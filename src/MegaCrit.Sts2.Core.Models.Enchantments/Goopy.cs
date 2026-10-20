@@ -1,0 +1,48 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
+
+namespace MegaCrit.Sts2.Core.Models.Enchantments;
+
+public sealed class Goopy : EnchantmentModel
+{
+	public override bool HasExtraCardText => true;
+
+	protected override IEnumerable<IHoverTip> ExtraHoverTips => new _003C_003Ez__ReadOnlySingleElementList<IHoverTip>(HoverTipFactory.FromKeyword(CardKeyword.Exhaust));
+
+	public override bool CanEnchant(CardModel card)
+	{
+		if (base.CanEnchant(card))
+		{
+			return card.Tags.Contains(CardTag.Defend);
+		}
+		return false;
+	}
+
+	protected override void OnEnchant()
+	{
+		Card.AddKeyword(CardKeyword.Exhaust);
+	}
+
+	public override Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+	{
+		if (cardPlay.Card != Card)
+		{
+			return Task.CompletedTask;
+		}
+		Amount++;
+		if (Card.DeckVersion != null)
+		{
+			Card.DeckVersion.Enchantment.Amount++;
+		}
+		return Task.CompletedTask;
+	}
+
+	public override decimal EnchantBlockAdditive(decimal originalBlock)
+	{
+		return Amount - 1;
+	}
+}

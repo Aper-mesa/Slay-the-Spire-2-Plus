@@ -1,0 +1,18 @@
+# Build output
+src/bin/
+src/obj/
+src/.vs/
+.vs/
+.idea/
+*.user
+
+# Local reverse-engineering artifacts (not part of the source release)
+backup/
+gdre/
+gdc/
+gdscript_src/
+loc_probe/
+recover_probe/
+pck_files.tsv
+tools/
+*.zip

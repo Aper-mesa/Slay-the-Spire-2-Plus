@@ -1,0 +1,67 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using MegaCrit.Sts2.Core.CardSelection;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Models;
+
+namespace MegaCrit.Sts2.Core.Entities.RestSite;
+
+public sealed class CookRestSiteOption : RestSiteOption
+{
+	private const int _cardsToRemove = 2;
+
+	private const int _maxHpGain = 5;
+
+	public override string OptionId => "COOK";
+
+	public override LocString Description
+	{
+		get
+		{
+			if (IsEnabled)
+			{
+				LocString locString = new LocString("rest_site_ui", "OPTION_" + OptionId + ".description");
+				locString.Add("Cards", 2m);
+				locString.Add("MaxHp", 5m);
+				return locString;
+			}
+			return new LocString("rest_site_ui", "OPTION_" + OptionId + ".descriptionDisabled");
+		}
+	}
+
+	public override bool IsEnabled => GetRemovableCardCount(Owner) >= 2;
+
+	public CookRestSiteOption(Player owner)
+		: base(owner)
+	{
+	}
+
+	public override async Task<bool> OnSelect()
+	{
+		CardSelectorPrefs prefs = new CardSelectorPrefs(CardSelectorPrefs.RemoveSelectionPrompt, 2)
+		{
+			Cancelable = true,
+			RequireManualConfirmation = true
+		};
+		IEnumerable<CardModel> enumerable = await CardSelectCmd.FromDeckForRemoval(Owner, prefs);
+		if (!enumerable.Any())
+		{
+			return false;
+		}
+		foreach (CardModel item in enumerable)
+		{
+			await CardPileCmd.RemoveFromDeck(item);
+		}
+		await CreatureCmd.GainMaxHp(Owner.Creature, 5m);
+		return true;
+	}
+
+	private static int GetRemovableCardCount(Player player)
+	{
+		return PileType.Deck.GetPile(player).Cards.Count((CardModel c) => c.IsRemovable);
+	}
+}
