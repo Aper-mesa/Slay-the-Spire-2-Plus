@@ -3120,7 +3120,7 @@ internal class MetricsSerializerContext : JsonSerializerContext, IJsonTypeInfoRe
 		return typeInfo;
 	}
 
-	JsonTypeInfo? IJsonTypeInfoResolver.GetTypeInfo(Type type, JsonSerializerOptions options)
+	JsonTypeInfo? global::System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver.GetTypeInfo(Type type, JsonSerializerOptions options)
 	{
 		if (type == typeof(bool))
 		{

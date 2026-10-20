@@ -7,6 +7,8 @@ public static class UserDataPathProvider
 {
 	public static string SavesDir => "saves";
 
+	public static bool IsRunningModded { get; set; }
+
 	public static string GetProfileScopedPath(int profileId, string dataType, PlatformType? platformOverride = null, ulong? userIdOverride = null)
 	{
 		PlatformType platformType = platformOverride ?? PlatformUtil.PrimaryPlatform;
