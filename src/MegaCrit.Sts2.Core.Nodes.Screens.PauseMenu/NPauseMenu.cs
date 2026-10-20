@@ -16,6 +16,7 @@ using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.Capstones;
 using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 using MegaCrit.Sts2.Core.Nodes.Screens.Settings;
+using MegaCrit.Sts2.Core.Plus;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.addons.mega_text;
@@ -194,13 +195,15 @@ public class NPauseMenu : NSubmenu
 
 	private NPauseMenuButton _saveAndQuitButton;
 
+	private NPauseMenuButton _saveAndLoadButton;
+
 	private MegaLabel _pausedLabel;
 
 	private IRunState _runState;
 
 	protected override Control InitialFocusedControl => _resumeButton;
 
-	private NPauseMenuButton[] Buttons => new NPauseMenuButton[6] { _resumeButton, _settingsButton, _compendiumButton, _giveUpButton, _disconnectButton, _saveAndQuitButton };
+	private NPauseMenuButton[] Buttons => new NPauseMenuButton[7] { _resumeButton, _settingsButton, _compendiumButton, _giveUpButton, _disconnectButton, _saveAndQuitButton, _saveAndLoadButton };
 
 	public bool UseSharedBackstop => true;
 
@@ -216,6 +219,11 @@ public class NPauseMenu : NSubmenu
 		_giveUpButton = _buttonContainer.GetNode<NPauseMenuButton>("GiveUp");
 		_disconnectButton = _buttonContainer.GetNode<NPauseMenuButton>("Disconnect");
 		_saveAndQuitButton = _buttonContainer.GetNode<NPauseMenuButton>("SaveAndQuit");
+		_saveAndLoadButton = SceneHelper.Instantiate<NPauseMenuButton>("pause_menu/pause_menu_button");
+		_saveAndLoadButton.Name = "SaveAndLoad";
+		_saveAndLoadButton.FocusMode = Control.FocusModeEnum.All;
+		_saveAndLoadButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+		_buttonContainer.AddChild(_saveAndLoadButton);
 		_backButton = GetNode<NBackButton>("%BackButton");
 		_pausedLabel = GetNode<MegaLabel>("%PausedText/Label");
 		RefreshLabels();
@@ -225,11 +233,13 @@ public class NPauseMenu : NSubmenu
 		_giveUpButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnGiveUpButtonPressed));
 		_disconnectButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnDisconnectButtonPressed));
 		_saveAndQuitButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnSaveAndQuitButtonPressed));
+		_saveAndLoadButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnSaveAndLoadButtonPressed));
 		_backButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnBackOrResumeButtonPressed));
 		_backButton.Disable();
 		_giveUpButton.Visible = RunManager.Instance.NetService.Type != NetGameType.Client;
 		_saveAndQuitButton.Visible = RunManager.Instance.NetService.Type != NetGameType.Client;
 		_disconnectButton.Visible = RunManager.Instance.NetService.Type == NetGameType.Client;
+		_saveAndLoadButton.Visible = RunManager.Instance.NetService.Type != NetGameType.Replay;
 		for (int i = 0; i < Buttons.Length; i++)
 		{
 			Buttons[i].FocusNeighborLeft = Buttons[i].GetPath();
@@ -253,6 +263,7 @@ public class NPauseMenu : NSubmenu
 		_giveUpButton.GetNode<MegaLabel>("Label").SetTextAutoSize(_giveUpLoc.GetFormattedText());
 		_disconnectButton.GetNode<MegaLabel>("Label").SetTextAutoSize(_disconnectLoc.GetFormattedText());
 		_saveAndQuitButton.GetNode<MegaLabel>("Label").SetTextAutoSize(_saveAndQuitLoc.GetFormattedText());
+		_saveAndLoadButton.GetNode<MegaLabel>("Label").SetTextAutoSize(new LocString("gameplay_ui", "PAUSE_MENU.SAVE_AND_LOAD").GetFormattedText());
 	}
 
 	public void Initialize(IRunState runState)
@@ -313,6 +324,13 @@ public class NPauseMenu : NSubmenu
 		TaskHelper.RunSafely(CloseToMenu());
 	}
 
+	private void OnSaveAndLoadButtonPressed(NButton _)
+	{
+		NCapstoneContainer.Instance.Close();
+		NRun.Instance.GlobalUi.TopBar.Pause.ToggleAnimState();
+		PlusSaveLoadService.Request();
+	}
+
 	/// <summary>
 	/// Helper method to quit to main menu as we require an async Task.
 	/// </summary>
@@ -324,6 +342,7 @@ public class NPauseMenu : NSubmenu
 		_giveUpButton.Disable();
 		_disconnectButton.Disable();
 		_saveAndQuitButton.Disable();
+		_saveAndLoadButton.Disable();
 		_backButton.Disable();
 		NRunMusicController.Instance.StopMusic();
 		NDebugAudioManager.Instance?.StopAll();

@@ -1543,7 +1543,8 @@ public class RunManager : IRunLobbyListener
 	/// </summary>
 	/// <param name="graceful">If true, messages are allowed to be sent before closing the multiplayer connection. Pass
 	/// false if the game window is being closed.</param>
-	public void CleanUp(bool graceful = true)
+	/// <param name="disconnect">[apermesa] Pass false when reloading a multiplayer run; the session must stay alive.</param>
+	public void CleanUp(bool graceful = true, bool disconnect = true)
 	{
 		if (State == null)
 		{
@@ -1580,7 +1581,10 @@ public class RunManager : IRunLobbyListener
 				RunLobby.RemotePlayerDisconnected -= RemotePlayerDisconnected;
 				RunLobby.Dispose();
 			}
-			NetService.Disconnect(NetError.Quit, !graceful);
+			if (disconnect)
+			{
+				NetService.Disconnect(NetError.Quit, !graceful);
+			}
 		}
 		finally
 		{

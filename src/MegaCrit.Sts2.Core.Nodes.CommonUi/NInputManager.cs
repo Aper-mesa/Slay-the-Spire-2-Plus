@@ -7,6 +7,7 @@ using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.ControllerInput;
+using MegaCrit.Sts2.Core.Plus;
 using MegaCrit.Sts2.Core.Debug;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Debug;
@@ -271,7 +272,8 @@ public class NInputManager : Node
 		MegaInput.selectCard7,
 		MegaInput.selectCard8,
 		MegaInput.selectCard9,
-		MegaInput.selectCard10
+		MegaInput.selectCard10,
+		MegaInput.saveAndLoad
 	};
 
 	public static readonly IReadOnlyList<StringName> remappableKbOnlyInputs = new List<StringName>
@@ -300,7 +302,8 @@ public class NInputManager : Node
 		MegaInput.selectCard7,
 		MegaInput.selectCard8,
 		MegaInput.selectCard9,
-		MegaInput.selectCard10
+		MegaInput.selectCard10,
+		MegaInput.saveAndLoad
 	};
 
 	public static readonly IReadOnlyList<StringName> remappableControllerInputs = new List<StringName>
@@ -439,6 +442,10 @@ public class NInputManager : Node
 		{
 			MegaInput.selectCard10,
 			Key.Key0
+		},
+		{
+			MegaInput.saveAndLoad,
+			Key.F8
 		}
 	};
 
@@ -547,6 +554,10 @@ public class NInputManager : Node
 		{
 			MegaInput.topPanel,
 			Key.W
+		},
+		{
+			MegaInput.saveAndLoad,
+			Key.F8
 		}
 	};
 
@@ -578,6 +589,12 @@ public class NInputManager : Node
 
 	private async Task Init()
 	{
+		PlusSaveLoadRuntimeLoc.EnsureRegistered();
+		// [apermesa] Save & Load hotkey action; project.godot is packed and cannot be edited.
+		if (!InputMap.HasAction(MegaInput.saveAndLoad))
+		{
+			InputMap.AddAction(MegaInput.saveAndLoad, 0.5f);
+		}
 		await ControllerManager.Init();
 		SettingsSave settingsSave = SaveManager.Instance.SettingsSave;
 		if (settingsSave.KeyboardMapping.Count > 0)

@@ -210,6 +210,10 @@ public class NInputSettingsEntry : NButton
 		{
 			MegaInput.selectCard10,
 			"selectCard10"
+		},
+		{
+			MegaInput.saveAndLoad,
+			"saveAndLoad"
 		}
 	};
 

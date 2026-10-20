@@ -13,6 +13,7 @@ using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
+using MegaCrit.Sts2.Core.Plus;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.addons.mega_text;
@@ -194,6 +195,7 @@ public class NRun : Control
 		RunMusicController.UpdateMusic();
 		_seedLabel = GetNode<MegaLabel>("%DebugSeed");
 		_seedLabel.SetTextAutoSize(_state.Rng.StringSeed);
+		PlusSaveLoadService.OnRunStarted();
 	}
 
 	public override void _Process(double delta)

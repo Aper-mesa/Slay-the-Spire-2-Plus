@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.Multiplayer.Messages.Game.Checksums;
 using MegaCrit.Sts2.Core.Multiplayer.Messages.Game.Flavor;
 using MegaCrit.Sts2.Core.Multiplayer.Messages.Game.Sync;
 using MegaCrit.Sts2.Core.Multiplayer.Messages.Lobby;
+using MegaCrit.Sts2.Core.Plus;
 
 namespace MegaCrit.Sts2.Core.Multiplayer.Serialization;
 
@@ -116,17 +117,29 @@ public static class INetMessageSubtypes
 
 	private static readonly Type _t51 = typeof(PlayerRejoinedMessage);
 
-	private static readonly Type[] _subtypes = new Type[52]
+	private static readonly Type _t52 = typeof(PlusSlInitiateMessage);
+
+	private static readonly Type _t53 = typeof(PlusSlInitiateResponseMessage);
+
+	private static readonly Type _t54 = typeof(PlusSlExecuteMessage);
+
+	private static readonly Type _t55 = typeof(PlusSlCancelMessage);
+
+	private static readonly Type _t56 = typeof(PlusSlSetupReadyMessage);
+
+	private static readonly Type _t57 = typeof(PlusSlRunBeginMessage);
+
+	private static readonly Type[] _subtypes = new Type[58]
 	{
 		_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9,
 		_t10, _t11, _t12, _t13, _t14, _t15, _t16, _t17, _t18, _t19,
 		_t20, _t21, _t22, _t23, _t24, _t25, _t26, _t27, _t28, _t29,
 		_t30, _t31, _t32, _t33, _t34, _t35, _t36, _t37, _t38, _t39,
 		_t40, _t41, _t42, _t43, _t44, _t45, _t46, _t47, _t48, _t49,
-		_t50, _t51
+		_t50, _t51, _t52, _t53, _t54, _t55, _t56, _t57
 	};
 
-	public static int Count => 52;
+	public static int Count => 58;
 
 	public static IReadOnlyList<Type> All => _subtypes;
 

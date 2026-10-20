@@ -66,9 +66,11 @@ public static class MegaInput
 
 	public static readonly StringName peek = "mega_peek";
 
-	public static string[] AllInputs => new string[19]
+	public static readonly StringName saveAndLoad = "mega_save_and_load";
+
+	public static string[] AllInputs => new string[20]
 	{
 		up, down, left, right, altUp, altDown, altLeft, altRight, select, cancel,
-		confirm, topPanel, viewDeckAndTabLeft, viewExhaustPileAndTabRight, viewDiscardPile, viewDrawPile, pauseAndBack, viewMap, peek
+		confirm, topPanel, viewDeckAndTabLeft, viewExhaustPileAndTabRight, viewDiscardPile, viewDrawPile, pauseAndBack, viewMap, peek, saveAndLoad
 	};
 }
