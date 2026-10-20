@@ -39,6 +39,12 @@ public class LocManager
 
 	private Dictionary<string, LocTable> _tables = new Dictionary<string, LocTable>();
 
+	/// <summary>
+	/// [apermesa] Strings registered at runtime (for features that do not ship their own loc tables).
+	/// Keyed by language, then table, then entry.
+	/// </summary>
+	private static readonly Dictionary<string, Dictionary<string, Dictionary<string, string>>> _runtimeStrings = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
+
 	private Dictionary<string, LocTable>? _engTables;
 
 	private PreOverrideState? _stateBeforeOverridingWithEnglish;
@@ -345,6 +351,7 @@ public class LocManager
 		OverridesActive = overridesActive;
 		ValidationErrors = validationErrors.AsReadOnly();
 		Language = language;
+		ApplyRuntimeStrings();
 		if (OverridesActive)
 		{
 			Log.Info("Localization overrides are active for language '" + language + "'");
@@ -478,6 +485,57 @@ public class LocManager
 			dictionary2[fileNameWithoutExtension] = locTable;
 		}
 		return (tables: dictionary2, overridesActive: item, validationErrors: list);
+	}
+
+	/// <summary>
+	/// [apermesa] Registers strings that are not present in the shipped loc files.
+	/// They are re-applied on every language change.
+	/// </summary>
+	public static void RegisterRuntimeStrings(string language, string table, Dictionary<string, string> entries)
+	{
+		if (!_runtimeStrings.TryGetValue(language, out Dictionary<string, Dictionary<string, string>> value))
+		{
+			value = new Dictionary<string, Dictionary<string, string>>();
+			_runtimeStrings[language] = value;
+		}
+		if (!value.TryGetValue(table, out Dictionary<string, string> value2))
+		{
+			value2 = new Dictionary<string, string>();
+			value[table] = value2;
+		}
+		foreach (KeyValuePair<string, string> entry in entries)
+		{
+			value2[entry.Key] = entry.Value;
+		}
+		Instance?.ApplyRuntimeStrings();
+	}
+
+	private void ApplyRuntimeStrings()
+	{
+		if (Language != "eng")
+		{
+			ApplyRuntimeStringsForLanguage("eng");
+		}
+		ApplyRuntimeStringsForLanguage(Language);
+	}
+
+	private void ApplyRuntimeStringsForLanguage(string language)
+	{
+		if (!_runtimeStrings.TryGetValue(language, out Dictionary<string, Dictionary<string, string>> value))
+		{
+			return;
+		}
+		foreach (KeyValuePair<string, Dictionary<string, string>> item in value)
+		{
+			if (_tables.TryGetValue(item.Key, out LocTable value2))
+			{
+				value2.MergeWith(item.Value);
+			}
+			else
+			{
+				_tables[item.Key] = new LocTable(item.Key, new Dictionary<string, string>(item.Value));
+			}
+		}
 	}
 
 	public LocTable GetTable(string name)

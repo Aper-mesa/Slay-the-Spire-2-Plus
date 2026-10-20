@@ -45,13 +45,19 @@ public class Darv : AncientEventModel
 
 	private const string _sfxIntroduction = "event:/sfx/npcs/darv/darv_introduction";
 
-	private static readonly List<ValidRelicSet> _validRelicSets;
+	private static List<ValidRelicSet>? _validRelicSets;
+
+	/// <summary>
+	/// [apermesa] Lazily build the relic sets. Building them in a static constructor made Darv depend on
+	/// Astrolabe being registered in ModelDb first, which is not guaranteed when mods inject model types.
+	/// </summary>
+	private static List<ValidRelicSet> ValidRelicSets => _validRelicSets ?? (_validRelicSets = CreateValidRelicSets());
 
 	public override Color ButtonColor => new Color(0.06f, 0f, 0.08f, 0.5f);
 
 	public override Color DialogueColor => new Color("512E66");
 
-	public override IEnumerable<EventOption> AllPossibleOptions => (from r in _validRelicSets.SelectMany((ValidRelicSet s) => s.relics)
+	public override IEnumerable<EventOption> AllPossibleOptions => (from r in ValidRelicSets.SelectMany((ValidRelicSet s) => s.relics)
 		select RelicOption(r.ToMutable())).Concat(new _003C_003Ez__ReadOnlySingleElementList<EventOption>(RelicOption<DustyTome>()));
 
 	protected override AncientDialogueSet DefineDialogues()
@@ -147,7 +153,7 @@ public class Darv : AncientEventModel
 
 	protected override IReadOnlyList<EventOption> GenerateInitialOptions()
 	{
-		List<EventOption> source = (from rs in _validRelicSets
+		List<EventOption> source = (from rs in ValidRelicSets
 			where rs.filter(Owner)
 			select RelicOption(Rng.NextItem(rs.relics).ToMutable())).ToList().UnstableShuffle(Rng);
 		List<EventOption> list;
@@ -168,7 +174,7 @@ public class Darv : AncientEventModel
 		return list;
 	}
 
-	static Darv()
+	private static List<ValidRelicSet> CreateValidRelicSets()
 	{
 		int num = 11;
 		List<ValidRelicSet> list = new List<ValidRelicSet>(num);
@@ -196,6 +202,6 @@ public class Darv : AncientEventModel
 		span[num2] = new ValidRelicSet((Player owner) => owner.RunState.CurrentActIndex >= 1, new RelicModel[1] { ModelDb.Relic<PhilosophersStone>() });
 		num2++;
 		span[num2] = new ValidRelicSet((Player owner) => owner.RunState.CurrentActIndex >= 1, new RelicModel[1] { ModelDb.Relic<VelvetChoker>() });
-		_validRelicSets = list;
+		return list;
 	}
 }

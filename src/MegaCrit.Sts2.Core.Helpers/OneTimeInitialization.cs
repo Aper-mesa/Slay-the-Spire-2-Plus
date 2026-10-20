@@ -82,6 +82,7 @@ public static class OneTimeInitialization
 		ModelDb.InitIds();
 		MessageTypes.Initialize();
 		ActionTypes.Initialize();
+		MegaCrit.Sts2.Core.Transfer.TransferState.Initialize();
 	}
 
 	/// <summary>

@@ -13,6 +13,8 @@ using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Debug;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Localization.Fonts;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -21,6 +23,7 @@ using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
+using MegaCrit.Sts2.Core.Transfer;
 
 namespace MegaCrit.Sts2.Core.Nodes.Combat;
 
@@ -244,6 +247,10 @@ public class NCombatUi : Control
 
 	private NPingButton PingButton { get; set; }
 
+	private Button? _transferCardButton;
+
+	private Button? _transferRelicButton;
+
 	public NDrawPileButton DrawPile => _combatPilesContainer.DrawPile;
 
 	public NDiscardPileButton DiscardPile => _combatPilesContainer.DiscardPile;
@@ -292,6 +299,7 @@ public class NCombatUi : Control
 		PlayQueue = GetNode<NCardPlayQueue>("%PlayQueue");
 		CardPreviewContainer = GetNode<Control>("%CardPreviewContainer");
 		MessyCardPreviewContainer = GetNode<NMessyCardPreviewContainer>("%MessyCardPreviewContainer");
+		CreateTransferButtons();
 		if (!_isDebugHidden)
 		{
 			return;
@@ -311,12 +319,94 @@ public class NCombatUi : Control
 		DisconnectSignals();
 	}
 
+	private void CreateTransferButtons()
+	{
+		_transferCardButton = CreateTransferButton("APERMESA_TRANSFER_CARD_BUTTON", "APERMESA_TRANSFER_CARD_TOOLTIP", -334f, OnTransferCardPressed);
+		_transferRelicButton = CreateTransferButton("APERMESA_TRANSFER_RELIC_BUTTON", "APERMESA_TRANSFER_RELIC_TOOLTIP", -390f, OnTransferRelicPressed);
+	}
+
+	private Button CreateTransferButton(string labelKey, string tooltipKey, float offsetTop, Action onPressed)
+	{
+		Button button = new Button
+		{
+			Name = "ApermesaTransfer" + labelKey,
+			Text = new LocString("gameplay_ui", labelKey).GetFormattedText(),
+			TooltipText = new LocString("gameplay_ui", tooltipKey).GetFormattedText(),
+			FocusMode = Control.FocusModeEnum.All,
+			MouseDefaultCursorShape = Control.CursorShape.PointingHand
+		};
+		button.SetAnchorsPreset(Control.LayoutPreset.BottomRight);
+		button.OffsetLeft = -316f;
+		button.OffsetRight = -96f;
+		button.OffsetTop = offsetTop;
+		button.OffsetBottom = offsetTop + 40f;
+		button.AddThemeFontSizeOverride("font_size", 22);
+		button.AddThemeColorOverride("font_color", new Color(1f, 0.965f, 0.886f));
+		button.AddThemeColorOverride("font_hover_color", Colors.White);
+		button.AddThemeColorOverride("font_pressed_color", new Color(0.8f, 0.75f, 0.6f));
+		button.AddThemeColorOverride("font_disabled_color", new Color(0.5f, 0.5f, 0.5f));
+		StyleBoxFlat styleBoxFlat = CreateTransferButtonStyle(new Color(0.09f, 0.07f, 0.05f, 0.88f), new Color(0.72f, 0.6f, 0.38f, 0.9f));
+		StyleBoxFlat styleBoxFlat2 = CreateTransferButtonStyle(new Color(0.16f, 0.12f, 0.08f, 0.95f), new Color(0.95f, 0.8f, 0.5f, 1f));
+		StyleBoxFlat styleBoxFlat3 = CreateTransferButtonStyle(new Color(0.05f, 0.04f, 0.03f, 0.95f), new Color(0.95f, 0.8f, 0.5f, 1f));
+		StyleBoxFlat styleBoxFlat4 = CreateTransferButtonStyle(new Color(0.06f, 0.06f, 0.06f, 0.7f), new Color(0.3f, 0.3f, 0.3f, 0.8f));
+		button.AddThemeStyleboxOverride("normal", styleBoxFlat);
+		button.AddThemeStyleboxOverride("hover", styleBoxFlat2);
+		button.AddThemeStyleboxOverride("pressed", styleBoxFlat3);
+		button.AddThemeStyleboxOverride("disabled", styleBoxFlat4);
+		button.AddThemeStyleboxOverride("focus", styleBoxFlat2);
+		button.ApplyLocaleFontSubstitution(FontType.Bold, "font");
+		button.Visible = false;
+		button.Pressed += onPressed;
+		AddChild(button);
+		return button;
+	}
+
+	private static StyleBoxFlat CreateTransferButtonStyle(Color background, Color border)
+	{
+		StyleBoxFlat styleBoxFlat = new StyleBoxFlat
+		{
+			BgColor = background,
+			BorderColor = border
+		};
+		styleBoxFlat.SetBorderWidthAll(2);
+		styleBoxFlat.SetCornerRadiusAll(6);
+		styleBoxFlat.SetContentMarginAll(4f);
+		return styleBoxFlat;
+	}
+
+	private void OnTransferCardPressed()
+	{
+		Player me = LocalContext.GetMe(_state);
+		if (me != null)
+		{
+			TransferState.BeginCardTransfer(me, _transferCardButton);
+		}
+	}
+
+	private void OnTransferRelicPressed()
+	{
+		Player me = LocalContext.GetMe(_state);
+		if (me != null)
+		{
+			TransferState.BeginRelicTransfer(me, _transferRelicButton);
+		}
+	}
+
 	public void Activate(CombatState state)
 	{
 		CombatManager.Instance.CombatEnded += OnCombatEnded;
 		CombatManager.Instance.CombatWon += OnCombatWon;
 		_state = state;
 		Player me = LocalContext.GetMe(_state);
+		bool showTransfer = state.Players.Count > 1;
+		if (_transferCardButton != null)
+		{
+			_transferCardButton.Visible = showTransfer;
+		}
+		if (_transferRelicButton != null)
+		{
+			_transferRelicButton.Visible = showTransfer;
+		}
 		_combatPilesContainer.Initialize(me);
 		_starCounter.Initialize(me);
 		EndTurnButton.Initialize(state);

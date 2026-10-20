@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using MegaCrit.Sts2.Core.DevConsole;
+using MegaCrit.Sts2.Core.Transfer;
 
 namespace MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
@@ -29,13 +30,17 @@ public static class INetActionSubtypes
 
 	private static readonly Type _t10 = typeof(NetVoteToMoveToNextActAction);
 
-	private static readonly Type[] _subtypes = new Type[11]
+	private static readonly Type _t11 = typeof(NetTransferCardAction);
+
+	private static readonly Type _t12 = typeof(NetTransferRelicAction);
+
+	private static readonly Type[] _subtypes = new Type[13]
 	{
 		_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9,
-		_t10
+		_t10, _t11, _t12
 	};
 
-	public static int Count => 11;
+	public static int Count => 13;
 
 	public static IReadOnlyList<Type> All => _subtypes;
 

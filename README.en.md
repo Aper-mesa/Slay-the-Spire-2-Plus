@@ -79,6 +79,13 @@ apermesa-build-<AssemblyHasher.GetMainAssemblyHash()>
 - A different build (including the unmodified game) → `ModMismatch` popup and connection blocked.
 - Every rebuild changes the fingerprint, so all players must use the same DLL.
 
+### Multiplayer transfer
+
+- **Send Card**: once per turn, with more than 1 Energy, spend 1 Energy to send a hand card to a teammate. If the teammate's hand is full, the card goes to their discard pile.
+- **Send Relic**: once per turn, with more than 1 Max HP, spend 1 Max HP to lend a relic to a teammate. The relic returns at the start of the giver's next turn or when combat ends.
+- Relic whitelist is rule-generated: relics with on-pickup effects (max HP, card/curse grants, enchantments), combat-start-only relics, used-up/melted/pet-summoning relics, starter relics and event relics are excluded; Pael's Eye is allowed as an explicit "first time each combat" exception.
+- Multiplayer sync uses the new `TransferCardAction` / `TransferRelicAction` through the action queue; all peers must run the same build.
+
 ## Notes
 
 - Decompiled with ILSpy 11.1.0 (ICSharpCode.Decompiler 11.1.0), C# 14.
