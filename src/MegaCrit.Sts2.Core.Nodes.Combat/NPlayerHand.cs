@@ -1273,9 +1273,13 @@ public class NPlayerHand : Control
 	{
 		foreach (NSelectedHandCardHolder item in _selectedHandCardContainer.Holders.ToList())
 		{
-			NCard cardNode = item.CardNode;
+			NCard? cardNode = item.CardNode;
 			item.QueueFreeSafely();
-			Add(cardNode);
+			// [apermesa] The card may have left the hand (e.g. transferred); never create an empty holder.
+			if (cardNode != null && GodotObject.IsInstanceValid(cardNode))
+			{
+				Add(cardNode);
+			}
 		}
 		if (_upgradePreview.Card != null)
 		{

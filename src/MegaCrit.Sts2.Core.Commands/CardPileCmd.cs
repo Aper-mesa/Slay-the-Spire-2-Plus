@@ -233,6 +233,15 @@ public static class CardPileCmd
 		card.GiveToAnotherPlayer(player);
 		bool islocalPlayerTheReceivingPlayer = LocalContext.IsMine(card);
 		await Add(new _003C_003Ez__ReadOnlySingleElementList<CardModel>(card), pileType.GetPile(player), position, clonedBy, skipVisuals: true, isChangingOwners: true);
+		if (islocalPlayerTheReceivingPlayer)
+		{
+			// [apermesa] skipVisuals skips node creation, and the card has no node on the receiver's table.
+			NCard? receivedCardNode = NCard.Create(card);
+			if (receivedCardNode != null)
+			{
+				NPlayerHand.Instance?.Add(receivedCardNode);
+			}
+		}
 		if (cardNode == null || !cardNode.IsValid())
 		{
 			return;
