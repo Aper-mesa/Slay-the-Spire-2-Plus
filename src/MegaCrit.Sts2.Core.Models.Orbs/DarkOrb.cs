@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.ValueProps;
 
@@ -51,7 +52,8 @@ public class DarkOrb : OrbModel
 		PlayEvokeSfx();
 		Creature weakestEnemy = hittableEnemies.MinBy((Creature c) => c.CurrentHp);
 		ActivateEvoke(new Creature[1] { weakestEnemy });
-		await CreatureCmd.Damage(playerChoiceContext, weakestEnemy, EvokeVal, ValueProp.Unpowered, Owner.Creature);
+		decimal damage = ((weakestEnemy.GetPower<ClassicLockOnPower>() != null) ? (EvokeVal * 1.5m) : EvokeVal);
+		await CreatureCmd.Damage(playerChoiceContext, weakestEnemy, damage, ValueProp.Unpowered, Owner.Creature);
 		return new _003C_003Ez__ReadOnlySingleElementList<Creature>(weakestEnemy);
 	}
 }

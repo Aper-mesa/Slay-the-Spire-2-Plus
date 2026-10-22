@@ -154,7 +154,7 @@ public abstract class CardModel : AbstractModel
 
 	public bool HasBetaPortrait => ResourceLoader.Exists(BetaPortraitPngPath);
 
-	public Texture2D Portrait => ResourceLoader.Load<Texture2D>(PortraitPath, null, ResourceLoader.CacheMode.Reuse);
+	public virtual Texture2D Portrait => ResourceLoader.Load<Texture2D>(PortraitPath, null, ResourceLoader.CacheMode.Reuse);
 
 	private string FramePath
 	{

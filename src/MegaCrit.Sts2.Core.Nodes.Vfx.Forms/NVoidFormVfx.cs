@@ -228,7 +228,7 @@ public class NVoidFormVfx : NFormVfx
 			{
 				boneName = _necrobinderBoneName;
 			}
-			else if (character is Defect)
+			else if (character is Defect || character is ClassicDefect)
 			{
 				boneName = _defectBoneName;
 			}

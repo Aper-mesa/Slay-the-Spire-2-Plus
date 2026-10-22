@@ -43,7 +43,7 @@ public sealed class YummyCookie : RelicModel
 					{
 						if (!(characterModel is Necrobinder))
 						{
-							if (characterModel is Defect)
+							if (characterModel is Defect || characterModel is ClassicDefect)
 							{
 								return "yummy_cookie_defect";
 							}

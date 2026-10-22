@@ -6,6 +6,7 @@ using Godot;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace MegaCrit.Sts2.Core.Models.Orbs;
@@ -49,7 +50,20 @@ public class LightningOrb : OrbModel
 		{
 			return Array.Empty<Creature>();
 		}
-		IReadOnlyList<Creature> targets = ((target == null) ? new _003C_003Ez__ReadOnlySingleElementList<Creature>(Owner.RunState.Rng.CombatTargets.NextItem(list)) : new _003C_003Ez__ReadOnlySingleElementList<Creature>(target));
+		bool hitsAll = Owner.Creature.GetPower<ClassicElectroPower>() != null;
+		IReadOnlyList<Creature> targets;
+		if (hitsAll)
+		{
+			targets = list;
+		}
+		else if (target == null)
+		{
+			targets = new _003C_003Ez__ReadOnlySingleElementList<Creature>(Owner.RunState.Rng.CombatTargets.NextItem(list));
+		}
+		else
+		{
+			targets = new _003C_003Ez__ReadOnlySingleElementList<Creature>(target);
+		}
 		if (isEvoke)
 		{
 			ActivateEvoke(targets.ToArray());
@@ -59,7 +73,22 @@ public class LightningOrb : OrbModel
 			VfxCmd.PlayOnCreature(item, "vfx/vfx_attack_lightning");
 		}
 		PlayEvokeSfx();
-		await CreatureCmd.Damage(choiceContext, targets, value, ValueProp.Unpowered, Owner.Creature);
+		if (targets.Any((Creature t) => t.GetPower<ClassicLockOnPower>() != null))
+		{
+			foreach (Creature item2 in targets)
+			{
+				decimal num = value;
+				if (item2.GetPower<ClassicLockOnPower>() != null)
+				{
+					num *= 1.5m;
+				}
+				await CreatureCmd.Damage(choiceContext, new _003C_003Ez__ReadOnlySingleElementList<Creature>(item2), num, ValueProp.Unpowered, Owner.Creature);
+			}
+		}
+		else
+		{
+			await CreatureCmd.Damage(choiceContext, targets, value, ValueProp.Unpowered, Owner.Creature);
+		}
 		return targets;
 	}
 }

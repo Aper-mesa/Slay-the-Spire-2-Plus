@@ -97,7 +97,7 @@ public class NHyperbeamImpactVfx : Node2D
 		{
 			Vector2 vfxSpawnPosition = nCreature.VfxSpawnPosition;
 			Player player = owner.Player;
-			if (player != null && player.Character is Defect)
+			if (player != null && (player.Character is Defect || player.Character is ClassicDefect))
 			{
 				vfxSpawnPosition += Defect.EyelineOffset;
 			}

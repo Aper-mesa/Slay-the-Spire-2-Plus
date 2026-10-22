@@ -13,6 +13,7 @@ gdc/
 gdscript_src/
 loc_probe/
 recover_probe/
+tmp_probe/
 pck_files.tsv
 tools/
 *.zip

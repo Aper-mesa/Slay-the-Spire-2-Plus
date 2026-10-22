@@ -307,6 +307,7 @@ public class NGeneralStatsGrid : Control
 		CreateCharacterSection(progressSave, ModelDb.Character<Regent>().Id);
 		CreateCharacterSection(progressSave, ModelDb.Character<Necrobinder>().Id);
 		CreateCharacterSection(progressSave, ModelDb.Character<Defect>().Id);
+		CreateCharacterSection(progressSave, ModelDb.Character<MegaCrit.Sts2.Core.Models.Characters.ClassicDefect>().Id);
 	}
 
 	private void CreateCharacterSection(ProgressState progressSave, ModelId id)

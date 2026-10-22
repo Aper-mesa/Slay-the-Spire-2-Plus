@@ -11,7 +11,10 @@
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
   </PropertyGroup>
   <PropertyGroup />
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="ClassicDefectArt\*.png" />
+    <EmbeddedResource Include="ClassicPowerIcons\*.png" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="GodotSharp">
       <HintPath>X:\SteamLibrary\steamapps\common\Slay the Spire 2\data_sts2_windows_x86_64\GodotSharp.dll</HintPath>

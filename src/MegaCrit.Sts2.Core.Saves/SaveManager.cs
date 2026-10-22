@@ -1050,7 +1050,7 @@ public class SaveManager : IProfileIdProvider
 
 	public static int GetAggregateAscensionCount()
 	{
-		return ModelDb.AllCharacters.Count() * 10;
+		return ModelDb.AllCharacters.Count((CharacterModel c) => !(c is MegaCrit.Sts2.Core.Models.Characters.ClassicDefect)) * 10;
 	}
 
 	public int GetTotalKills()

@@ -340,7 +340,7 @@ public class ProgressSaveManager
 		TryObtainEpochPostRun(EpochModel.Get<NeowEpoch>(), serializablePlayer, serializableRun);
 		PostRunUnlockCharacterEpochCheck(serializablePlayer, serializableRun);
 		PostRunCharacterEpochChecks(serializablePlayer, serializableRun, victory);
-		int num = ModelDb.AllCharacters.Count();
+		int num = ModelDb.AllCharacters.Count((CharacterModel c) => !(c is MegaCrit.Sts2.Core.Models.Characters.ClassicDefect));
 		if (victory && Progress.CharacterStats.Count >= num)
 		{
 			TryObtainEpochPostRun(EpochModel.Get<DailyRunEpoch>(), serializablePlayer, serializableRun);
@@ -451,7 +451,7 @@ public class ProgressSaveManager
 					{
 						if (!(character is Necrobinder))
 						{
-							if (!(character is Deprived))
+							if (!(character is Deprived) && !(character is ClassicDefect))
 							{
 								throw new ArgumentOutOfRangeException("character", character, null);
 							}
@@ -528,7 +528,7 @@ public class ProgressSaveManager
 					{
 						if (!(character is Necrobinder))
 						{
-							if (!(character is Deprived))
+							if (!(character is Deprived) && !(character is ClassicDefect))
 							{
 								throw new ArgumentOutOfRangeException("character", character, null);
 							}
@@ -592,7 +592,7 @@ public class ProgressSaveManager
 	/// </summary>
 	private void ObtainCharUnlockEpoch(Player localPlayer, int act)
 	{
-		if (localPlayer.Character.IsPlayable)
+		if (localPlayer.Character.IsPlayable && !(localPlayer.Character is ClassicDefect))
 		{
 			string text = localPlayer.Character.Id.Entry.ToUpperInvariant();
 			EpochModel epochModel = null;

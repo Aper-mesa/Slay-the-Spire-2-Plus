@@ -78,6 +78,7 @@ public static class OneTimeInitialization
 		LocManager.Initialize();
 		AssemblyInfo.Init();
 		ModelDb.Init();
+		MegaCrit.Sts2.Core.ClassicContent.ClassicDefectContent.InjectAll();
 		ModelIdSerializationCache.Init();
 		ModelDb.InitIds();
 		MessageTypes.Initialize();
