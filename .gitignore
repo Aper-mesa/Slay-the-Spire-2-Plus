@@ -17,3 +17,8 @@ tmp_probe/
 pck_files.tsv
 tools/
 *.zip
+
+# Local AI assistant config (never commit)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
