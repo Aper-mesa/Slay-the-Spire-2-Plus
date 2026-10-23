@@ -6,8 +6,11 @@ Decompiled C# / GDScript source of **Slay the Spire 2 v0.111.0** (Godot 4.5.1 + 
 
 > **Disclaimer**
 > This repository contains decompiled source code for research, interoperability and modding.
-> Slay the Spire 2 and its code are © Mega Crit Games. No game assets, binaries, save data or
-> Steam Workshop content are included. This project is not affiliated with or endorsed by Mega Crit.
+> Slay the Spire 2 and its code are © Mega Crit Games. Apart from the small set of Slay the Spire 1
+> card/power images under `src/ClassicDefectArt/` and `src/ClassicPowerIcons/` used to build the
+> classic Defect character, no game assets, binaries, save data or Steam Workshop content are
+> included. Those images are © Mega Crit Games as well and may be deleted (missing card art then
+> falls back to the placeholder). This project is not affiliated with or endorsed by Mega Crit.
 > Do not use this repository to distribute the original game or its assets.
 > Rights holders may open an issue for removal.
 
@@ -25,11 +28,14 @@ Decompiled C# / GDScript source of **Slay the Spire 2 v0.111.0** (Godot 4.5.1 + 
 | Path | Contents |
 | --- | --- |
 | `src/` | ILSpy-decompiled C# project: 223 namespaces, 3,537 files, ~491,700 lines |
+| `src/ClassicDefectArt/` | 23 STS1 card images, embedded into the DLL for the classic Defect |
+| `src/ClassicPowerIcons/` | 6 STS1 power icons (48 / 128), embedded into the DLL |
 | `gdscript_tree/` | 56 GDScript files recovered from GDSC v101 bytecode, original project paths |
 | `types.txt` | Class inventory (6,641 classes) |
 | `original_source_paths.txt` | Original C# source paths recorded in the PCK (3,441 entries, paths only) |
 
-Not included: game assets, PCK, original game DLL, tool binaries, local save data.
+Not included: PCK, original game DLL, tool binaries, local save data. The only game assets in the
+repository are the classic Defect images listed above.
 
 ## Build
 
@@ -86,6 +92,28 @@ apermesa-build-<AssemblyHasher.GetMainAssemblyHash()>
 - Relic whitelist is rule-generated: relics with on-pickup effects (max HP, card/curse grants, enchantments), combat-start-only relics, used-up/melted/pet-summoning relics, starter relics and event relics are excluded; Pael's Eye is allowed as an explicit "first time each combat" exception.
 - Multiplayer sync uses the new `TransferCardAction` / `TransferRelicAction` through the action queue; all peers must run the same build.
 
+### Classic Defect (Slay the Spire 1)
+
+The Slay the Spire 1 Defect is ported as a separate character that coexists with the redesigned
+STS2 Defect:
+
+- 75 STS1 cards, 9 STS1 relics and 7 classic-only powers with their own card and relic pools; the
+  character has its own entry in character select.
+- Numbers and mechanics follow the STS1 source, e.g. Barrage 4, Biased Cognition 4 Focus, Claw +2
+  damage on upgrade, Fusion 2-cost with no Exhaust, Glacier 7 Block, Hyperbeam 26 damage with a
+  permanent 3 Focus loss, Meteor Strike 24, Chill gains Innate on upgrade, Darkness only triggers
+  Dark passives when upgraded, Tempest Exhausts, Storm gains Innate on upgrade, Genetic Algorithm
+  +2 per play, All For One returns every 0-cost card from the discard pile.
+- Lock-On's 50% damage bonus applies to Lightning passives/evokes and Dark evokes, and the debuff
+  is now visible; all six classic powers (Amplify, Electrodynamics, Heatsinks, Lock-On, Static
+  Discharge, Self Repair) display STS1 icons in the power bar.
+- STS1 card art and power icons are embedded into the DLL as resources (`src/ClassicDefectArt/`,
+  `src/ClassicPowerIcons/`), so the mod is still a single `sts2.dll`.
+- Character visuals/Spine/SFX currently reuse the STS2 Defect; ancient and Architect dialogue also
+  reuse the STS2 Defect lines and animations so the post-Act-3 ending completes normally.
+- The card library's Defect filter lists both STS2 Defect and classic Defect cards. A dedicated
+  filter button would require overriding `card_library.tscn` through a mod PCK.
+
 ## Notes
 
 - Decompiled with ILSpy 11.1.0 (ICSharpCode.Decompiler 11.1.0), C# 14.
@@ -96,7 +124,8 @@ apermesa-build-<AssemblyHasher.GetMainAssemblyHash()>
   build with plain `Microsoft.NET.Sdk` (as provided) or disable the generators.
 - The game's own mod system (`mods/`, `ModHelper`, `Harmony`) is under
   `src/MegaCrit.Sts2.Core.Modding/`.
-- Assets, scenes, audio and FMOD banks are not included.
+- `src/ClassicDefectArt/*.png` and `src/ClassicPowerIcons/*.png` are compiled into the DLL as
+  `EmbeddedResource`; apart from those, no scenes, audio or FMOD banks are included.
 
 ## References
 
