@@ -242,11 +242,14 @@ public class NEventRoom : Control, IScreenContext
 			int totalVisits = statsForAncient?.TotalVisits ?? 0;
 			IEnumerable<AncientDialogue> validDialogues = ancientEventModel.DialogueSet.GetValidDialogues(id, charVisits, totalVisits, !ancientEventModel.AnyCharacterDialogueBlacklist.Contains(_event.Owner.Character));
 			AncientDialogue ancientDialogue = Rng.Chaotic.NextItem(validDialogues);
-			foreach (AncientDialogueLine line in ancientDialogue.Lines)
+			if (ancientDialogue != null)
 			{
-				line.LineText?.Add("Act1Name", _runState.Acts[0].Title);
+				foreach (AncientDialogueLine line in ancientDialogue.Lines)
+				{
+					line.LineText?.Add("Act1Name", _runState.Acts[0].Title);
+				}
+				((NAncientEventLayout)Layout).SetDialogue(ancientDialogue.Lines);
 			}
-			((NAncientEventLayout)Layout).SetDialogue(ancientDialogue.Lines);
 		}
 		SetOptions(_event);
 		Layout.OnSetupComplete();

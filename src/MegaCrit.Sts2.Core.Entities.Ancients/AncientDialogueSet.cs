@@ -108,7 +108,9 @@ public class AncientDialogueSet
 			return new _003C_003Ez__ReadOnlySingleElementList<AncientDialogue>(FirstVisitEverDialogue);
 		}
 		IReadOnlyList<AncientDialogue> readOnlyList = null;
-		if (CharacterDialogues.TryGetValue(characterId.Entry, out IReadOnlyList<AncientDialogue> value))
+		// [apermesa] The classic Defect has no dialogue set of its own and borrows the STS2 Defect's lines.
+		string characterEntry = ((characterId.Entry == "CLASSIC_DEFECT") ? "DEFECT" : characterId.Entry);
+		if (CharacterDialogues.TryGetValue(characterEntry, out IReadOnlyList<AncientDialogue> value))
 		{
 			readOnlyList = value;
 			List<AncientDialogue> list = readOnlyList.Where((AncientDialogue d) => d.VisitIndex == charVisits).ToList();
