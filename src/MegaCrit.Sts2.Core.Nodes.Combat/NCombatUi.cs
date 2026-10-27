@@ -321,8 +321,8 @@ public class NCombatUi : Control
 
 	private void CreateTransferButtons()
 	{
-		_transferCardButton = CreateTransferButton("APERMESA_TRANSFER_CARD_BUTTON", "APERMESA_TRANSFER_CARD_TOOLTIP", -334f, OnTransferCardPressed);
-		_transferRelicButton = CreateTransferButton("APERMESA_TRANSFER_RELIC_BUTTON", "APERMESA_TRANSFER_RELIC_TOOLTIP", -390f, OnTransferRelicPressed);
+		_transferCardButton = CreateTransferButton("APERMESA_TRANSFER_CARD_BUTTON", "APERMESA_TRANSFER_CARD_TOOLTIP", 92f, OnTransferCardPressed);
+		_transferRelicButton = CreateTransferButton("APERMESA_TRANSFER_RELIC_BUTTON", "APERMESA_TRANSFER_RELIC_TOOLTIP", 140f, OnTransferRelicPressed);
 	}
 
 	private Button CreateTransferButton(string labelKey, string tooltipKey, float offsetTop, Action onPressed)
@@ -335,7 +335,7 @@ public class NCombatUi : Control
 			FocusMode = Control.FocusModeEnum.All,
 			MouseDefaultCursorShape = Control.CursorShape.PointingHand
 		};
-		button.SetAnchorsPreset(Control.LayoutPreset.BottomRight);
+		button.SetAnchorsPreset(Control.LayoutPreset.TopRight);
 		button.OffsetLeft = -316f;
 		button.OffsetRight = -96f;
 		button.OffsetTop = offsetTop;
@@ -361,7 +361,7 @@ public class NCombatUi : Control
 		return button;
 	}
 
-	private static StyleBoxFlat CreateTransferButtonStyle(Color background, Color border)
+	internal static StyleBoxFlat CreateTransferButtonStyle(Color background, Color border)
 	{
 		StyleBoxFlat styleBoxFlat = new StyleBoxFlat
 		{

@@ -61,17 +61,21 @@ public sealed class TransferCardAction : GameAction
 			Cancel();
 			return;
 		}
-		if (playerCombatState.Energy <= _energyCost || playerCombatState.Hand.Cards.Count == 0)
+		if (playerCombatState.Energy < _energyCost || TransferState.GetTransferableCards(Player).Count == 0)
 		{
 			Cancel();
 			return;
 		}
 		PlayerChoiceContext context = new GameActionPlayerChoiceContext(this);
-		CardSelectorPrefs prefs = new CardSelectorPrefs(new LocString("card_selection", "APERMESA_TRANSFER_CARD_PROMPT"), 1);
+		CardSelectorPrefs prefs = new CardSelectorPrefs(new LocString("card_selection", "APERMESA_TRANSFER_CARD_PROMPT"), 1)
+		{
+			Cancelable = true,
+			RequireManualConfirmation = true
+		};
 		IEnumerable<CardModel> enumerable;
 		try
 		{
-			enumerable = await CardSelectCmd.FromHand(context, Player, prefs, null, null);
+			enumerable = await CardSelectCmd.FromHand(context, Player, prefs, TransferState.IsTransferableCard, null);
 		}
 		catch (OperationCanceledException)
 		{
@@ -88,7 +92,7 @@ public sealed class TransferCardAction : GameAction
 			Cancel();
 			return;
 		}
-		if (playerCombatState.Energy <= _energyCost)
+		if (playerCombatState.Energy < _energyCost)
 		{
 			Cancel();
 			return;

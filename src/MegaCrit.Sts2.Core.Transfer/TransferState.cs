@@ -85,11 +85,12 @@ public static class TransferState
 		{
 			["APERMESA_TRANSFER_CARD_BUTTON"] = "传牌",
 			["APERMESA_TRANSFER_RELIC_BUTTON"] = "传遗物",
+			["APERMESA_TRANSFER_CANCEL_BUTTON"] = "取消",
 			["APERMESA_TRANSFER_CARD_TOOLTIP"] = "花费 1 点能量，将一张手牌传给队友（每回合一次）",
 			["APERMESA_TRANSFER_RELIC_TOOLTIP"] = "花费 1 点最大生命值，将一件遗物借给队友，下个回合开始或战斗结束时归还（每回合一次）",
 			["APERMESA_TRANSFER_NOT_PLAY_PHASE"] = "现在不能传递",
 			["APERMESA_TRANSFER_NO_TARGET"] = "没有可传递的队友",
-			["APERMESA_TRANSFER_NO_ENERGY"] = "能量不足：传牌需要多于 1 点能量",
+			["APERMESA_TRANSFER_NO_ENERGY"] = "能量不足：传牌需要 1 点能量",
 			["APERMESA_TRANSFER_NO_HP"] = "最大生命值不足：传遗物需要多于 1 点最大生命值",
 			["APERMESA_TRANSFER_NO_CARDS"] = "手牌中没有可传递的牌",
 			["APERMESA_TRANSFER_NO_RELICS"] = "没有可传递的遗物",
@@ -100,11 +101,12 @@ public static class TransferState
 		{
 			["APERMESA_TRANSFER_CARD_BUTTON"] = "Send Card",
 			["APERMESA_TRANSFER_RELIC_BUTTON"] = "Send Relic",
+			["APERMESA_TRANSFER_CANCEL_BUTTON"] = "Cancel",
 			["APERMESA_TRANSFER_CARD_TOOLTIP"] = "Spend 1 Energy to send a card from your hand to a teammate (once per turn).",
 			["APERMESA_TRANSFER_RELIC_TOOLTIP"] = "Spend 1 Max HP to lend a relic to a teammate. It returns at the start of your next turn or when combat ends (once per turn).",
 			["APERMESA_TRANSFER_NOT_PLAY_PHASE"] = "You cannot transfer right now.",
 			["APERMESA_TRANSFER_NO_TARGET"] = "No teammate available.",
-			["APERMESA_TRANSFER_NO_ENERGY"] = "Not enough Energy: sending a card requires more than 1 Energy.",
+			["APERMESA_TRANSFER_NO_ENERGY"] = "Not enough Energy: sending a card costs 1 Energy.",
 			["APERMESA_TRANSFER_NO_HP"] = "Not enough Max HP: sending a relic requires more than 1 Max HP.",
 			["APERMESA_TRANSFER_NO_CARDS"] = "You have no cards in hand.",
 			["APERMESA_TRANSFER_NO_RELICS"] = "You have no transferable relics.",
@@ -151,6 +153,19 @@ public static class TransferState
 		return (from c in combatState.GetTeammatesOf(me.Creature)
 			where c != null && c.IsAlive && c.IsPlayer && c.Player != me
 			select c.Player).OfType<Player>().ToList();
+	}
+
+	/// <summary>
+	/// [apermesa] Afflicted cards (e.g. the Queen's Bound) are tied to the current owner and must not travel.
+	/// </summary>
+	public static bool IsTransferableCard(CardModel card)
+	{
+		return card != null && card.Affliction == null;
+	}
+
+	public static List<CardModel> GetTransferableCards(Player player)
+	{
+		return player.PlayerCombatState?.Hand.Cards.Where(IsTransferableCard).ToList() ?? new List<CardModel>();
 	}
 
 	/// <summary>
@@ -236,11 +251,11 @@ public static class TransferState
 		{
 			return "APERMESA_TRANSFER_NO_TARGET";
 		}
-		if (playerCombatState.Energy <= _cardEnergyCost)
+		if (playerCombatState.Energy < _cardEnergyCost)
 		{
 			return "APERMESA_TRANSFER_NO_ENERGY";
 		}
-		if (playerCombatState.Hand.Cards.Count == 0)
+		if (GetTransferableCards(me).Count == 0)
 		{
 			return "APERMESA_TRANSFER_NO_CARDS";
 		}

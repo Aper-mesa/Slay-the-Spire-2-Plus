@@ -141,8 +141,9 @@ apermesa-build-<AssemblyHasher.GetMainAssemblyHash()>
 
 ### Multiplayer transfer: cards & relics
 
-- **Send Card**: once per turn, with more than 1 Energy, spend 1 Energy to send a hand card to a teammate. If the teammate's hand is full, the card goes to their discard pile.
+- **Send Card**: once per turn, spend 1 Energy to send a hand card to a teammate — 1 Energy is enough. Cards locked by the Queen (and any other combat afflictions) cannot be sent. If the teammate's hand is full, the card goes to their discard pile.
 - **Send Relic**: once per turn, with more than 1 Max HP, spend 1 Max HP to lend a relic to a teammate. The relic returns at the start of the giver's next turn or when combat ends.
+- The Send Card / Send Relic buttons sit in the **top-right corner** of the combat UI; the card/relic picker has a **Cancel** button that aborts the transfer without spending Energy or Max HP.
 - The **relic whitelist** is rule-generated: relics with on-pickup effects (max HP, card/curse grants, enchantments), combat-start-only relics, used-up / melted / pet-summoning relics, starter relics and event relics are excluded; **Pael's Eye** is allowed as an explicit "first time each combat" exception.
 - Multiplayer sync uses the new `TransferCardAction` / `TransferRelicAction` through the action queue; **all peers must run the same build.**
 

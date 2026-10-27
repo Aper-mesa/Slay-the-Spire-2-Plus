@@ -11,6 +11,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Extensions;
 using MegaCrit.Sts2.Core.GameActions;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.Screens;
@@ -91,7 +92,7 @@ public sealed class TransferRelicAction : GameAction
 		{
 			if (LocalContext.IsMe(Player) && RunManager.Instance.NetService.Type != NetGameType.Replay)
 			{
-				NChooseARelicSelection? nChooseARelicSelection = NChooseARelicSelection.ShowScreen(eligible);
+				NChooseARelicSelection? nChooseARelicSelection = NChooseARelicSelection.ShowScreen(eligible, new LocString("gameplay_ui", "APERMESA_TRANSFER_CANCEL_BUTTON").GetFormattedText());
 				relic = ((nChooseARelicSelection == null) ? null : (await nChooseARelicSelection.RelicsSelected()).FirstOrDefault());
 				int index = ((relic == null) ? (-1) : eligible.IndexOf(relic));
 				RunManager.Instance.PlayerChoiceSynchronizer.SyncLocalChoice(Player, choiceId, PlayerChoiceResult.FromIndex(index));

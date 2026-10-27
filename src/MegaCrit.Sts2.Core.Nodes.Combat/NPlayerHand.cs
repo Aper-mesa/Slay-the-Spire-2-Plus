@@ -14,6 +14,8 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Extensions;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Localization.Fonts;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
@@ -405,6 +407,8 @@ public class NPlayerHand : Control
 
 	private NConfirmButton _selectModeConfirmButton;
 
+	private Button? _selectModeCancelButton;
+
 	private MegaRichTextLabel _selectionHeader;
 
 	private NCardPlay? _currentCardPlay;
@@ -572,11 +576,12 @@ public class NPlayerHand : Control
 		_selectedHandCardContainer.Hand = this;
 		_selectModeConfirmButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnSelectModeConfirmButtonPressed));
 		_selectModeConfirmButton.Disable();
+		CreateSelectModeCancelButton();
 		_selectedHandCardContainer.Connect(Node.SignalName.ChildExitingTree, Callable.From<Node>(OnCardDeselected));
 		_selectedHandCardContainer.Connect(Node.SignalName.ChildEnteredTree, Callable.From<Node>(OnCardSelected));
 		PeekButton = GetNode<NPeekButton>("%PeekButton");
 		PeekButton.Disable();
-		PeekButton.AddTargets(_selectModeBackstop, _upgradePreviewContainer, _selectModeConfirmButton, _selectionHeader, _selectedHandCardContainer);
+		PeekButton.AddTargets(_selectModeBackstop, _upgradePreviewContainer, _selectModeConfirmButton, _selectModeCancelButton, _selectionHeader, _selectedHandCardContainer);
 		PeekButton.Connect(NPeekButton.SignalName.Toggled, Callable.From<NPeekButton>(OnPeekButtonToggled));
 		CardHolderContainer.Connect(Control.SignalName.FocusEntered, Callable.From(() =>
 		{
@@ -980,6 +985,10 @@ public class NPlayerHand : Control
 		_selectionCompletionSource = new TaskCompletionSource<IEnumerable<CardModel>>();
 		_selectionHeader.Visible = true;
 		_selectionHeader.Text = "[center]" + prefs.Prompt.GetFormattedText() + "[/center]";
+		if (_selectModeCancelButton != null)
+		{
+			_selectModeCancelButton.Visible = prefs.Cancelable;
+		}
 		PeekButton.Enable();
 		UpdateSelectModeCardVisibility();
 		RefreshSelectModeConfirmButton();
@@ -1048,6 +1057,10 @@ public class NPlayerHand : Control
 		_selectModeConfirmButton.Disable();
 		_upgradePreviewContainer.Visible = false;
 		_selectionHeader.Visible = false;
+		if (_selectModeCancelButton != null)
+		{
+			_selectModeCancelButton.Visible = false;
+		}
 		PeekButton.Disable();
 		NCombatRoom.Instance.Ui.OnHandSelectModeExited();
 		if (source != null)
@@ -1246,6 +1259,47 @@ public class NPlayerHand : Control
 	private void OnSelectModeConfirmButtonPressed(NButton _)
 	{
 		_selectionCompletionSource.SetResult(_selectedCards.ToList());
+	}
+
+	private void CreateSelectModeCancelButton()
+	{
+		Button button = new Button
+		{
+			Name = "SelectModeCancelButton",
+			Text = new LocString("gameplay_ui", "APERMESA_TRANSFER_CANCEL_BUTTON").GetFormattedText(),
+			FocusMode = Control.FocusModeEnum.All,
+			MouseDefaultCursorShape = Control.CursorShape.PointingHand,
+			Visible = false
+		};
+		button.SetAnchorsPreset(Control.LayoutPreset.BottomRight);
+		button.OffsetLeft = -400f;
+		button.OffsetRight = -180f;
+		button.OffsetTop = -354f;
+		button.OffsetBottom = -244f;
+		button.AddThemeFontSizeOverride("font_size", 24);
+		button.AddThemeColorOverride("font_color", new Color(1f, 0.965f, 0.886f));
+		button.AddThemeColorOverride("font_hover_color", Colors.White);
+		button.AddThemeColorOverride("font_pressed_color", new Color(0.8f, 0.75f, 0.6f));
+		StyleBoxFlat styleBoxFlat = NCombatUi.CreateTransferButtonStyle(new Color(0.09f, 0.07f, 0.05f, 0.88f), new Color(0.72f, 0.6f, 0.38f, 0.9f));
+		StyleBoxFlat styleBoxFlat2 = NCombatUi.CreateTransferButtonStyle(new Color(0.16f, 0.12f, 0.08f, 0.95f), new Color(0.95f, 0.8f, 0.5f, 1f));
+		StyleBoxFlat styleBoxFlat3 = NCombatUi.CreateTransferButtonStyle(new Color(0.05f, 0.04f, 0.03f, 0.95f), new Color(0.95f, 0.8f, 0.5f, 1f));
+		button.AddThemeStyleboxOverride("normal", styleBoxFlat);
+		button.AddThemeStyleboxOverride("hover", styleBoxFlat2);
+		button.AddThemeStyleboxOverride("pressed", styleBoxFlat3);
+		button.AddThemeStyleboxOverride("focus", styleBoxFlat2);
+		button.ApplyLocaleFontSubstitution(FontType.Bold, "font");
+		button.Pressed += OnSelectModeCancelButtonPressed;
+		AddChild(button);
+		_selectModeCancelButton = button;
+	}
+
+	private void OnSelectModeCancelButtonPressed()
+	{
+		// Completing with an empty selection is synchronized to peers, unlike CancelHandSelectionIfNecessary.
+		if (IsInCardSelection && _selectionCompletionSource != null)
+		{
+			_selectionCompletionSource.TrySetResult(Array.Empty<CardModel>());
+		}
 	}
 
 	private void CheckIfSelectionComplete()

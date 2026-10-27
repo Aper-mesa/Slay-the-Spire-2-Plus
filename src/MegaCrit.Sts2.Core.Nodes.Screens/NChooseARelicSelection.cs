@@ -18,6 +18,7 @@ using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 using MegaCrit.Sts2.Core.TestSupport;
+using MegaCrit.Sts2.addons.mega_text;
 
 namespace MegaCrit.Sts2.Core.Nodes.Screens;
 
@@ -156,6 +157,8 @@ public class NChooseARelicSelection : Control, IOverlayScreen, IScreenContext
 
 	private IReadOnlyList<RelicModel> _relics;
 
+	private string? _skipLabel;
+
 	public NetScreenType ScreenType => NetScreenType.Rewards;
 
 	private static string ScenePath => SceneHelper.GetScenePath("screens/choose_a_relic_selection_screen");
@@ -175,6 +178,14 @@ public class NChooseARelicSelection : Control, IOverlayScreen, IScreenContext
 
 	public static NChooseARelicSelection? ShowScreen(IReadOnlyList<RelicModel> relics)
 	{
+		return ShowScreen(relics, null);
+	}
+
+	/// <summary>
+	/// [apermesa] Show the relic picker with a custom skip/cancel label.
+	/// </summary>
+	public static NChooseARelicSelection? ShowScreen(IReadOnlyList<RelicModel> relics, string? skipLabel)
+	{
 		if (TestMode.IsOn)
 		{
 			return null;
@@ -182,6 +193,7 @@ public class NChooseARelicSelection : Control, IOverlayScreen, IScreenContext
 		NChooseARelicSelection nChooseARelicSelection = PreloadManager.Cache.GetScene(ScenePath).Instantiate<NChooseARelicSelection>(PackedScene.GenEditState.Disabled);
 		nChooseARelicSelection.Name = "NChooseACardSelectionScreen";
 		nChooseARelicSelection._relics = relics;
+		nChooseARelicSelection._skipLabel = skipLabel;
 		NOverlayStack.Instance.Push(nChooseARelicSelection);
 		return nChooseARelicSelection;
 	}
@@ -207,6 +219,10 @@ public class NChooseARelicSelection : Control, IOverlayScreen, IScreenContext
 		}
 		_skipButton = GetNode<NChoiceSelectionSkipButton>("SkipButton");
 		_skipButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnSkipButtonReleased));
+		if (!string.IsNullOrEmpty(_skipLabel))
+		{
+			_skipButton.GetNode<MegaLabel>("Label").SetTextAutoSize(_skipLabel);
+		}
 		_skipButton.AnimateIn();
 		List<NRelicBasicHolder> list = _relicRow.GetChildren().OfType<NRelicBasicHolder>().ToList();
 		NRelicBasicHolder nRelicBasicHolder2 = _relicRow.GetChildren().OfType<NRelicBasicHolder>().ToList()[list.Count / 2];
