@@ -68,7 +68,7 @@ public sealed class Shiv : CardModel
 			ArgumentNullException.ThrowIfNull(cardPlay.Target, "cardPlay.Target");
 			attackCommand = attackCommand.Targeting(cardPlay.Target).WithHitVfxNode((Creature t) => NShivThrowVfx.Create(Owner.Creature, t, Colors.Green));
 		}
-		if (Owner.Character is Silent)
+		if (Owner.Character is Silent || Owner.Character is ClassicSilent)
 		{
 			attackCommand.WithAttackerAnim("Shiv", 0.2f);
 		}

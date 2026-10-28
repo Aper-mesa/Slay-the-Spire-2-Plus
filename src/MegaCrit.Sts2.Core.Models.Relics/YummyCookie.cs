@@ -35,9 +35,9 @@ public sealed class YummyCookie : RelicModel
 			{
 				characterModel = Owner.Character;
 			}
-			if (!(characterModel is Ironclad))
+			if (!(characterModel is Ironclad) && !(characterModel is ClassicIronclad))
 			{
-				if (!(characterModel is Silent))
+				if (!(characterModel is Silent) && !(characterModel is ClassicSilent))
 				{
 					if (!(characterModel is Regent))
 					{

@@ -95,7 +95,7 @@ public sealed class Ironclad : CharacterModel
 
 	public static string GetHeavyAnimIfApplicable(CharacterModel character)
 	{
-		if (!(character is Ironclad))
+		if (!(character is Ironclad) && !(character is ClassicIronclad))
 		{
 			return "Attack";
 		}
@@ -104,7 +104,7 @@ public sealed class Ironclad : CharacterModel
 
 	public static float GetHeavyAttackDelayIfApplicable(CharacterModel character)
 	{
-		if (!(character is Ironclad))
+		if (!(character is Ironclad) && !(character is ClassicIronclad))
 		{
 			return character.AttackAnimDelay;
 		}

@@ -20,5 +20,7 @@ tools/
 
 # Local AI assistant config (never commit)
 .claude/
+.Codex/
+AGENTS.md
 CLAUDE.md
 CLAUDE.local.md

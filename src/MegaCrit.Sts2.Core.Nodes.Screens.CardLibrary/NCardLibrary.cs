@@ -452,8 +452,8 @@ public sealed class NCardLibrary : NSubmenu
 		_colorlessFilter.Connect(NCardPoolFilter.SignalName.Toggled, callable);
 		_ancientsFilter.Connect(NCardPoolFilter.SignalName.Toggled, callable);
 		_miscPoolFilter.Connect(NCardPoolFilter.SignalName.Toggled, callable);
-		_poolFilters.Add(_ironcladFilter, (CardModel c) => c.Pool is IroncladCardPool);
-		_poolFilters.Add(_silentFilter, (CardModel c) => c.Pool is SilentCardPool);
+		_poolFilters.Add(_ironcladFilter, (CardModel c) => c.Pool is IroncladCardPool || c.Pool is ClassicIroncladCardPool);
+		_poolFilters.Add(_silentFilter, (CardModel c) => c.Pool is SilentCardPool || c.Pool is ClassicSilentCardPool);
 		_poolFilters.Add(_defectFilter, (CardModel c) => c.Pool is DefectCardPool || c.Pool is ClassicDefectCardPool);
 		_poolFilters.Add(_regentFilter, (CardModel c) => c.Pool is RegentCardPool);
 		_poolFilters.Add(_necrobinderFilter, (CardModel c) => c.Pool is NecrobinderCardPool);
@@ -562,7 +562,9 @@ public sealed class NCardLibrary : NSubmenu
 		_threePlusFilter.Loc = new LocString("card_library", "COST_THREE_TIP");
 		_xFilter.Loc = new LocString("card_library", "COST_X_TIP");
 		_cardPoolFilters.Add(ModelDb.Character<Ironclad>(), _ironcladFilter);
+		_cardPoolFilters.Add(ModelDb.Character<ClassicIronclad>(), _ironcladFilter);
 		_cardPoolFilters.Add(ModelDb.Character<Silent>(), _silentFilter);
+		_cardPoolFilters.Add(ModelDb.Character<ClassicSilent>(), _silentFilter);
 		_cardPoolFilters.Add(ModelDb.Character<Defect>(), _defectFilter);
 		_cardPoolFilters.Add(ModelDb.Character<MegaCrit.Sts2.Core.Models.Characters.ClassicDefect>(), _defectFilter);
 		_cardPoolFilters.Add(ModelDb.Character<Necrobinder>(), _necrobinderFilter);

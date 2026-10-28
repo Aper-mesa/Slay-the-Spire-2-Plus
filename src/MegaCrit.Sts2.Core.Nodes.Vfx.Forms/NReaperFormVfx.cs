@@ -135,11 +135,11 @@ public class NReaperFormVfx : NFormVfx
 		if (_owner != null)
 		{
 			CharacterModel character = _owner.Character;
-			if (character is Ironclad)
+			if (character is Ironclad || character is ClassicIronclad)
 			{
 				boneName = _ironcladBoneName;
 			}
-			else if (character is Silent)
+			else if (character is Silent || character is ClassicSilent)
 			{
 				boneName = _silentBoneName;
 			}

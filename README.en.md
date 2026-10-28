@@ -42,6 +42,8 @@
   - [Multiplayer build fingerprint](#multiplayer-build-fingerprint)
   - [Multiplayer transfer: cards & relics](#multiplayer-transfer-cards--relics)
   - [Classic Defect](#classic-defect-slay-the-spire-1)
+  - [Classic Silent](#classic-silent-slay-the-spire-1)
+  - [Classic Ironclad](#classic-ironclad-slay-the-spire-1)
 - [Notes](#notes)
 - [References](#references)
 
@@ -51,9 +53,9 @@ A **source tree that actually compiles**:
 
 - A C# project decompiled from `sts2.dll` with **ILSpy 11.1.0** (`src/`) — namespaces, types and members are intact and not obfuscated;
 - 56 GDScript files (`gdscript_tree/`) recovered from **GDSC v101** bytecode, keeping their original project paths;
-- A set of **Plus changes** layered on top: shared saves, a multiplayer build fingerprint, card / relic transfer, and the STS1 Defect ported wholesale into STS2.
+- A set of **Plus changes** layered on top: shared saves, a multiplayer build fingerprint, card / relic transfer, and the STS1 Defect, Silent and Ironclad ported as separate characters.
 
-Getting from scratch to a clean build takes **15 small fixes**; the result is **0 errors** with the same type count as the original assembly.
+The original decompiled baseline builds after **15 small fixes**, with the same type count as the original assembly. Plus changes add further types.
 
 ## Target
 
@@ -105,7 +107,7 @@ The decompiled tree needed 15 small fixes to compile:
 | 5 | `Container` ambiguity (`System.ComponentModel.Container` vs `Godot.Container`) | `using Container = Godot.Container;` |
 | 2 | `base._002Ector();` artifacts | Removed |
 
-Result: **0 errors**, 6,641 types (same type count as the original assembly).
+Original decompiled baseline: **0 errors**, 6,641 types (excluding later Plus additions).
 
 ## Plus changes
 
@@ -115,6 +117,8 @@ Result: **0 errors**, 6,641 types (same type count as the original assembly).
 | 🔑 **Build fingerprint** | Co-op peers must run the **same DLL**, or the connection is blocked |
 | 🃏 **Card / relic transfer** | Once per turn, hand a card or lend a relic to a teammate at a cost |
 | 🤖 **Classic Defect** | The STS1 Defect ported in whole, with all 75 cards |
+| 🗡️ **Classic Silent** | Independent STS1 Silent with 75 cards and 11 relics, reusing STS2 art |
+| ⚔️ **Classic Ironclad** | Independent STS1 Ironclad with 75 cards and 11 relics, reusing STS2 art |
 
 ### Shared saves
 
@@ -178,6 +182,29 @@ The Slay the Spire 1 Defect is ported as a **separate character** that coexists 
 - STS1 card art and power icons are **embedded into the DLL** as resources (`src/ClassicDefectArt/`, `src/ClassicPowerIcons/`), so the mod is still a single `sts2.dll`;
 - Character visuals / Spine / SFX currently reuse the STS2 Defect; ancient and Architect dialogue also reuse the STS2 Defect lines and animations so the post-Act-3 ending completes normally;
 - The card library's Defect filter lists both STS2 Defect and classic Defect cards. A dedicated filter button would require overriding `card_library.tscn` through a mod PCK.
+
+### Classic Silent (Slay the Spire 1)
+
+Adds **Silent (Classic)** alongside the STS2 Silent and Classic Defect: 70 HP, 99 gold, Ring of the Snake, five Strikes, five Defends, Neutralize and Survivor.
+
+- 75 cards and 11 character relics have independent `ClassicSilent` model IDs. Costs, rarity, values and upgrades follow the STS1 source.
+- Restores discard-triggered Reflex/Tactician, non-exhausting Blade Dance, upgraded Calculated Gamble without Exhaust, Catalyst, Corpse Explosion, Glass Knife, selective Well-Laid Plans retention and end-of-turn Wraith Form Dexterity loss.
+- STS2 has no boss-relic reward tier. Ring of the Serpent, Wrist Blade and Hovering Kite use the rare pool, following the Classic Defect convention. Ring of the Serpent replaces the classic starter ring on pickup.
+- Reuses STS2 visuals, sounds, portraits and icons, with similar card art where the original card is absent. No new images or PCK are required. Ancient/Architect dialogue uses the STS2 Silent's lines.
+- Includes English/Chinese localization, a shared Silent card-library filter, and separate character statistics.
+
+Combat/network execution, common powers, potions, events and rewards use STS2 rules. Manual regression should cover save/reload, discard synergies, chained Corpse Explosion, end-turn retention, stacked Phantasmal Killer, Wraith Form, and multiplayer with both Silent variants and card transfers.
+
+### Classic Ironclad (Slay the Spire 1)
+
+Adds **Ironclad (Classic)** alongside the STS2 Ironclad and other classic characters: 80 HP, 99 gold, Burning Blood, five Strikes, four Defends and Bash.
+
+- Independent `ClassicIronclad` IDs for 75 cards and 11 relics, with STS1 costs, rarities, values and upgrades.
+- Restores Heavy Blade's 3x/5x Strength scaling, repeatedly upgradable Searing Blow, Double Tap, Evolve/Fire Breathing status synergies, self-inflicted Rupture triggers, Reaper healing, and Perfected Strike counting non-exhausted Strike-tagged cards.
+- Includes Paper Phrog, Champion Belt, Magic Flower and Runic Cube. Black Blood, Mark of Pain and Runic Cube use the rare pool; Black Blood replaces classic Burning Blood on pickup.
+- Reuses STS2 art, icons, animations, audio and Ancient/Architect dialogue. Includes English/Chinese text, a shared Ironclad library filter and separate character statistics.
+
+Uses STS2's common combat, power, event and reward framework. Manual regression should cover repeated Searing Blow upgrades with save/reload, exhaust/draw chains, negative Strength and Heavy Blade, stacked Combust, Rupture, Reaper/Magic Flower, and multiplayer/card transfers. No game or smoke tests were run automatically.
 
 ## Notes
 

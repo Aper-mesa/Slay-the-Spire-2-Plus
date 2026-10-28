@@ -34,6 +34,8 @@ public static class ClassicDefectContent
 
 		RegisterLocStrings();
 		ClassicDefectLocale.Register();
+		ClassicSilentLocale.Register();
+		ClassicIroncladLocale.Register();
 	}
 
 	private static void RegisterLocStrings()

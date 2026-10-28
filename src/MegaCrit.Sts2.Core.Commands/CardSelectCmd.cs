@@ -814,7 +814,18 @@ public static class CardSelectCmd
 	/// <param name="filter">Function describing which cards can be selected. All can be selected if null.</param>
 	/// <param name="source">Model that kicked off the hand selection.</param>
 	/// <returns>The card that was chosen by the given player.</returns>
-	public static async Task<IEnumerable<CardModel>> FromHand(PlayerChoiceContext context, Player player, CardSelectorPrefs prefs, Func<CardModel, bool>? filter, AbstractModel source)
+	public static Task<IEnumerable<CardModel>> FromHand(PlayerChoiceContext context, Player player, CardSelectorPrefs prefs, Func<CardModel, bool>? filter, AbstractModel source)
+    {
+        return FromHandInternal(context, player, prefs, filter, source, preserveEndTurn: false);
+    }
+
+    // End-of-turn retain choices must not re-enable card play or withdraw multiplayer readiness.
+    public static Task<IEnumerable<CardModel>> FromHandForRetain(PlayerChoiceContext context, Player player, CardSelectorPrefs prefs, AbstractModel source)
+    {
+        return FromHandInternal(context, player, prefs, c => !c.ShouldRetainThisTurn, source, preserveEndTurn: true);
+    }
+
+    private static async Task<IEnumerable<CardModel>> FromHandInternal(PlayerChoiceContext context, Player player, CardSelectorPrefs prefs, Func<CardModel, bool>? filter, AbstractModel source, bool preserveEndTurn)
 	{
 		if (CombatManager.Instance.IsOverOrEnding)
 		{
@@ -824,7 +835,7 @@ public static class CardSelectCmd
 		{
 			NPlayerHand.Instance?.CancelAllCardPlay();
 		}
-		UndoEndTurnIfNecessary(player);
+		if (!preserveEndTurn) UndoEndTurnIfNecessary(player);
 		uint? choiceId = null;
 		if (Selector == null)
 		{

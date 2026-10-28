@@ -454,13 +454,13 @@ public class NMapPointHistoryEntry : NClickableControl
 		int index;
 		if (!(character is Defect))
 		{
-			if (!(character is Ironclad))
+			if (!(character is Ironclad) && !(character is ClassicIronclad))
 			{
 				if (!(character is Necrobinder))
 				{
 					if (!(character is Regent))
 					{
-						if (character is Silent)
+						if (character is Silent || character is ClassicSilent)
 						{
 							num = 1;
 							List<string> list = new List<string>(num);
@@ -512,13 +512,13 @@ public class NMapPointHistoryEntry : NClickableControl
 		int num2;
 		if (!(character is Defect))
 		{
-			if (!(character is Ironclad))
+			if (!(character is Ironclad) && !(character is ClassicIronclad))
 			{
 				if (!(character is Necrobinder))
 				{
 					if (!(character is Regent))
 					{
-						if (character is Silent)
+						if (character is Silent || character is ClassicSilent)
 						{
 							num = 2;
 							List<string> list = new List<string>(num);

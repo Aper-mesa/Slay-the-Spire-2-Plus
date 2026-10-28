@@ -719,7 +719,7 @@ public class NBestiary : NSubmenu
 		}
 		_dialogueBubble.SelfModulate = selfModulate;
 		_dialogueTail.SelfModulate = selfModulate;
-		string path = ((character is Silent) ? "res://images/ui/thought_tail.png" : "res://images/ui/dialogue_tail.png");
+		string path = ((character is Silent || character is ClassicSilent) ? "res://images/ui/thought_tail.png" : "res://images/ui/dialogue_tail.png");
 		_dialogueTail.Texture = PreloadManager.Cache.GetCompressedTexture2D(path);
 	}
 

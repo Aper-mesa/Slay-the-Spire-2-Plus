@@ -43,6 +43,10 @@ public sealed class VulnerablePower : PowerModel
 			{
 				num = paperPhrog.ModifyVulnerableMultiplier(target, num, props, dealer, cardSource);
 			}
+            else if (dealer != target && dealer.Player?.GetRelic<ClassicIroncladPaperPhrog>() is { IsMelted: false } classicPaperPhrog)
+            {
+                num = classicPaperPhrog.ModifyVulnerableMultiplier(num);
+            }
 			CrueltyPower crueltyPower = dealer.GetPower<CrueltyPower>() ?? dealer.PetOwner?.Creature.GetPower<CrueltyPower>();
 			if (crueltyPower != null)
 			{

@@ -738,6 +738,8 @@ public static class CreatureCmd
 		{
 			return;
 		}
+        if (creature.Player?.GetRelic<MegaCrit.Sts2.Core.Models.Relics.ClassicIroncladMagicFlower>() is { IsMelted: false } magicFlower)
+            amount = magicFlower.ModifyHealing(amount);
 		bool wasDead = creature.IsDead;
 		decimal amountHealed = Math.Min(amount, creature.MaxHp - creature.CurrentHp);
 		if (creature == null || !(creature.Monster is Osty))
