@@ -234,7 +234,7 @@ public class NReactionWheel : Control
 			Visible = true;
 			if (_localPlayer != null)
 			{
-				_marker.Texture = _localPlayer.Character.MapMarker;
+				_marker.Texture = _localPlayer.Character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("topIcon") : _localPlayer.Character.MapMarker;
 			}
 			_centerPosition = GetViewport().GetMousePosition();
 			_marker.Position = (Size - _marker.Size) * 0.5f;

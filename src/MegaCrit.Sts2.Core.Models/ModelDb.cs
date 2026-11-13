@@ -142,7 +142,7 @@ public static class ModelDb
 	/// <summary>
 	/// Get all the characters in the game (ignores Unlocks/Epoch state).
 	/// </summary>
-	public static IEnumerable<CharacterModel> AllCharacters => new _003C_003Ez__ReadOnlyArray<CharacterModel>(new CharacterModel[8]
+	public static IEnumerable<CharacterModel> AllCharacters => new _003C_003Ez__ReadOnlyArray<CharacterModel>(new CharacterModel[9]
 	{
 		Character<Ironclad>(),
 		Character<Silent>(),
@@ -151,7 +151,8 @@ public static class ModelDb
 		Character<Defect>(),
 		Character<ClassicDefect>(),
 		Character<ClassicSilent>(),
-		Character<ClassicIronclad>()
+		Character<ClassicIronclad>(),
+		Character<ClassicWatcher>()
 	});
 
 	/// <summary>

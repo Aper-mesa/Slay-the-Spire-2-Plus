@@ -82,7 +82,7 @@ public class NMapMarker : TextureRect
 	public void Initialize(Player player)
 	{
 		_isEnabled = player.RunState.Players.Count == 1;
-		Texture = player.Character.MapMarker;
+		Texture = player.Character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("topIcon") : player.Character.MapMarker;
 		Visible = false;
 	}
 

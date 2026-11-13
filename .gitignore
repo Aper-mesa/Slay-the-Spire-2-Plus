@@ -24,3 +24,6 @@ tools/
 AGENTS.md
 CLAUDE.md
 CLAUDE.local.md
+
+# Locally embedded STS1 Watcher assets
+src/ClassicWatcherAssets/

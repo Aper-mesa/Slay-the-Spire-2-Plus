@@ -456,7 +456,7 @@ public sealed class NCardLibrary : NSubmenu
 		_poolFilters.Add(_silentFilter, (CardModel c) => c.Pool is SilentCardPool || c.Pool is ClassicSilentCardPool);
 		_poolFilters.Add(_defectFilter, (CardModel c) => c.Pool is DefectCardPool || c.Pool is ClassicDefectCardPool);
 		_poolFilters.Add(_regentFilter, (CardModel c) => c.Pool is RegentCardPool);
-		_poolFilters.Add(_necrobinderFilter, (CardModel c) => c.Pool is NecrobinderCardPool);
+		_poolFilters.Add(_necrobinderFilter, (CardModel c) => c.Pool is NecrobinderCardPool || c.Pool is ClassicWatcherCardPool);
 		_poolFilters.Add(_colorlessFilter, (CardModel c) => c.Pool is ColorlessCardPool);
 		_poolFilters.Add(_ancientsFilter, (CardModel c) => c.Rarity == CardRarity.Ancient);
 		_poolFilters.Add(_miscPoolFilter, (CardModel c) =>
@@ -568,6 +568,7 @@ public sealed class NCardLibrary : NSubmenu
 		_cardPoolFilters.Add(ModelDb.Character<Defect>(), _defectFilter);
 		_cardPoolFilters.Add(ModelDb.Character<MegaCrit.Sts2.Core.Models.Characters.ClassicDefect>(), _defectFilter);
 		_cardPoolFilters.Add(ModelDb.Character<Necrobinder>(), _necrobinderFilter);
+		_cardPoolFilters.Add(ModelDb.Character<ClassicWatcher>(), _necrobinderFilter);
 		_cardPoolFilters.Add(ModelDb.Character<Regent>(), _regentFilter);
 		UnlockState unlockState = SaveManager.Instance.GenerateUnlockStateFromProgress();
 		foreach (KeyValuePair<CharacterModel, NCardPoolFilter> cardPoolFilter in _cardPoolFilters)

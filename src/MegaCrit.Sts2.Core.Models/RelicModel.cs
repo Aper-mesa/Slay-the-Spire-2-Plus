@@ -139,11 +139,11 @@ public abstract class RelicModel : AbstractModel
 
 	public string IconPath => PackedIconPath;
 
-	public Texture2D Icon => ResourceLoader.Load<Texture2D>(PackedIconPath, null, ResourceLoader.CacheMode.Reuse);
+	public virtual Texture2D Icon => ResourceLoader.Load<Texture2D>(PackedIconPath, null, ResourceLoader.CacheMode.Reuse);
 
-	public Texture2D IconOutline => ResourceLoader.Load<Texture2D>(PackedIconOutlinePath, null, ResourceLoader.CacheMode.Reuse);
+	public virtual Texture2D IconOutline => ResourceLoader.Load<Texture2D>(PackedIconOutlinePath, null, ResourceLoader.CacheMode.Reuse);
 
-	public Texture2D BigIcon => PreloadManager.Cache.GetTexture2D(ResolvedBigIconPath);
+	public virtual Texture2D BigIcon => PreloadManager.Cache.GetTexture2D(ResolvedBigIconPath);
 
 	private string ResolvedBigIconPath
 	{

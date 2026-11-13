@@ -369,12 +369,12 @@ public class NCharacterSelectButton : NButton
 		}
 		if (_isLocked)
 		{
-			_icon.Texture = character.CharacterSelectLockedIcon;
+			_icon.Texture = character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("selectIcon") : character.CharacterSelectLockedIcon;
 			_lock.Visible = true;
 		}
 		else
 		{
-			_icon.Texture = character.CharacterSelectIcon;
+			_icon.Texture = character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("selectIcon") : character.CharacterSelectIcon;
 		}
 	}
 
@@ -436,7 +436,7 @@ public class NCharacterSelectButton : NButton
 	/// </summary>
 	public void LockForAnimation()
 	{
-		_icon.Texture = _character.CharacterSelectLockedIcon;
+		_icon.Texture = _character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("selectIcon") : _character.CharacterSelectLockedIcon;
 		_lock.Visible = true;
 		ZIndex = 1;
 		_lock.Modulate = Colors.White;
@@ -465,7 +465,7 @@ public class NCharacterSelectButton : NButton
 		NDebugAudioManager.Instance.Play("character_unlock.mp3");
 		_lock.Position = originalLockPosition;
 		_lock.Texture = PreloadManager.Cache.GetTexture2D(_unlockedIconPath);
-		_icon.Texture = _character.CharacterSelectIcon;
+		_icon.Texture = _character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("selectIcon") : _character.CharacterSelectIcon;
 		_iconAdd.Texture = _icon.Texture;
 		_iconAdd.Visible = true;
 		GpuParticles2D node = GetNode<GpuParticles2D>("%UnlockParticles");
@@ -630,7 +630,7 @@ public class NCharacterSelectButton : NButton
 
 	public void DebugUnlock()
 	{
-		_icon.Texture = _character.CharacterSelectIcon;
+		_icon.Texture = _character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("selectIcon") : _character.CharacterSelectIcon;
 		_isLocked = false;
 		_lock.Visible = false;
 		Enable();
@@ -641,7 +641,7 @@ public class NCharacterSelectButton : NButton
 		UnlockState unlockState = SaveManager.Instance.GenerateUnlockStateFromProgress();
 		if (unlockState.Characters.Contains(_character))
 		{
-			_icon.Texture = _character.CharacterSelectIcon;
+			_icon.Texture = _character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("selectIcon") : _character.CharacterSelectIcon;
 			_isLocked = false;
 			_lock.Visible = false;
 			Enable();

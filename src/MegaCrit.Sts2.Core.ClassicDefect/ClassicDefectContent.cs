@@ -36,6 +36,7 @@ public static class ClassicDefectContent
 		ClassicDefectLocale.Register();
 		ClassicSilentLocale.Register();
 		ClassicIroncladLocale.Register();
+		ClassicWatcherLocale.Register();
 	}
 
 	private static void RegisterLocStrings()

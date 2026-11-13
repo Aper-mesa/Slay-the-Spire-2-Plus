@@ -14,6 +14,9 @@
   <ItemGroup>
     <EmbeddedResource Include="ClassicDefectArt\*.png" />
     <EmbeddedResource Include="ClassicPowerIcons\*.png" />
+    <EmbeddedResource Include="ClassicWatcherAssets\*.json" LogicalName="ClassicWatcherAssets.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="ClassicWatcherAssets\*.jpg" LogicalName="ClassicWatcherAssets.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="ClassicWatcherAssets\*.png" LogicalName="ClassicWatcherAssets.%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="GodotSharp">
@@ -44,4 +47,7 @@
       <HintPath>X:\SteamLibrary\steamapps\common\Slay the Spire 2\data_sts2_windows_x86_64\SharpGen.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <Target Name="ValidateClassicWatcherAssets" BeforeTargets="BeforeBuild">
+    <Error Condition="!Exists('ClassicWatcherAssets/Strike.png') Or !Exists('ClassicWatcherAssets/pose.json') Or !Exists('ClassicWatcherAssets/selectPortrait.jpg')" Text="Classic Watcher embedded assets are missing. Prepare src/ClassicWatcherAssets from the local STS1 assets before building; see README." />
+  </Target>
 </Project>

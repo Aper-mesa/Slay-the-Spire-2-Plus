@@ -114,6 +114,7 @@ public class AncientDialogueSet
             "CLASSIC_DEFECT" => "DEFECT",
             "CLASSIC_SILENT" => "SILENT",
             "CLASSIC_IRONCLAD" => "IRONCLAD",
+            "CLASSIC_WATCHER" => "SILENT",
             _ => characterId.Entry
         };
 		if (CharacterDialogues.TryGetValue(characterEntry, out IReadOnlyList<AncientDialogue> value))

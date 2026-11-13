@@ -692,7 +692,7 @@ public class NCharacterSelectScreen : NSubmenu, IStartRunLobbyListener, ICharact
 	{
 		NGame.Instance?.ScreenShake(ShakeStrength.Weak, ShakeDuration.Short, 90f);
 		SfxCmd.Play(characterModel.CharacterSelectSfx);
-		Control control = PreloadManager.Cache.GetScene(characterModel.CharacterSelectBg).Instantiate<Control>(PackedScene.GenEditState.Disabled);
+		Control control = characterModel.CreateCharacterSelectBackground();
 		control.Name = characterModel.Id.Entry + "_bg";
 		_bgContainer.AddChildSafely(control);
 		_delayEmbarkForCharacterSelect = true;
@@ -834,7 +834,7 @@ public class NCharacterSelectScreen : NSubmenu, IStartRunLobbyListener, ICharact
 		if (!charSelectButton.IsLocked)
 		{
 			_embarkButton.Enable();
-			Control control = PreloadManager.Cache.GetScene(characterModel.CharacterSelectBg).Instantiate<Control>(PackedScene.GenEditState.Disabled);
+			Control control = characterModel.CreateCharacterSelectBackground();
 			control.Name = characterModel.Id.Entry + "_bg";
 			_bgContainer.AddChildSafely(control);
 			string formattedText = new LocString("characters", characterModel.CharacterSelectTitle).GetFormattedText();

@@ -139,7 +139,7 @@ public class NReaperFormVfx : NFormVfx
 			{
 				boneName = _ironcladBoneName;
 			}
-			else if (character is Silent || character is ClassicSilent)
+			else if (character is Silent || character is ClassicSilent || character is ClassicWatcher)
 			{
 				boneName = _silentBoneName;
 			}

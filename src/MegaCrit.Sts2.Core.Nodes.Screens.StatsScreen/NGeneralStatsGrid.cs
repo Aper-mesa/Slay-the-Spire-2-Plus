@@ -304,6 +304,7 @@ public class NGeneralStatsGrid : Control
 		_characterStatContainer.FreeChildren();
 		CreateCharacterSection(progressSave, ModelDb.Character<Ironclad>().Id);
 		CreateCharacterSection(progressSave, ModelDb.Character<MegaCrit.Sts2.Core.Models.Characters.ClassicIronclad>().Id);
+		CreateCharacterSection(progressSave, ModelDb.Character<MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher>().Id);
 		CreateCharacterSection(progressSave, ModelDb.Character<Silent>().Id);
 		CreateCharacterSection(progressSave, ModelDb.Character<MegaCrit.Sts2.Core.Models.Characters.ClassicSilent>().Id);
 		CreateCharacterSection(progressSave, ModelDb.Character<Regent>().Id);

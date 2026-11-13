@@ -44,6 +44,7 @@
   - [Classic Defect](#classic-defect-slay-the-spire-1)
   - [Classic Silent](#classic-silent-slay-the-spire-1)
   - [Classic Ironclad](#classic-ironclad-slay-the-spire-1)
+  - [Classic Watcher](#classic-watcher-slay-the-spire-1)
 - [Notes](#notes)
 - [References](#references)
 
@@ -53,7 +54,7 @@ A **source tree that actually compiles**:
 
 - A C# project decompiled from `sts2.dll` with **ILSpy 11.1.0** (`src/`) — namespaces, types and members are intact and not obfuscated;
 - 56 GDScript files (`gdscript_tree/`) recovered from **GDSC v101** bytecode, keeping their original project paths;
-- A set of **Plus changes** layered on top: shared saves, a multiplayer build fingerprint, card / relic transfer, and the STS1 Defect, Silent and Ironclad ported as separate characters.
+- A set of **Plus changes** layered on top: shared saves, a multiplayer build fingerprint, card / relic transfer, and the STS1 Defect, Silent, Ironclad and Watcher ported as separate characters.
 
 The original decompiled baseline builds after **15 small fixes**, with the same type count as the original assembly. Plus changes add further types.
 
@@ -119,6 +120,7 @@ Original decompiled baseline: **0 errors**, 6,641 types (excluding later Plus ad
 | 🤖 **Classic Defect** | The STS1 Defect ported in whole, with all 75 cards |
 | 🗡️ **Classic Silent** | Independent STS1 Silent with 75 cards and 11 relics, reusing STS2 art |
 | ⚔️ **Classic Ironclad** | Independent STS1 Ironclad with 75 cards and 11 relics, reusing STS2 art |
+| 🪷 **Classic Watcher** | 75 regular cards, nine relics, Stances and Scry, with STS1 art embedded in the DLL |
 
 ### Shared saves
 
@@ -205,6 +207,20 @@ Adds **Ironclad (Classic)** alongside the STS2 Ironclad and other classic charac
 - Reuses STS2 art, icons, animations, audio and Ancient/Architect dialogue. Includes English/Chinese text, a shared Ironclad library filter and separate character statistics.
 
 Uses STS2's common combat, power, event and reward framework. Manual regression should cover repeated Searing Blow upgrades with save/reload, exhaust/draw chains, negative Strength and Heavy Blade, stacked Combust, Rupture, Reaper/Magic Flower, and multiplayer/card transfers. No game or smoke tests were run automatically.
+
+### Classic Watcher (Slay the Spire 1)
+
+Adds an independent Watcher: 72 HP, 99 gold, Pure Water, four Strikes, four Defends, Eruption and Vigilance.
+
+- 75 regular cards, 11 generated/choice cards, nine character relics and three character potions. Deprecated Discipline and Unraveling are excluded.
+- Adds Calm/Wrath/Divinity, Mantra, Scry, stance synergies, retain growth, Omniscience, Blasphemy and extra turns through STS2's synchronized commands and choices.
+- STS1 portraits, relic/power icons, character-selection art and original setup-pose meshes/textures are embedded in the DLL. The combat figure is a static rendering of the Spine 3.4 setup pose, without the old animation runtime. Distribution needs no extra PCK or image files.
+- Reuses STS2 purple frames/energy UI, Silent merchant/rest-site scenes, audio and Ancient dialogue, and existing potion-bottle art. Watcher cards share the Necrobinder library filter; statistics are separate.
+- Holy Water and Violet Lotus use the rare relic pool. Common combat/status rules and multiplayer extra-turn scheduling follow STS2.
+
+Local embedded inputs live in ignored `src/ClassicWatcherAssets/`; preserve those inputs for rebuilding. The local `tools/port_watcher.py` prepares card portraits from the STS1 source/assets directory; pose, character and relic assets must also be retained. The build checks for key resources. Only the final DLL needs distribution.
+
+No game or smoke tests were run automatically. Manual regression should cover stance damage and energy, Mantra thresholds, empty-pile Scry/Nirvana, nested Omniscience, Blasphemy with Intangible/Buffer, retain growth, extra turns, save/reload and multiplayer transfers.
 
 ## Notes
 

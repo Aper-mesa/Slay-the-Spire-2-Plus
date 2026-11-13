@@ -64,9 +64,9 @@ public abstract class PotionModel : AbstractModel
 		}
 	}
 
-	private string PackedImagePath => ImageHelper.GetImagePath("atlases/potion_atlas.sprites/" + Id.Entry.ToLowerInvariant() + ".tres");
+	protected virtual string PackedImagePath => ImageHelper.GetImagePath("atlases/potion_atlas.sprites/" + Id.Entry.ToLowerInvariant() + ".tres");
 
-	private string PackedOutlinePath => ImageHelper.GetImagePath("atlases/potion_outline_atlas.sprites/" + Id.Entry.ToLowerInvariant() + ".tres");
+	protected virtual string PackedOutlinePath => ImageHelper.GetImagePath("atlases/potion_outline_atlas.sprites/" + Id.Entry.ToLowerInvariant() + ".tres");
 
 	public string ImagePath => PackedImagePath;
 
@@ -96,7 +96,7 @@ public abstract class PotionModel : AbstractModel
 		}
 	}
 
-	public string LargeImagePath => ImageHelper.GetImagePath("potions/large/" + Id.Entry.ToLowerInvariant() + ".png");
+	public virtual string LargeImagePath => ImageHelper.GetImagePath("potions/large/" + Id.Entry.ToLowerInvariant() + ".png");
 
 	public Texture2D LargeImage => ResourceLoader.Load<Texture2D>(ResourceLoader.Exists(LargeImagePath) ? LargeImagePath : ImageHelper.GetImagePath("potions/missing_potion.png"), null, ResourceLoader.CacheMode.Reuse);
 

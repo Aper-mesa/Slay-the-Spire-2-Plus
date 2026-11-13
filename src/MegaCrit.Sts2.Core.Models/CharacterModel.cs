@@ -118,15 +118,15 @@ public abstract class CharacterModel : AbstractModel
 
 	protected virtual string IconTexturePath => ImageHelper.GetImagePath("ui/top_panel/character_icon_" + Id.Entry.ToLowerInvariant() + ".png");
 
-	public Texture2D IconTexture => PreloadManager.Cache.GetTexture2D(IconTexturePath);
+	public virtual Texture2D IconTexture => PreloadManager.Cache.GetTexture2D(IconTexturePath);
 
 	protected virtual string IconOutlineTexturePath => ImageHelper.GetImagePath("ui/top_panel/character_icon_" + Id.Entry.ToLowerInvariant() + "_outline.png");
 
-	public Texture2D IconOutlineTexture => PreloadManager.Cache.GetTexture2D(IconOutlineTexturePath);
+	public virtual Texture2D IconOutlineTexture => PreloadManager.Cache.GetTexture2D(IconOutlineTexturePath);
 
 	protected virtual string IconPath => SceneHelper.GetScenePath("ui/character_icons/" + Id.Entry.ToLowerInvariant() + "_icon");
 
-	public Control Icon => PreloadManager.Cache.GetScene(IconPath).Instantiate<Control>(PackedScene.GenEditState.Disabled);
+	public virtual Control Icon => PreloadManager.Cache.GetScene(IconPath).Instantiate<Control>(PackedScene.GenEditState.Disabled);
 
 	public virtual string EnergyCounterPath => SceneHelper.GetScenePath("combat/energy_counters/" + Id.Entry.ToLowerInvariant() + "_energy_counter");
 
@@ -157,6 +157,8 @@ public abstract class CharacterModel : AbstractModel
 	public string CharacterSelectTitle => Id.Entry.ToUpperInvariant() + ".title";
 
 	public string CharacterSelectDesc => Id.Entry.ToUpperInvariant() + ".description";
+
+	public virtual Control CreateCharacterSelectBackground() => PreloadManager.Cache.GetScene(CharacterSelectBg).Instantiate<Control>(PackedScene.GenEditState.Disabled);
 
 	public virtual string CharacterSelectBg => SceneHelper.GetScenePath("screens/char_select/char_select_bg_" + Id.Entry.ToLowerInvariant());
 
@@ -234,7 +236,7 @@ public abstract class CharacterModel : AbstractModel
 
 	public override bool ShouldReceiveCombatHooks => false;
 
-	public NCreatureVisuals CreateVisuals()
+	public virtual NCreatureVisuals CreateVisuals()
 	{
 		return PreloadManager.Cache.GetScene(VisualsPath).Instantiate<NCreatureVisuals>(PackedScene.GenEditState.Disabled);
 	}
