@@ -20,14 +20,15 @@ public class Defect1Epoch : EpochModel
 
 	public override EpochModel[] GetTimelineExpansion()
 	{
-		return new EpochModel[6]
+		return new EpochModel[7]
 		{
 			EpochModel.Get(EpochModel.GetId<Defect2Epoch>()),
 			EpochModel.Get(EpochModel.GetId<Defect3Epoch>()),
 			EpochModel.Get(EpochModel.GetId<Defect4Epoch>()),
 			EpochModel.Get(EpochModel.GetId<Defect5Epoch>()),
 			EpochModel.Get(EpochModel.GetId<Defect6Epoch>()),
-			EpochModel.Get(EpochModel.GetId<Defect7Epoch>())
+			EpochModel.Get(EpochModel.GetId<Defect7Epoch>()),
+			EpochModel.Get(EpochModel.GetId<Fool1Epoch>())
 		};
 	}
 

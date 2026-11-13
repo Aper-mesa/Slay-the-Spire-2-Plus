@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.GameActions;
 
 namespace MegaCrit.Sts2.Core.Combat;
 
@@ -12,4 +11,4 @@ namespace MegaCrit.Sts2.Core.Combat;
 /// optional test hook to run during the enemy turn. The combat needs no stamp: the signal lives on one combat's
 /// turn state, so it can only ever be consumed by that combat's turn loop.
 /// </summary>
-internal sealed record EndTurnSignal(GameAction? RunningAction, int ScheduledTurnNumber, Player ScheduledPlayer, Func<Task>? ActionDuringEnemyTurn);
+internal sealed record EndTurnSignal(int ScheduledTurnNumber, Player ScheduledPlayer, Func<Task>? ActionDuringEnemyTurn);

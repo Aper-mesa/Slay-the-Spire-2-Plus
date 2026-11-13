@@ -9,11 +9,12 @@ public static class RewardTypeExtensions
 	{
 		return rewardType switch
 		{
-			RewardType.Card => CardReward.AssetPaths, 
-			RewardType.Gold => GoldReward.AssetPaths, 
-			RewardType.RemoveCard => CardRemovalReward.AssetPaths, 
-			RewardType.SpecialCard => SpecialCardReward.AssetPaths, 
-			_ => Array.Empty<string>(), 
+			RewardType.Card => CardReward.AssetPaths,
+			RewardType.Gold => GoldReward.AssetPaths,
+			RewardType.RemoveCard => CardRemovalReward.AssetPaths,
+			RewardType.UpgradeCard => CardUpgradeReward.AssetPaths,
+			RewardType.SpecialCard => SpecialCardReward.AssetPaths,
+			_ => Array.Empty<string>(),
 		};
 	}
 }

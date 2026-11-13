@@ -4,7 +4,6 @@ using System.ComponentModel;
 using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
-using MegaCrit.Sts2.Core.ControllerInput;
 using MegaCrit.Sts2.Core.Daily;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Combat;
@@ -32,11 +31,6 @@ public class NLeaderboardDayPaginator : Control
 		public new static readonly StringName _Ready = "_Ready";
 
 		/// <summary>
-		/// Cached name for the '_GuiInput' method.
-		/// </summary>
-		public new static readonly StringName _GuiInput = "_GuiInput";
-
-		/// <summary>
 		/// Cached name for the 'PageLeft' method.
 		/// </summary>
 		public static readonly StringName PageLeft = "PageLeft";
@@ -57,14 +51,9 @@ public class NLeaderboardDayPaginator : Control
 		public static readonly StringName OnDayChanged = "OnDayChanged";
 
 		/// <summary>
-		/// Cached name for the 'Disable' method.
+		/// Cached name for the 'SetEnabled' method.
 		/// </summary>
-		public static readonly StringName Disable = "Disable";
-
-		/// <summary>
-		/// Cached name for the 'Enable' method.
-		/// </summary>
-		public static readonly StringName Enable = "Enable";
+		public static readonly StringName SetEnabled = "SetEnabled";
 
 		/// <summary>
 		/// Cached name for the 'OnFocus' method.
@@ -116,6 +105,21 @@ public class NLeaderboardDayPaginator : Control
 		/// Cached name for the '_leaderboard' field.
 		/// </summary>
 		public static readonly StringName _leaderboard = "_leaderboard";
+
+		/// <summary>
+		/// Cached name for the '_canPageLeft' field.
+		/// </summary>
+		public static readonly StringName _canPageLeft = "_canPageLeft";
+
+		/// <summary>
+		/// Cached name for the '_canPageRight' field.
+		/// </summary>
+		public static readonly StringName _canPageRight = "_canPageRight";
+
+		/// <summary>
+		/// Cached name for the '_paginationAllowed' field.
+		/// </summary>
+		public static readonly StringName _paginationAllowed = "_paginationAllowed";
 	}
 
 	/// <summary>
@@ -129,9 +133,9 @@ public class NLeaderboardDayPaginator : Control
 
 	private MegaLabel _vfxLabel;
 
-	private NLeaderboardPageArrow _leftArrow;
+	private NLeaderboardDayArrow _leftArrow;
 
-	private NLeaderboardPageArrow _rightArrow;
+	private NLeaderboardDayArrow _rightArrow;
 
 	private NSelectionReticle _selectionReticle;
 
@@ -145,60 +149,62 @@ public class NLeaderboardDayPaginator : Control
 
 	private NDailyRunLeaderboard? _leaderboard;
 
+	private bool _canPageLeft;
+
+	private bool _canPageRight;
+
+	private bool _paginationAllowed = true;
+
 	public override void _Ready()
 	{
 		_label = GetNode<MegaLabel>("LabelContainer/Mask/Label");
 		_vfxLabel = GetNode<MegaLabel>("LabelContainer/Mask/VfxLabel");
 		_selectionReticle = GetNode<NSelectionReticle>("SelectionReticle");
-		_leftArrow = GetNode<NLeaderboardPageArrow>("LeftArrow");
-		_rightArrow = GetNode<NLeaderboardPageArrow>("RightArrow");
+		_leftArrow = GetNode<NLeaderboardDayArrow>("LeftArrow");
+		_rightArrow = GetNode<NLeaderboardDayArrow>("RightArrow");
 		Connect(Control.SignalName.FocusEntered, Callable.From(OnFocus));
 		Connect(Control.SignalName.FocusExited, Callable.From(OnUnfocus));
 		_leftArrow.Connect(PageLeft);
 		_rightArrow.Connect(PageRight);
+		SetEnabled(leftArrowEnabled: false, rightArrowEnabled: false);
 	}
 
-	public void Initialize(NDailyRunLeaderboard leaderboard, DateTimeOffset dateTime, bool showArrows)
+	public void Initialize(NDailyRunLeaderboard leaderboard, DateTimeOffset dateTime, bool allowPagination)
 	{
 		_currentDay = dateTime;
 		_leaderboard = leaderboard;
+		_paginationAllowed = allowPagination;
 		OnDayChanged(changeLeaderboardDay: false);
-		_leftArrow.Visible = showArrows;
-		_rightArrow.Visible = showArrows;
-	}
-
-	public override void _GuiInput(InputEvent input)
-	{
-		base._GuiInput(input);
-		if (input.IsActionPressed(MegaInput.left))
-		{
-			PageLeft();
-		}
-		if (input.IsActionPressed(MegaInput.right))
-		{
-			PageRight();
-		}
+		_leftArrow.Visible = allowPagination;
+		_rightArrow.Visible = allowPagination;
+		FocusMode = (FocusModeEnum)(allowPagination ? 2 : 0);
 	}
 
 	private void PageLeft()
 	{
-		DateTimeOffset? dateTimeOffset = DailyRunUtility.AddLeaderboardDays(_currentDay, -1);
-		if (dateTimeOffset.HasValue)
+		if (_paginationAllowed && _canPageLeft && _leaderboard != null)
 		{
-			DateTimeOffset valueOrDefault = dateTimeOffset.GetValueOrDefault();
-			_currentDay = valueOrDefault;
-			DayChangeHelper(pagedLeft: true);
+			DateTimeOffset? dateTimeOffset = DailyRunUtility.AddLeaderboardDays(_currentDay, -1);
+			if (dateTimeOffset.HasValue)
+			{
+				DateTimeOffset valueOrDefault = dateTimeOffset.GetValueOrDefault();
+				_currentDay = valueOrDefault;
+				DayChangeHelper(pagedLeft: true);
+			}
 		}
 	}
 
 	private void PageRight()
 	{
-		DateTimeOffset? dateTimeOffset = DailyRunUtility.AddLeaderboardDays(_currentDay, 1);
-		if (dateTimeOffset.HasValue)
+		if (_paginationAllowed && _canPageRight && _leaderboard != null)
 		{
-			DateTimeOffset valueOrDefault = dateTimeOffset.GetValueOrDefault();
-			_currentDay = valueOrDefault;
-			DayChangeHelper(pagedLeft: false);
+			DateTimeOffset? dateTimeOffset = DailyRunUtility.AddLeaderboardDays(_currentDay, 1);
+			if (dateTimeOffset.HasValue)
+			{
+				DateTimeOffset valueOrDefault = dateTimeOffset.GetValueOrDefault();
+				_currentDay = valueOrDefault;
+				DayChangeHelper(pagedLeft: false);
+			}
 		}
 	}
 
@@ -226,22 +232,12 @@ public class NLeaderboardDayPaginator : Control
 		}
 	}
 
-	public void Disable()
+	public void SetEnabled(bool leftArrowEnabled, bool rightArrowEnabled)
 	{
-		_leftArrow.Disable();
-		_rightArrow.Disable();
-	}
-
-	public void Enable(bool leftArrowEnabled, bool rightArrowEnabled)
-	{
-		if (leftArrowEnabled)
-		{
-			_leftArrow.Enable();
-		}
-		if (rightArrowEnabled)
-		{
-			_rightArrow.Enable();
-		}
+		_canPageLeft = leftArrowEnabled && _paginationAllowed;
+		_canPageRight = rightArrowEnabled && _paginationAllowed;
+		_leftArrow.SetEnabled(_canPageLeft);
+		_rightArrow.SetEnabled(_canPageRight);
 	}
 
 	private void OnFocus()
@@ -265,12 +261,8 @@ public class NLeaderboardDayPaginator : Control
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(10);
+		List<MethodInfo> list = new List<MethodInfo>(8);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName._GuiInput, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
-		{
-			new PropertyInfo(Variant.Type.Object, "input", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("InputEvent"), exported: false)
-		}, null));
 		list.Add(new MethodInfo(MethodName.PageLeft, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.PageRight, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.DayChangeHelper, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
@@ -281,8 +273,7 @@ public class NLeaderboardDayPaginator : Control
 		{
 			new PropertyInfo(Variant.Type.Bool, "changeLeaderboardDay", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
-		list.Add(new MethodInfo(MethodName.Disable, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName.Enable, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		list.Add(new MethodInfo(MethodName.SetEnabled, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Bool, "leftArrowEnabled", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false),
 			new PropertyInfo(Variant.Type.Bool, "rightArrowEnabled", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
@@ -299,12 +290,6 @@ public class NLeaderboardDayPaginator : Control
 		if (method == MethodName._Ready && args.Count == 0)
 		{
 			_Ready();
-			ret = default;
-			return true;
-		}
-		if (method == MethodName._GuiInput && args.Count == 1)
-		{
-			_GuiInput(VariantUtils.ConvertTo<InputEvent>(in args[0]));
 			ret = default;
 			return true;
 		}
@@ -332,15 +317,9 @@ public class NLeaderboardDayPaginator : Control
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.Disable && args.Count == 0)
+		if (method == MethodName.SetEnabled && args.Count == 2)
 		{
-			Disable();
-			ret = default;
-			return true;
-		}
-		if (method == MethodName.Enable && args.Count == 2)
-		{
-			Enable(VariantUtils.ConvertTo<bool>(in args[0]), VariantUtils.ConvertTo<bool>(in args[1]));
+			SetEnabled(VariantUtils.ConvertTo<bool>(in args[0]), VariantUtils.ConvertTo<bool>(in args[1]));
 			ret = default;
 			return true;
 		}
@@ -367,10 +346,6 @@ public class NLeaderboardDayPaginator : Control
 		{
 			return true;
 		}
-		if (method == MethodName._GuiInput)
-		{
-			return true;
-		}
 		if (method == MethodName.PageLeft)
 		{
 			return true;
@@ -387,11 +362,7 @@ public class NLeaderboardDayPaginator : Control
 		{
 			return true;
 		}
-		if (method == MethodName.Disable)
-		{
-			return true;
-		}
-		if (method == MethodName.Enable)
+		if (method == MethodName.SetEnabled)
 		{
 			return true;
 		}
@@ -422,12 +393,12 @@ public class NLeaderboardDayPaginator : Control
 		}
 		if (name == PropertyName._leftArrow)
 		{
-			_leftArrow = VariantUtils.ConvertTo<NLeaderboardPageArrow>(in value);
+			_leftArrow = VariantUtils.ConvertTo<NLeaderboardDayArrow>(in value);
 			return true;
 		}
 		if (name == PropertyName._rightArrow)
 		{
-			_rightArrow = VariantUtils.ConvertTo<NLeaderboardPageArrow>(in value);
+			_rightArrow = VariantUtils.ConvertTo<NLeaderboardDayArrow>(in value);
 			return true;
 		}
 		if (name == PropertyName._selectionReticle)
@@ -443,6 +414,21 @@ public class NLeaderboardDayPaginator : Control
 		if (name == PropertyName._leaderboard)
 		{
 			_leaderboard = VariantUtils.ConvertTo<NDailyRunLeaderboard>(in value);
+			return true;
+		}
+		if (name == PropertyName._canPageLeft)
+		{
+			_canPageLeft = VariantUtils.ConvertTo<bool>(in value);
+			return true;
+		}
+		if (name == PropertyName._canPageRight)
+		{
+			_canPageRight = VariantUtils.ConvertTo<bool>(in value);
+			return true;
+		}
+		if (name == PropertyName._paginationAllowed)
+		{
+			_paginationAllowed = VariantUtils.ConvertTo<bool>(in value);
 			return true;
 		}
 		return base.SetGodotClassPropertyValue(in name, in value);
@@ -487,6 +473,21 @@ public class NLeaderboardDayPaginator : Control
 			value = VariantUtils.CreateFrom(in _leaderboard);
 			return true;
 		}
+		if (name == PropertyName._canPageLeft)
+		{
+			value = VariantUtils.CreateFrom(in _canPageLeft);
+			return true;
+		}
+		if (name == PropertyName._canPageRight)
+		{
+			value = VariantUtils.CreateFrom(in _canPageRight);
+			return true;
+		}
+		if (name == PropertyName._paginationAllowed)
+		{
+			value = VariantUtils.CreateFrom(in _paginationAllowed);
+			return true;
+		}
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
@@ -506,6 +507,9 @@ public class NLeaderboardDayPaginator : Control
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._selectionReticle, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._tween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._leaderboard, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._canPageLeft, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._canPageRight, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._paginationAllowed, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
 
@@ -521,6 +525,9 @@ public class NLeaderboardDayPaginator : Control
 		info.AddProperty(PropertyName._selectionReticle, Variant.From(in _selectionReticle));
 		info.AddProperty(PropertyName._tween, Variant.From(in _tween));
 		info.AddProperty(PropertyName._leaderboard, Variant.From(in _leaderboard));
+		info.AddProperty(PropertyName._canPageLeft, Variant.From(in _canPageLeft));
+		info.AddProperty(PropertyName._canPageRight, Variant.From(in _canPageRight));
+		info.AddProperty(PropertyName._paginationAllowed, Variant.From(in _paginationAllowed));
 	}
 
 	/// <inheritdoc />
@@ -538,11 +545,11 @@ public class NLeaderboardDayPaginator : Control
 		}
 		if (info.TryGetProperty(PropertyName._leftArrow, out var value3))
 		{
-			_leftArrow = value3.As<NLeaderboardPageArrow>();
+			_leftArrow = value3.As<NLeaderboardDayArrow>();
 		}
 		if (info.TryGetProperty(PropertyName._rightArrow, out var value4))
 		{
-			_rightArrow = value4.As<NLeaderboardPageArrow>();
+			_rightArrow = value4.As<NLeaderboardDayArrow>();
 		}
 		if (info.TryGetProperty(PropertyName._selectionReticle, out var value5))
 		{
@@ -555,6 +562,18 @@ public class NLeaderboardDayPaginator : Control
 		if (info.TryGetProperty(PropertyName._leaderboard, out var value7))
 		{
 			_leaderboard = value7.As<NDailyRunLeaderboard>();
+		}
+		if (info.TryGetProperty(PropertyName._canPageLeft, out var value8))
+		{
+			_canPageLeft = value8.As<bool>();
+		}
+		if (info.TryGetProperty(PropertyName._canPageRight, out var value9))
+		{
+			_canPageRight = value9.As<bool>();
+		}
+		if (info.TryGetProperty(PropertyName._paginationAllowed, out var value10))
+		{
+			_paginationAllowed = value10.As<bool>();
 		}
 	}
 }

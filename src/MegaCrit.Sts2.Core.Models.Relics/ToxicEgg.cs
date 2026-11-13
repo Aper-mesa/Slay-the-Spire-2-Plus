@@ -13,11 +13,6 @@ public sealed class ToxicEgg : RelicModel
 {
 	public override RelicRarity Rarity => RelicRarity.Rare;
 
-	public override bool IsAllowed(IRunState runState)
-	{
-		return RelicModel.IsBeforeAct3TreasureChest(runState);
-	}
-
 	public override bool TryModifyCardRewardOptionsLate(Player player, List<CardCreationResult> cardRewards, CardCreationOptions options)
 	{
 		if (player != Owner)

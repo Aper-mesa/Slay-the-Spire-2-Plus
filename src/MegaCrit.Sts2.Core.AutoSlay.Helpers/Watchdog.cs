@@ -8,19 +8,74 @@ using MegaCrit.Sts2.Core.Runs;
 namespace MegaCrit.Sts2.Core.AutoSlay.Helpers;
 
 /// <summary>
-/// Watchdog that detects when AutoSlay gets stuck and dumps diagnostic state.
+/// Watchdog that detects when an automated driver gets stuck and dumps diagnostic state.
 /// </summary>
 public class Watchdog
 {
+	private sealed class WatchdogScope : IDisposable
+	{
+		private readonly Watchdog? _previous;
+
+		private bool _disposed;
+
+		public WatchdogScope(Watchdog watchdog)
+		{
+			_previous = Current;
+			Current = watchdog;
+		}
+
+		public void Dispose()
+		{
+			if (!_disposed)
+			{
+				_disposed = true;
+				Current = _previous;
+			}
+		}
+	}
+
+	private readonly Action<string> _logInfo;
+
+	private readonly Action<string> _logError;
+
+	private readonly TimeSpan _timeout;
+
+	private readonly TimeSpan _logInterval;
+
+	private readonly Func<DateTime> _clock;
+
 	private DateTime _lastProgressTime;
 
 	private DateTime _lastLogTime;
 
 	private string _lastActivity = "Starting";
 
-	public Watchdog()
+	/// <summary>
+	/// The watchdog the currently running driver registered, for <see cref="T:MegaCrit.Sts2.Core.AutoSlay.Helpers.WaitHelper" /> integration.
+	/// Set only through <see cref="M:MegaCrit.Sts2.Core.AutoSlay.Helpers.Watchdog.Use(MegaCrit.Sts2.Core.AutoSlay.Helpers.Watchdog)" />, which restores the previous watchdog on dispose.
+	/// </summary>
+	public static Watchdog? Current { get; private set; }
+
+	/// <summary>
+	/// The <paramref name="clock" /> is injected so stall behaviour is testable without sleeping.
+	/// </summary>
+	public Watchdog(Action<string> logInfo, Action<string> logError, TimeSpan? timeout = null, TimeSpan? logInterval = null, Func<DateTime>? clock = null)
 	{
+		_logInfo = logInfo;
+		_logError = logError;
+		_timeout = timeout ?? AutoSlayConfig.watchdogTimeout;
+		_logInterval = logInterval ?? AutoSlayConfig.watchdogLogInterval;
+		_clock = clock ?? ((Func<DateTime>)(() => DateTime.UtcNow));
 		Reset("Initialized");
+	}
+
+	/// <summary>
+	/// Installs <paramref name="watchdog" /> as <see cref="P:MegaCrit.Sts2.Core.AutoSlay.Helpers.Watchdog.Current" /> for the lifetime of the
+	/// returned scope, restoring whatever was there before on dispose.
+	/// </summary>
+	public static IDisposable Use(Watchdog watchdog)
+	{
+		return new WatchdogScope(watchdog);
 	}
 
 	/// <summary>
@@ -28,7 +83,7 @@ public class Watchdog
 	/// </summary>
 	public void Reset(string activity)
 	{
-		_lastProgressTime = DateTime.UtcNow;
+		_lastProgressTime = _clock();
 		_lastActivity = activity;
 	}
 
@@ -38,17 +93,18 @@ public class Watchdog
 	/// </summary>
 	public void Check()
 	{
-		TimeSpan timeSpan = DateTime.UtcNow - _lastProgressTime;
-		if (timeSpan > AutoSlayConfig.watchdogLogInterval && DateTime.UtcNow - _lastLogTime > AutoSlayConfig.watchdogLogInterval)
+		DateTime dateTime = _clock();
+		TimeSpan timeSpan = dateTime - _lastProgressTime;
+		if (timeSpan > _logInterval && dateTime - _lastLogTime > _logInterval)
 		{
-			_lastLogTime = DateTime.UtcNow;
-			AutoSlayLog.Info($"[Watchdog] No progress for {timeSpan.TotalSeconds:F1}s (last: {_lastActivity})");
+			_lastLogTime = dateTime;
+			_logInfo($"[Watchdog] Still on '{_lastActivity}' after {timeSpan.TotalSeconds:F1}s (stalls at {_timeout.TotalSeconds:F0}s)");
 		}
-		if (timeSpan > AutoSlayConfig.watchdogTimeout)
+		if (timeSpan > _timeout)
 		{
 			string value = DumpState();
-			AutoSlayLog.Error($"[Watchdog] Stuck detected! No progress for {timeSpan.TotalSeconds:F1}s\nLast activity: {_lastActivity}\n{value}");
-			throw new AutoSlayTimeoutException($"Watchdog timeout: No progress for {timeSpan.TotalSeconds:F1}s. Last activity: {_lastActivity}");
+			_logError($"[Watchdog] Stuck detected! No progress for {timeSpan.TotalSeconds:F1}s\nLast activity: {_lastActivity}\n{value}");
+			throw new DriverTimeoutException($"Watchdog timeout: No progress for {timeSpan.TotalSeconds:F1}s. Last activity: {_lastActivity}");
 		}
 	}
 
@@ -58,7 +114,7 @@ public class Watchdog
 	public static string DumpState()
 	{
 		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.AppendLine("=== AutoSlay State Dump ===");
+		stringBuilder.AppendLine("=== Driver State Dump ===");
 		try
 		{
 			RunState runState = RunManager.Instance.DebugOnlyGetState();

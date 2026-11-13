@@ -39,7 +39,7 @@ public abstract class GameAction
 
 	private TaskCompletionSource? _executeAfterResumptionTaskSource;
 
-	private TaskCompletionSource _completionSource = new TaskCompletionSource();
+	private readonly TaskCompletionSource _completionSource = new TaskCompletionSource();
 
 	private Task? _executionTask;
 

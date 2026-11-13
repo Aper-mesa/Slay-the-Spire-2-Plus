@@ -17,7 +17,7 @@ public class Necrobinder4Epoch : EpochModel
 
 	public override EpochEra Era => EpochEra.Invitation2;
 
-	public override int EraPosition => 2;
+	public override int EraPosition => 3;
 
 	public override string StoryId => "Necrobinder";
 

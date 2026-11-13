@@ -8,6 +8,8 @@ public struct JoinResult
 {
 	public GameMode gameMode;
 
+	public bool isCustom;
+
 	public RunSessionState? sessionState;
 
 	public ClientRejoinResponseMessage? rejoinResponse;

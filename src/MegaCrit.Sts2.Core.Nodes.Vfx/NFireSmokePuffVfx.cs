@@ -8,7 +8,7 @@ using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Nodes.Rooms;
+using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.TestSupport;
 
 namespace MegaCrit.Sts2.Core.Nodes.Vfx;
@@ -28,6 +28,11 @@ public class NFireSmokePuffVfx : Node2D
 		/// Cached name for the '_ExitTree' method.
 		/// </summary>
 		public new static readonly StringName _ExitTree = "_ExitTree";
+
+		/// <summary>
+		/// Cached name for the 'Create' method.
+		/// </summary>
+		public static readonly StringName Create = "Create";
 
 		/// <summary>
 		/// Cached name for the '_Ready' method.
@@ -79,8 +84,18 @@ public class NFireSmokePuffVfx : Node2D
 		{
 			return null;
 		}
+		NCreature creatureNode = target.GetCreatureNode();
+		return Create(creatureNode.VfxSpawnPosition);
+	}
+
+	public static NFireSmokePuffVfx? Create(Vector2 position)
+	{
+		if (TestMode.IsOn)
+		{
+			return null;
+		}
 		NFireSmokePuffVfx nFireSmokePuffVfx = PreloadManager.Cache.GetScene(ScenePath).Instantiate<NFireSmokePuffVfx>(PackedScene.GenEditState.Disabled);
-		nFireSmokePuffVfx.GlobalPosition = NCombatRoom.Instance.GetCreatureNode(target).VfxSpawnPosition;
+		nFireSmokePuffVfx.GlobalPosition = position;
 		return nFireSmokePuffVfx;
 	}
 
@@ -108,8 +123,12 @@ public class NFireSmokePuffVfx : Node2D
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(2);
+		List<MethodInfo> list = new List<MethodInfo>(3);
 		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.Create, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Node2D"), exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Vector2, "position", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		return list;
 	}
@@ -124,6 +143,11 @@ public class NFireSmokePuffVfx : Node2D
 			ret = default;
 			return true;
 		}
+		if (method == MethodName.Create && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<NFireSmokePuffVfx>(Create(VariantUtils.ConvertTo<Vector2>(in args[0])));
+			return true;
+		}
 		if (method == MethodName._Ready && args.Count == 0)
 		{
 			_Ready();
@@ -133,11 +157,27 @@ public class NFireSmokePuffVfx : Node2D
 		return base.InvokeGodotClassMethod(in method, args, out ret);
 	}
 
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	internal static bool InvokeGodotClassStaticMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
+	{
+		if (method == MethodName.Create && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<NFireSmokePuffVfx>(Create(VariantUtils.ConvertTo<Vector2>(in args[0])));
+			return true;
+		}
+		ret = default;
+		return false;
+	}
+
 	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
 		if (method == MethodName._ExitTree)
+		{
+			return true;
+		}
+		if (method == MethodName.Create)
 		{
 			return true;
 		}

@@ -328,9 +328,18 @@ public abstract class ActModel : AbstractModel
 			select backgroundsPath + "/" + path).ToArray();
 	}
 
-	public void GenerateRooms(Rng rng, UnlockState unlockState, bool isMultiplayer = false)
+	public void GenerateRooms(RunState runState)
+	{
+		Rng upFront = runState.Rng.UpFront;
+		UnlockState unlockState = runState.UnlockState;
+		bool isMultiplayer = runState.Players.Count > 1;
+		GenerateRooms(upFront, unlockState, isMultiplayer, runState.GameMode == GameMode.Blitz);
+	}
+
+	public void GenerateRooms(Rng rng, UnlockState unlockState, bool isMultiplayer = false, bool isBlitz = false)
 	{
 		AssertMutable();
+		int num = (isBlitz ? 1 : NumberOfWeakEncounters);
 		List<EventModel> list = AllEvents.Concat(ModelDb.AllSharedEvents).ToList();
 		if (!unlockState.IsEpochRevealed<Event1Epoch>())
 		{
@@ -346,7 +355,7 @@ public abstract class ActModel : AbstractModel
 		}
 		_rooms.events.AddRange(list.UnstableShuffle(rng));
 		GrabBag<EncounterModel> grabBag = new GrabBag<EncounterModel>();
-		for (int num = 0; num < NumberOfWeakEncounters; num++)
+		for (int num2 = 0; num2 < num; num2++)
 		{
 			if (!grabBag.Any())
 			{
@@ -358,7 +367,7 @@ public abstract class ActModel : AbstractModel
 			AddWithoutRepeatingTags(_rooms.normalEncounters, grabBag, rng);
 		}
 		GrabBag<EncounterModel> grabBag2 = new GrabBag<EncounterModel>();
-		for (int num2 = NumberOfWeakEncounters; num2 < GetNumberOfRooms(isMultiplayer); num2++)
+		for (int num3 = num; num3 < GetNumberOfRooms(isMultiplayer); num3++)
 		{
 			if (!grabBag2.Any())
 			{
@@ -370,7 +379,7 @@ public abstract class ActModel : AbstractModel
 			AddWithoutRepeatingTags(_rooms.normalEncounters, grabBag2, rng);
 		}
 		GrabBag<EncounterModel> grabBag3 = new GrabBag<EncounterModel>();
-		for (int num3 = 0; num3 < 15; num3++)
+		for (int num4 = 0; num4 < 15; num4++)
 		{
 			if (!grabBag3.Any())
 			{
@@ -383,6 +392,23 @@ public abstract class ActModel : AbstractModel
 		}
 		_rooms.Boss = rng.NextItem(AllBossEncounters);
 		_rooms.Ancient = rng.NextItem(GetUnlockedAncients(unlockState).Concat(_sharedAncientSubset ?? new List<AncientEventModel>()));
+	}
+
+	/// <summary>
+	/// Used in tests to force a specific set of rooms.
+	/// </summary>
+	public void SetRooms(RoomSet roomSet)
+	{
+		AssertMutable();
+		_rooms = roomSet;
+	}
+
+	/// <summary>
+	/// Used in debugging.
+	/// </summary>
+	public RoomSet GetRoomsDebug()
+	{
+		return _rooms;
 	}
 
 	/// <summary>
@@ -446,10 +472,10 @@ public abstract class ActModel : AbstractModel
 	{
 		return roomType switch
 		{
-			RoomType.Monster => _rooms.NextNormalEncounter, 
-			RoomType.Elite => _rooms.NextEliteEncounter, 
-			RoomType.Boss => _rooms.NextBossEncounter, 
-			_ => throw new ArgumentOutOfRangeException("roomType", roomType, null), 
+			RoomType.Monster => _rooms.NextNormalEncounter,
+			RoomType.Elite => _rooms.NextEliteEncounter,
+			RoomType.Boss => _rooms.NextBossEncounter,
+			_ => throw new ArgumentOutOfRangeException("roomType", roomType, null),
 		};
 	}
 

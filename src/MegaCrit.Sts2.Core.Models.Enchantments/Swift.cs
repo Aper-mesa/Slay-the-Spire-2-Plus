@@ -16,8 +16,17 @@ public sealed class Swift : EnchantmentModel
 	{
 		if (Status == EnchantmentStatus.Normal)
 		{
-			Status = EnchantmentStatus.Disabled;
 			await CardPileCmd.Draw(choiceContext, Amount, Card.Owner);
 		}
+	}
+
+	public override Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+	{
+		if (cardPlay.Card != Card)
+		{
+			return Task.CompletedTask;
+		}
+		Status = EnchantmentStatus.Disabled;
+		return Task.CompletedTask;
 	}
 }

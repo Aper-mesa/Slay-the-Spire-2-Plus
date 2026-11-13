@@ -57,7 +57,17 @@ public sealed class SoulFysh : MonsterModel
 
 	private int GazeDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 8, 7);
 
-	private int BeckonMoveAmount => 2;
+	private int BeckonMoveAmount
+	{
+		get
+		{
+			if (!AscensionHelper.IsDread())
+			{
+				return 2;
+			}
+			return 3;
+		}
+	}
 
 	private int GazeMoveAmount => 1;
 
@@ -78,7 +88,7 @@ public sealed class SoulFysh : MonsterModel
 		}
 	}
 
-	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (creature != Creature)
 		{
@@ -138,13 +148,18 @@ public sealed class SoulFysh : MonsterModel
 		foreach (Creature target in targets)
 		{
 			Player player = target.Player ?? target.PetOwner;
-			CardPileAddResult[] statusCards = new CardPileAddResult[BeckonMoveAmount];
+			List<CardPileAddResult> statusCards = new List<CardPileAddResult>();
 			CardModel card = CombatState.CreateCard<Beckon>(player);
-			CardPileAddResult[] array = statusCards;
-			array[0] = await CardPileCmd.AddGeneratedCardToCombat(card, PileType.Draw, null, CardPilePosition.Random);
-			CardModel card2 = CombatState.CreateCard<Beckon>(player);
-			array = statusCards;
-			array[1] = await CardPileCmd.AddGeneratedCardToCombat(card2, PileType.Discard, null);
+			List<CardPileAddResult> list = statusCards;
+			list.Add(await CardPileCmd.AddGeneratedCardToCombat(card, PileType.Draw, null, CardPilePosition.Random));
+			if (AscensionHelper.IsDread())
+			{
+				CardModel card2 = CombatState.CreateCard<Beckon>(player);
+				await CardPileCmd.AddGeneratedCardToCombat(card2, PileType.Hand, null);
+			}
+			CardModel card3 = CombatState.CreateCard<Beckon>(player);
+			list = statusCards;
+			list.Add(await CardPileCmd.AddGeneratedCardToCombat(card3, PileType.Discard, null));
 			if (LocalContext.IsMe(player))
 			{
 				CardCmd.PreviewCardPileAdd(statusCards);

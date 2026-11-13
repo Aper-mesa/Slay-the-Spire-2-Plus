@@ -10,9 +10,11 @@ using MegaCrit.Sts2.Core.Entities.Actions;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Models.Exceptions;
+using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
@@ -97,7 +99,7 @@ public class NCardPlayQueue : Control
 	{
 	}
 
-	private List<QueueItem> _playQueue = new List<QueueItem>();
+	private readonly List<QueueItem> _playQueue = new List<QueueItem>();
 
 	public static NCardPlayQueue? Instance => NCombatRoom.Instance?.Ui.PlayQueue;
 
@@ -121,31 +123,44 @@ public class NCardPlayQueue : Control
 	/// <param name="card">The card that was played.</param>
 	public void OnLocalCardPlayed(PlayCardAction action, NCardHolder? holder, CardModel card)
 	{
-		NCard nCard = holder?.CardNode ?? NCard.Create(card);
-		CardModel? model = nCard.Model;
-		if (model != null && model.Pile?.Type == PileType.Hand)
+		CardPile? pile = card.Pile;
+		if (pile == null || pile.Type != PileType.Hand)
 		{
-			QueueItem item = new QueueItem
-			{
-				card = nCard,
-				action = action
-			};
-			if (nCard.IsInsideTree())
-			{
-				nCard.Reparent(this);
-			}
-			else
-			{
-				this.AddChildSafely(nCard);
-			}
-			this.MoveChildSafely(nCard, 0);
-			if (holder != null && holder.IsValid())
-			{
-				NPlayerHand.Instance.RemoveCardHolder(holder);
-			}
-			_playQueue.Add(item);
-			TweenCardToQueuePosition(item, _playQueue.Count - 1);
+			return;
 		}
+		NCard nCard;
+		if (holder?.CardNode != null)
+		{
+			nCard = holder.CardNode;
+		}
+		else
+		{
+			if (RunManager.Instance.NetService.Type != NetGameType.Replay)
+			{
+				Log.Error("A local card was played, but the card holder passed is null (or its card is null). This should never occur outside of a replay.");
+			}
+			nCard = NCard.Create(card);
+		}
+		QueueItem item = new QueueItem
+		{
+			card = nCard,
+			action = action
+		};
+		if (nCard.IsInsideTree())
+		{
+			nCard.Reparent(this);
+		}
+		else
+		{
+			this.AddChildSafely(nCard);
+		}
+		this.MoveChildSafely(nCard, 0);
+		if (holder != null && holder.IsValid())
+		{
+			NPlayerHand.Instance.RemoveCardHolder(holder);
+		}
+		_playQueue.Add(item);
+		TweenCardToQueuePosition(item, _playQueue.Count - 1);
 	}
 
 	/// <summary>

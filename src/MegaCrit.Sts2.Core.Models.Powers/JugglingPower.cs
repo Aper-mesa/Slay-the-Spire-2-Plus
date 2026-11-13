@@ -16,6 +16,8 @@ public sealed class JugglingPower : PowerModel
 	private class Data
 	{
 		public int attacksPlayedThisTurn;
+
+		public CardModel? cardToClone;
 	}
 
 	public override PowerType Type => PowerType.Buff;
@@ -33,15 +35,30 @@ public sealed class JugglingPower : PowerModel
 		return Task.CompletedTask;
 	}
 
-	public override async Task BeforeCardPlayed(CardPlay cardPlay)
+	public override Task BeforeCardPlayed(CardPlay cardPlay)
 	{
-		if (cardPlay.Card.Owner != Owner.Player || cardPlay.Card.Type != CardType.Attack)
+		if (cardPlay.Card.Owner != Owner.Player)
 		{
-			return;
+			return Task.CompletedTask;
+		}
+		if (cardPlay.Card.Type != CardType.Attack)
+		{
+			return Task.CompletedTask;
 		}
 		GetInternalData<Data>().attacksPlayedThisTurn++;
 		if (GetInternalData<Data>().attacksPlayedThisTurn == 3)
 		{
+			GetInternalData<Data>().cardToClone = cardPlay.Card;
+		}
+		return Task.CompletedTask;
+	}
+
+	public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+	{
+		CardModel cardToClone = GetInternalData<Data>().cardToClone;
+		if (cardToClone == cardPlay.Card)
+		{
+			GetInternalData<Data>().cardToClone = null;
 			Flash();
 			for (int i = 0; i < Amount; i++)
 			{

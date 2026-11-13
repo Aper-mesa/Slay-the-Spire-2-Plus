@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Godot;
 using MegaCrit.Sts2.Core.Models.Afflictions;
+using MegaCrit.Sts2.Core.Models.Dread;
+using MegaCrit.Sts2.Core.Models.Dread.Dominions;
 using MegaCrit.Sts2.Core.Models.Monsters;
 using MegaCrit.Sts2.Core.Rooms;
 
@@ -31,5 +33,10 @@ public sealed class CeremonialBeastBoss : EncounterModel
 	protected override IReadOnlyList<(MonsterModel, string?)> GenerateMonsters()
 	{
 		return new _003C_003Ez__ReadOnlySingleElementList<(MonsterModel, string)>((ModelDb.Monster<CeremonialBeast>().ToMutable(), null));
+	}
+
+	public override DominionModel GetDominion()
+	{
+		return ModelDb.Dominion<CeremonialBeastDominion>();
 	}
 }

@@ -33,7 +33,7 @@ public static class MapPathPruning
 
 	/// <summary>
 	/// After pruning removes nodes, some point types may fall below their target count.
-	/// This repairs the map by replacing monsters with the missing types.
+	/// This repairs the map by replacing monsters, then unknowns, with the missing types.
 	/// </summary>
 	/// <param name="map">The map to repair.</param>
 	/// <param name="pointTypeCounts">Target counts for each point type.</param>
@@ -51,7 +51,7 @@ public static class MapPathPruning
 
 	private static bool RepairPointType(ActMap map, MapPointType type, int targetCount, Rng rng, Func<MapPointType, MapPoint, bool> isValidPointType)
 	{
-		int num = map.GetAllMapPoints().Count((MapPoint p) => p.PointType == type);
+		int num = map.GetAllMapPoints().Count((MapPoint p) => p.PointType == type && p.CanBeModified);
 		int num2 = targetCount - num;
 		if (num2 <= 0)
 		{
@@ -62,6 +62,14 @@ public static class MapPathPruning
 			where p.PointType == MapPointType.Monster && p.CanBeModified
 			select p).ToList();
 		list.StableShuffle(rng);
+		if (type != MapPointType.Unknown)
+		{
+			List<MapPoint> list2 = (from p in map.GetAllMapPoints()
+				where p.PointType == MapPointType.Unknown && p.CanBeModified
+				select p).ToList();
+			list2.StableShuffle(rng);
+			list.AddRange(list2);
+		}
 		foreach (MapPoint item in list)
 		{
 			if (num2 == 0)

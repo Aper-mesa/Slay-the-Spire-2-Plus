@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Godot;
+using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Potions;
 using MegaCrit.Sts2.Core.Entities.Relics;
@@ -178,7 +179,7 @@ public abstract class EpochModel
 
 	private string PackedPortraitPath => ImageHelper.GetImagePath("atlases/epoch_atlas.sprites/" + Id.ToLowerInvariant() + ".tres");
 
-	public Texture2D RealPortrait => ResourceLoader.Load<Texture2D>(ResolvedPortraitPath, null, ResourceLoader.CacheMode.Reuse);
+	public Texture2D RealPortrait => PreloadManager.Cache.GetTexture2D(ResolvedPortraitPath);
 
 	public bool HasRealPortrait => ResourceLoader.Exists(RealPortraitPath);
 
@@ -231,7 +232,7 @@ public abstract class EpochModel
 
 	static EpochModel()
 	{
-		int num = 57;
+		int num = 66;
 		List<Type> list = new List<Type>(num);
 		CollectionsMarshal.SetCount(list, num);
 		Span<Type> span = CollectionsMarshal.AsSpan(list);
@@ -239,6 +240,8 @@ public abstract class EpochModel
 		span[num2] = typeof(Act2BEpoch);
 		num2++;
 		span[num2] = typeof(Act3BEpoch);
+		num2++;
+		span[num2] = typeof(BlitzEpoch);
 		num2++;
 		span[num2] = typeof(Colorless1Epoch);
 		num2++;
@@ -275,6 +278,22 @@ public abstract class EpochModel
 		span[num2] = typeof(Event2Epoch);
 		num2++;
 		span[num2] = typeof(Event3Epoch);
+		num2++;
+		span[num2] = typeof(DreadEpoch);
+		num2++;
+		span[num2] = typeof(Fool1Epoch);
+		num2++;
+		span[num2] = typeof(Fool2Epoch);
+		num2++;
+		span[num2] = typeof(Fool3Epoch);
+		num2++;
+		span[num2] = typeof(Fool4Epoch);
+		num2++;
+		span[num2] = typeof(Fool5Epoch);
+		num2++;
+		span[num2] = typeof(Fool6Epoch);
+		num2++;
+		span[num2] = typeof(Fool7Epoch);
 		num2++;
 		span[num2] = typeof(Ironclad2Epoch);
 		num2++;

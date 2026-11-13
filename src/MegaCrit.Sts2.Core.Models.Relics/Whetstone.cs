@@ -19,7 +19,7 @@ public sealed class Whetstone : RelicModel
 
 	public override Task AfterObtained()
 	{
-		IEnumerable<CardModel> enumerable = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => c != null && c.Type == CardType.Attack && c.IsUpgradable).ToList().StableShuffle(Owner.RunState.Rng.Niche)
+		IEnumerable<CardModel> enumerable = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => c != null && c.Type == CardType.Attack && c.IsUpgradable).ToList().StableShuffle(Owner.PlayerRng.NonCombatGeneration)
 			.Take(DynamicVars.Cards.IntValue);
 		foreach (CardModel item in enumerable)
 		{

@@ -23,7 +23,7 @@ public sealed class BeatDown : CardModel
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
 		CardPile pile = PileType.Discard.GetPile(Owner);
-		IEnumerable<CardModel> enumerable = pile.Cards.Where((CardModel c) => c.Type == CardType.Attack && !c.Keywords.Contains(CardKeyword.Unplayable)).ToList().StableShuffle(Owner.RunState.Rng.Shuffle)
+		IEnumerable<CardModel> enumerable = pile.Cards.Where((CardModel c) => c.Type == CardType.Attack && !c.Keywords.Contains(CardKeyword.Unplayable)).ToList().StableShuffle(Owner.RunState.Rng.CombatCardSelection)
 			.Take(DynamicVars.Cards.IntValue);
 		foreach (CardModel item in enumerable)
 		{

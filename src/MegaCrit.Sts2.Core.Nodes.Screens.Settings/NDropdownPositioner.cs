@@ -68,6 +68,7 @@ public class NDropdownPositioner : Control
 
 	private void OnVisibilityChange()
 	{
+		_dropdownNode.Visible = Visible;
 		if (Visible)
 		{
 			_dropdownNode.FocusNeighborBottom = FocusNeighborBottom;

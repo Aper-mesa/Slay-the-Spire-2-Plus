@@ -106,7 +106,7 @@ public class NCombatStartBanner : Control
 			.From(Vector2.One * 2f);
 		tween.TweenProperty(_label, "modulate:a", 0f, 1.0).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic)
 			.SetDelay(1.2999999523162842);
-		if (await tween.AwaitFinished(this))
+		if (await tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			GetParent().AddChildSafely(NPlayerTurnBanner.Create(1));
 			tween = CreateTween();

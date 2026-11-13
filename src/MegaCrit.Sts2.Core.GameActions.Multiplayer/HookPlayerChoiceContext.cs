@@ -35,6 +35,8 @@ public class HookPlayerChoiceContext : PlayerChoiceContext
 
 	private readonly TaskCompletionSource _pausedCompletionSource = new TaskCompletionSource();
 
+	private bool _dependenciesMocked;
+
 	private ActionQueueSynchronizer? _actionQueueSynchronizer;
 
 	private ActionQueueSet? _actionQueueSet;
@@ -52,19 +54,31 @@ public class HookPlayerChoiceContext : PlayerChoiceContext
 	/// them. Otherwise, we may run into ordering issues on remote players. For full context, see the
 	/// HookPlayerChoiceContextTest.
 	/// </summary>
-	private GameActionType _gameActionType;
+	private readonly GameActionType _gameActionType;
 
 	private ActionQueueSynchronizer ActionQueueSynchronizer => _actionQueueSynchronizer ?? RunManager.Instance.ActionQueueSynchronizer;
 
 	private ActionQueueSet ActionQueueSet => _actionQueueSet ?? RunManager.Instance.ActionQueueSet;
 
-	private ActionExecutor ActionExecutor => _actionExecutor ?? RunManager.Instance.ActionExecutor;
+	private ActionExecutor? ActionExecutor
+	{
+		get
+		{
+			if (!_dependenciesMocked)
+			{
+				return RunManager.Instance.ActionExecutor;
+			}
+			return _actionExecutor;
+		}
+	}
 
 	public AbstractModel? Source { get; }
 
 	public Task? Task { get; private set; }
 
 	public Player? Owner { get; }
+
+	public override GameActionType? GameActionType => _gameActionType;
 
 	public override ulong? OwnerId => Owner?.NetId;
 
@@ -131,6 +145,7 @@ public class HookPlayerChoiceContext : PlayerChoiceContext
 
 	public void MockDependenciesForTest(ActionQueueSynchronizer? actionQueueSynchronizer, ActionQueueSet? actionQueueSet, ActionExecutor? actionExecutor)
 	{
+		_dependenciesMocked = true;
 		_actionQueueSet = actionQueueSet;
 		_actionQueueSynchronizer = actionQueueSynchronizer;
 		_actionExecutor = actionExecutor;

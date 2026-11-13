@@ -193,7 +193,7 @@ public class NCardPileScreen : Control, ICapstoneScreen, IScreenContext
 		string[] closeHotkeys = _closeHotkeys;
 		foreach (string hotkey in closeHotkeys)
 		{
-			NHotkeyManager.Instance.PushHotkeyReleasedBinding(hotkey, NCapstoneContainer.Instance.Close);
+			NHotkeyManager.Instance.PushHotkeyReleasedBinding(hotkey, NCapstoneContainer.Instance.Close, 0L);
 		}
 	}
 
@@ -221,20 +221,23 @@ public class NCardPileScreen : Control, ICapstoneScreen, IScreenContext
 
 	private void OnPileContentsChanged()
 	{
-		List<CardModel> list = Pile.Cards.ToList();
+		IReadOnlyList<CardModel> readOnlyList = Pile.Cards;
 		if (Pile.Type == PileType.Draw)
 		{
-			list.Sort((CardModel c1, CardModel c2) => (c1.Rarity != c2.Rarity) ? c1.Rarity.CompareTo(c2.Rarity) : string.Compare(c1.Id.Entry, c2.Id.Entry, StringComparison.Ordinal));
+			readOnlyList = (from x in readOnlyList
+				orderby x.Rarity, x
+				select x).ToList();
 		}
 		NCardGrid grid = _grid;
+		IReadOnlyList<CardModel> cardsToDisplay = readOnlyList;
 		PileType type = Pile.Type;
 		int num = 1;
-		List<SortingOrders> list2 = new List<SortingOrders>(num);
-		CollectionsMarshal.SetCount(list2, num);
-		Span<SortingOrders> span = CollectionsMarshal.AsSpan(list2);
+		List<SortingOrders> list = new List<SortingOrders>(num);
+		CollectionsMarshal.SetCount(list, num);
+		Span<SortingOrders> span = CollectionsMarshal.AsSpan(list);
 		int index = 0;
 		span[index] = SortingOrders.Ascending;
-		grid.SetCards(list, type, list2);
+		grid.SetCards(cardsToDisplay, type, list);
 	}
 
 	private void OnReturnButtonPressed(NButton _)

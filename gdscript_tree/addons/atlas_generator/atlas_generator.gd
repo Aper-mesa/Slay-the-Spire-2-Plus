@@ -40,15 +40,15 @@ extends EditorPlugin
 
 const ATLAS_BASE_PATH: = "res://images/atlases/"
 const ATLAS_NAMES: = [
-	"relic_atlas", 
-	"relic_outline_atlas", 
-	"power_atlas", 
-	"card_atlas", 
-	"ui_atlas", 
-	"potion_atlas", 
-	"potion_outline_atlas", 
-	"era_atlas", 
-	"compressed"
+	"relic_atlas",
+	"relic_outline_atlas",
+	"power_atlas",
+	"card_atlas",
+	"ui_atlas",
+	"potion_atlas",
+	"potion_outline_atlas",
+	"era_atlas",
+	"compressed_atlas"
 ]
 
 func _enter_tree() -> void :

@@ -5,6 +5,7 @@ using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.ControllerInput;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.addons.mega_text;
 
@@ -73,11 +74,6 @@ public class NChoiceSelectionSkipButton : NButton
 		public static readonly StringName _label = "_label";
 
 		/// <summary>
-		/// Cached name for the '_optionName' field.
-		/// </summary>
-		public static readonly StringName _optionName = "_optionName";
-
-		/// <summary>
 		/// Cached name for the '_animInTween' field.
 		/// </summary>
 		public static readonly StringName _animInTween = "_animInTween";
@@ -126,8 +122,6 @@ public class NChoiceSelectionSkipButton : NButton
 
 	private MegaLabel _label;
 
-	private string? _optionName;
-
 	private Tween? _animInTween;
 
 	private Vector2 _showPosition;
@@ -150,6 +144,8 @@ public class NChoiceSelectionSkipButton : NButton
 
 	private static readonly Vector2 _downScale = Vector2.One * 0.95f;
 
+	private LocString Title => new LocString("card_reward_ui", "OPTION_SKIP.name");
+
 	protected override string[] Hotkeys => new string[1] { MegaInput.cancel };
 
 	public override void _Ready()
@@ -159,10 +155,7 @@ public class NChoiceSelectionSkipButton : NButton
 		_label = GetNode<MegaLabel>("Label");
 		_hsv = (ShaderMaterial)_image.Material;
 		_showPosition = Position;
-		if (_optionName != null)
-		{
-			_label.SetTextAutoSize(_optionName);
-		}
+		_label.SetTextAutoSize(Title.GetFormattedText());
 		_hotkeyIcon.UpdateInput(Hotkeys.First());
 	}
 
@@ -314,11 +307,6 @@ public class NChoiceSelectionSkipButton : NButton
 			_label = VariantUtils.ConvertTo<MegaLabel>(in value);
 			return true;
 		}
-		if (name == PropertyName._optionName)
-		{
-			_optionName = VariantUtils.ConvertTo<string>(in value);
-			return true;
-		}
 		if (name == PropertyName._animInTween)
 		{
 			_animInTween = VariantUtils.ConvertTo<Tween>(in value);
@@ -376,11 +364,6 @@ public class NChoiceSelectionSkipButton : NButton
 			value = VariantUtils.CreateFrom(in _label);
 			return true;
 		}
-		if (name == PropertyName._optionName)
-		{
-			value = VariantUtils.CreateFrom(in _optionName);
-			return true;
-		}
 		if (name == PropertyName._animInTween)
 		{
 			value = VariantUtils.CreateFrom(in _animInTween);
@@ -430,7 +413,6 @@ public class NChoiceSelectionSkipButton : NButton
 		List<PropertyInfo> list = new List<PropertyInfo>();
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._image, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._label, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.String, PropertyName._optionName, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._animInTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Vector2, PropertyName._showPosition, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._currentTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -449,7 +431,6 @@ public class NChoiceSelectionSkipButton : NButton
 		base.SaveGodotObjectData(info);
 		info.AddProperty(PropertyName._image, Variant.From(in _image));
 		info.AddProperty(PropertyName._label, Variant.From(in _label));
-		info.AddProperty(PropertyName._optionName, Variant.From(in _optionName));
 		info.AddProperty(PropertyName._animInTween, Variant.From(in _animInTween));
 		info.AddProperty(PropertyName._showPosition, Variant.From(in _showPosition));
 		info.AddProperty(PropertyName._currentTween, Variant.From(in _currentTween));
@@ -472,37 +453,33 @@ public class NChoiceSelectionSkipButton : NButton
 		{
 			_label = value2.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._optionName, out var value3))
+		if (info.TryGetProperty(PropertyName._animInTween, out var value3))
 		{
-			_optionName = value3.As<string>();
+			_animInTween = value3.As<Tween>();
 		}
-		if (info.TryGetProperty(PropertyName._animInTween, out var value4))
+		if (info.TryGetProperty(PropertyName._showPosition, out var value4))
 		{
-			_animInTween = value4.As<Tween>();
+			_showPosition = value4.As<Vector2>();
 		}
-		if (info.TryGetProperty(PropertyName._showPosition, out var value5))
+		if (info.TryGetProperty(PropertyName._currentTween, out var value5))
 		{
-			_showPosition = value5.As<Vector2>();
+			_currentTween = value5.As<Tween>();
 		}
-		if (info.TryGetProperty(PropertyName._currentTween, out var value6))
+		if (info.TryGetProperty(PropertyName._hsv, out var value6))
 		{
-			_currentTween = value6.As<Tween>();
+			_hsv = value6.As<ShaderMaterial>();
 		}
-		if (info.TryGetProperty(PropertyName._hsv, out var value7))
+		if (info.TryGetProperty(PropertyName._hsvDefault, out var value7))
 		{
-			_hsv = value7.As<ShaderMaterial>();
+			_hsvDefault = value7.As<Variant>();
 		}
-		if (info.TryGetProperty(PropertyName._hsvDefault, out var value8))
+		if (info.TryGetProperty(PropertyName._hsvHover, out var value8))
 		{
-			_hsvDefault = value8.As<Variant>();
+			_hsvHover = value8.As<Variant>();
 		}
-		if (info.TryGetProperty(PropertyName._hsvHover, out var value9))
+		if (info.TryGetProperty(PropertyName._hsvDown, out var value9))
 		{
-			_hsvHover = value9.As<Variant>();
-		}
-		if (info.TryGetProperty(PropertyName._hsvDown, out var value10))
-		{
-			_hsvDown = value10.As<Variant>();
+			_hsvDown = value9.As<Variant>();
 		}
 	}
 }

@@ -109,6 +109,9 @@ public class SerializableRun : ISaveSchema, IPacketSerializable
 	[JsonPropertyName("game_mode")]
 	public GameMode GameMode { get; set; }
 
+	[JsonPropertyName("is_custom_game")]
+	public bool IsCustomGame { get; set; }
+
 	/// <summary>
 	/// The furthest floor count reached during this run.
 	/// Used when uploading the "floor" value when uploading to the daily leaderboards.
@@ -156,6 +159,7 @@ public class SerializableRun : ISaveSchema, IPacketSerializable
 		}
 		writer.Write(ExtraFields);
 		writer.WriteInt(NumReloads);
+		writer.WriteBool(IsCustomGame);
 	}
 
 	public void Deserialize(PacketReader reader)
@@ -196,6 +200,7 @@ public class SerializableRun : ISaveSchema, IPacketSerializable
 		}
 		ExtraFields = reader.Read<SerializableExtraRunFields>();
 		NumReloads = reader.ReadInt();
+		IsCustomGame = reader.ReadBool();
 	}
 
 	public SerializableRun Anonymized()

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Daily;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
@@ -13,12 +14,11 @@ using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Multiplayer.Game.PeerInput;
 using MegaCrit.Sts2.Core.Multiplayer.Messages.Lobby;
 using MegaCrit.Sts2.Core.Nodes;
-using MegaCrit.Sts2.Core.Nodes.CommonUi;
-using MegaCrit.Sts2.Core.Nodes.Ftue;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
+using MegaCrit.Sts2.Core.Timeline;
 using MegaCrit.Sts2.Core.Timeline.Epochs;
 using MegaCrit.Sts2.Core.Unlocks;
 
@@ -91,7 +91,9 @@ public class StartRunLobby
 
 	public TimeServerResult? DailyTime { get; private set; }
 
-	public GameMode GameMode { get; private set; }
+	public GameMode GameMode { get; set; }
+
+	public bool IsCustom { get; private set; }
 
 	public IReadOnlyList<ModifierModel> Modifiers => _modifiers;
 
@@ -119,9 +121,10 @@ public class StartRunLobby
 	/// </summary>
 	public event Action<ulong, NetErrorInfo>? PlayerFailedToConnect;
 
-	public StartRunLobby(GameMode gameMode, INetGameService netService, IStartRunLobbyListener lobbyListener, int maxPlayers)
+	public StartRunLobby(GameMode gameMode, bool isCustom, INetGameService netService, IStartRunLobbyListener lobbyListener, int maxPlayers)
 	{
 		GameMode = gameMode;
+		IsCustom = isCustom;
 		NetService = netService;
 		LobbyListener = lobbyListener;
 		_maxPlayers = maxPlayers;
@@ -136,6 +139,7 @@ public class StartRunLobby
 		NetService.RegisterMessageHandler<LobbyAscensionChangedMessage>(HandleAscensionChangedMessage);
 		NetService.RegisterMessageHandler<LobbySeedChangedMessage>(HandleSeedChangedMessage);
 		NetService.RegisterMessageHandler<LobbyModifiersChangedMessage>(HandleModifiersChangedMessage);
+		NetService.RegisterMessageHandler<LobbyGameModeChangedMessage>(HandleGameModeChangedMessage);
 		NetService.RegisterMessageHandler<LobbyPlayerSetReadyMessage>(HandlePlayerReadyMessage);
 		NetService.RegisterMessageHandler<LobbyBeginRunMessage>(HandleLobbyBeginRunMessage);
 		NetService.Disconnected += OnDisconnected;
@@ -148,8 +152,8 @@ public class StartRunLobby
 		}
 	}
 
-	public StartRunLobby(GameMode gameMode, INetGameService netService, IStartRunLobbyListener lobbyListener, TimeServerResult timeServerResult, int maxPlayers)
-		: this(gameMode, netService, lobbyListener, maxPlayers)
+	public StartRunLobby(GameMode gameMode, bool isCustom, INetGameService netService, IStartRunLobbyListener lobbyListener, TimeServerResult timeServerResult, int maxPlayers)
+		: this(gameMode, isCustom, netService, lobbyListener, maxPlayers)
 	{
 		DailyTime = timeServerResult;
 	}
@@ -163,7 +167,9 @@ public class StartRunLobby
 		_modifiers.Clear();
 		_modifiers.AddRange(message.modifiers.Select(ModifierModel.FromSerializable));
 		Ascension = message.ascension;
-		UpdateMaxMultiplayerAscension();
+		GameMode = message.gameMode;
+		IsCustom = message.isCustom;
+		UpdateMaxSharedAscension();
 		Seed = message.seed;
 		LobbyListener.PlayerConnected(LocalPlayer);
 		PlayerConnected?.Invoke(LocalPlayer);
@@ -211,7 +217,7 @@ public class StartRunLobby
 	/// <summary>
 	/// Should be called when the lobby opens on the host player's side to generate the host's lobby player.
 	/// </summary>
-	public StartRunLobbyPlayer? AddLocalHostPlayer(UnlockState unlocks, int maxMultiplayerAscension)
+	public StartRunLobbyPlayer? AddLocalHostPlayer(UnlockState unlocks, int maxStandardAscension, int maxBlitzAscension)
 	{
 		if (NetService.Type == NetGameType.Client)
 		{
@@ -219,22 +225,46 @@ public class StartRunLobby
 		}
 		_logger.Context = $"{"StartRunLobby"} ({NetService.NetId})";
 		SerializableUnlockState unlockState = unlocks.ToSerializable();
-		return AddLocalHostPlayerInternal(unlockState, maxMultiplayerAscension);
+		return AddLocalHostPlayerInternal(unlockState, maxStandardAscension, maxBlitzAscension);
 	}
 
 	/// <summary>
 	/// For use in tests and internally in this class.
 	/// </summary>
-	public StartRunLobbyPlayer? AddLocalHostPlayerInternal(SerializableUnlockState unlockState, int maxMultiplayerAscension)
+	public StartRunLobbyPlayer? AddLocalHostPlayerInternal(SerializableUnlockState unlockState, int maxStandardAscension, int maxBlitzAscension)
 	{
-		StartRunLobbyPlayer? result = TryAddPlayerInFirstAvailableSlot(unlockState, maxMultiplayerAscension, NetService.LocalVersion.IsModded(), NetService.NetId);
+		StartRunLobbyPlayer? result = TryAddPlayerInFirstAvailableSlot(unlockState, maxStandardAscension, maxBlitzAscension, NetService.LocalVersion.IsModded(), NetService.NetId);
 		if (result.HasValue)
 		{
 			LobbyListener.PlayerConnected(result.Value);
 			PlayerConnected?.Invoke(result.Value);
 		}
-		UpdateMaxMultiplayerAscension();
+		UpdateMaxSharedAscension();
 		return result;
+	}
+
+	/// <summary>
+	/// Admits clients that finished the handshake before this lobby existed. A daily run starts hosting before it
+	/// can build its lobby, because the lobby needs the time server's answer first. A player who joins in that
+	/// window finishes the handshake with nothing listening to <see cref="E:MegaCrit.Sts2.Core.Multiplayer.Game.INetHostGameService.ClientConnected" />,
+	/// so without this they would wait for an initial game info message that never gets sent.
+	/// Call this once, after the local host player is added.
+	/// </summary>
+	public void AdmitClientsConnectedBeforeLobbyExisted()
+	{
+		if (NetService.Type != NetGameType.Host)
+		{
+			return;
+		}
+		INetHostGameService netHostGameService = (INetHostGameService)NetService;
+		foreach (NetClientData peer in netHostGameService.ConnectedPeers.ToList())
+		{
+			if (!_connectingPlayers.Any((ConnectingPlayer p) => p.id == peer.peerId) && !Players.Any((StartRunLobbyPlayer p) => p.id == peer.peerId))
+			{
+				_logger.Info($"Client {peer.peerId} connected before the lobby existed. Admitting them now.");
+				OnConnectedToClientAsHost(peer.peerId);
+			}
+		}
 	}
 
 	private void HandleClientLobbyJoinRequestMessage(ClientLobbyJoinRequestMessage message, ulong senderId)
@@ -253,17 +283,34 @@ public class StartRunLobby
 				return;
 			}
 			_logger.Info($"Received ClientLobbyJoinRequestMessage for {senderId}");
-			StartRunLobbyPlayer? startRunLobbyPlayer = TryAddPlayerInFirstAvailableSlot(message.unlockState, message.maxAscensionUnlocked, netHostGameService.GetVersionInfoForPeer(senderId).Value.IsModded(), senderId);
+			if (!IsCustom)
+			{
+				if (GameMode == GameMode.Dread && !message.unlockState.UnlockedEpochs.Contains(EpochModel.GetId<DreadEpoch>()))
+				{
+					_logger.Info($"Client {senderId} tried to join a Dread lobby without the Dread epoch unlocked. Disconnecting client.");
+					netHostGameService.DisconnectClient(senderId, NetError.DreadNotUnlocked);
+					return;
+				}
+				if (GameMode == GameMode.Blitz && !message.unlockState.UnlockedEpochs.Contains(EpochModel.GetId<BlitzEpoch>()))
+				{
+					_logger.Info($"Client {senderId} tried to join a Blitz lobby without the Blitz epoch unlocked. Disconnecting client.");
+					netHostGameService.DisconnectClient(senderId, NetError.BlitzNotUnlocked);
+					return;
+				}
+			}
+			StartRunLobbyPlayer? startRunLobbyPlayer = TryAddPlayerInFirstAvailableSlot(message.unlockState, message.maxStandardAscension, message.maxBlitzAscension, netHostGameService.GetVersionInfoForPeer(senderId)?.IsModded() ?? false, senderId);
 			if (!startRunLobbyPlayer.HasValue)
 			{
 				return;
 			}
-			UpdateMaxMultiplayerAscension();
+			UpdateMaxSharedAscension();
 			ClientLobbyJoinResponseMessage message2 = new ClientLobbyJoinResponseMessage
 			{
 				playersInLobby = Players,
 				ascension = Ascension,
 				dailyTime = DailyTime,
+				gameMode = GameMode,
+				isCustom = IsCustom,
 				seed = Seed,
 				modifiers = Modifiers.Select((ModifierModel m) => m.ToSerializable()).ToList()
 			};
@@ -292,16 +339,27 @@ public class StartRunLobby
 		}
 	}
 
-	private void UpdateMaxMultiplayerAscension()
+	/// <summary>
+	/// Updates the max ascension in Blitz and multiplayer.
+	/// In Blitz, ascensions are shared across all characters.
+	/// In multiplayer, the party is limited to the lowest Ascension any member has unlocked. A player with a higher
+	/// unlock cannot raise that limit, and after a win only the members who were on their own maximum advance. See
+	/// <see cref="M:MegaCrit.Sts2.Core.Saves.Managers.ProgressSaveManager.IncrementMultiplayerAscension(MegaCrit.Sts2.Core.Saves.SerializableRun)" />.
+	/// </summary>
+	private void UpdateMaxSharedAscension(bool sync = true)
 	{
-		int num = Players.Min((StartRunLobbyPlayer p) => p.maxMultiplayerAscensionUnlocked);
+		if (!NetService.Type.IsMultiplayer() && GameMode != GameMode.Blitz)
+		{
+			return;
+		}
+		int num = Players.Min((StartRunLobbyPlayer p) => (GameMode != GameMode.Blitz) ? p.maxStandardAscension : p.maxBlitzAscension);
 		if (num != MaxAscension)
 		{
 			MaxAscension = num;
 			LobbyListener.MaxAscensionChanged();
 			if (Ascension > MaxAscension && NetService.Type == NetGameType.Host)
 			{
-				SyncAscensionChange(MaxAscension);
+				SetAscensionInternal(MaxAscension, sync);
 			}
 		}
 	}
@@ -334,7 +392,7 @@ public class StartRunLobby
 		Players.Add(message.lobbyPlayer);
 		LobbyListener.PlayerConnected(message.lobbyPlayer);
 		PlayerConnected?.Invoke(message.lobbyPlayer);
-		UpdateMaxMultiplayerAscension();
+		UpdateMaxSharedAscension();
 	}
 
 	private void HandlePlayerLeftMessage(PlayerLeftMessage message, ulong senderId)
@@ -353,8 +411,8 @@ public class StartRunLobby
 
 	private void HandleLobbyPlayerChangedCharacterMessage(LobbyPlayerChangedCharacterMessage message, ulong senderId)
 	{
-		_logger.Debug($"Received LobbyPlayerChangedCharacterMessage for {senderId} {message.character}");
-		ChangeCharacter(senderId, message.character);
+		_logger.Debug($"Received LobbyPlayerChangedCharacterMessage for {senderId} ({message.character}). Is rotating: {message.isRotatingDread}");
+		ChangeCharacter(senderId, message.character, message.isRotatingDread);
 	}
 
 	private void HandleAscensionChangedMessage(LobbyAscensionChangedMessage message, ulong _)
@@ -398,6 +456,22 @@ public class StartRunLobby
 		}
 	}
 
+	private void HandleGameModeChangedMessage(LobbyGameModeChangedMessage message, ulong _)
+	{
+		_logger.Debug($"Received GameModeChangedMessage: {message.gameMode}");
+		if (_isBeginningRun)
+		{
+			Log.Warn($"Received GameModeChangedMessage with {message.gameMode} while run was already starting! Ignoring");
+		}
+		else
+		{
+			GameMode = message.gameMode;
+			Ascension = message.ascension;
+			MaxAscension = message.maxAscension;
+			LobbyListener.GameModeChanged();
+		}
+	}
+
 	private void HandlePlayerReadyMessage(LobbyPlayerSetReadyMessage message, ulong senderId)
 	{
 		_logger.Debug($"Received LobbyPlayerSetReadyMessage for player {senderId} with value {message.ready}");
@@ -407,7 +481,7 @@ public class StartRunLobby
 			StartRunLobbyPlayer startRunLobbyPlayer = Players[num];
 			startRunLobbyPlayer.isReady = message.ready;
 			Players[num] = startRunLobbyPlayer;
-			LobbyListener.PlayerChanged(startRunLobbyPlayer, isRandomCharacterResolution: false);
+			LobbyListener.PlayerChanged(startRunLobbyPlayer);
 			BeginRunForAllPlayersIfAllReady();
 		}
 	}
@@ -421,7 +495,7 @@ public class StartRunLobby
 		BeginRunLocally(message.seed, message.modifiers.Select(ModifierModel.FromSerializable).ToList());
 	}
 
-	private void ChangeCharacter(ulong playerId, CharacterModel character, bool isRandomCharacterResolution = false)
+	private void ChangeCharacter(ulong playerId, CharacterModel character, bool isRotatingDread)
 	{
 		if (_isBeginningRun)
 		{
@@ -433,8 +507,9 @@ public class StartRunLobby
 		{
 			StartRunLobbyPlayer startRunLobbyPlayer = Players[num];
 			startRunLobbyPlayer.character = character;
+			startRunLobbyPlayer.isRotatingDread = isRotatingDread;
 			Players[num] = startRunLobbyPlayer;
-			LobbyListener.PlayerChanged(startRunLobbyPlayer, isRandomCharacterResolution);
+			LobbyListener.PlayerChanged(startRunLobbyPlayer);
 		}
 	}
 
@@ -474,13 +549,18 @@ public class StartRunLobby
 		for (int i = 0; i < Players.Count; i++)
 		{
 			StartRunLobbyPlayer startRunLobbyPlayer = Players[i];
-			if (startRunLobbyPlayer.character is RandomCharacter)
+			CharacterModel character = startRunLobbyPlayer.character;
+			if ((character is RandomCharacter || character is RotatingCharacter) ? true : false)
 			{
-				CharacterModel character = rng.NextItem(ModelDb.AllCharacters);
-				ChangeCharacter(startRunLobbyPlayer.id, character, isRandomCharacterResolution: true);
+				if (GameMode == GameMode.Dread)
+				{
+					throw new InvalidOperationException("Random or rotating character selected in Dread! This should never happen.");
+				}
+				CharacterModel character2 = rng.NextItem(ModelDb.AllCharacters);
+				ChangeCharacter(startRunLobbyPlayer.id, character2, isRotatingDread: false);
 			}
 		}
-		if (NetService.Type == NetGameType.Singleplayer)
+		if (NetService.Type == NetGameType.Singleplayer && GameMode != GameMode.Blitz)
 		{
 			CharacterStats orCreateCharacterStats = SaveManager.Instance.Progress.GetOrCreateCharacterStats(Players[0].character.Id);
 			int num = Math.Min(Ascension, orCreateCharacterStats.MaxAscension);
@@ -513,9 +593,9 @@ public class StartRunLobby
 		return ModelDb.Act<Overgrowth>();
 	}
 
-	private void SetSingleplayerAscensionAfterCharacterChanged(ModelId characterId)
+	private void SetSingleplayerAscensionAfterCharacterChanged(ModelId characterId, bool sync = true)
 	{
-		if (NetService.Type.IsMultiplayer())
+		if (NetService.Type.IsMultiplayer() || GameMode == GameMode.Blitz || GameMode == GameMode.Dread)
 		{
 			return;
 		}
@@ -524,14 +604,14 @@ public class StartRunLobby
 		if (characterId == ModelDb.GetId<RandomCharacter>())
 		{
 			MaxAscension = GetMaxAscensionAcrossAllCharacters();
-			SyncAscensionChange(Math.Min(orCreateCharacterStats.PreferredAscension, MaxAscension));
+			SetAscensionInternal(Math.Min(orCreateCharacterStats.PreferredAscension, MaxAscension), sync);
 			LobbyListener.MaxAscensionChanged();
 			_logger.Info($"{characterId} ascension set to Max: {Ascension}");
 		}
 		else if (orCreateCharacterStats == null || orCreateCharacterStats.MaxAscension <= 0 || !flag)
 		{
 			MaxAscension = 0;
-			SyncAscensionChange(0);
+			SetAscensionInternal(0, sync);
 			LobbyListener.MaxAscensionChanged();
 			if (!flag)
 			{
@@ -545,21 +625,13 @@ public class StartRunLobby
 		else
 		{
 			MaxAscension = orCreateCharacterStats.MaxAscension;
-			SyncAscensionChange(Math.Min(orCreateCharacterStats.PreferredAscension, orCreateCharacterStats.MaxAscension));
+			SetAscensionInternal(Math.Min(orCreateCharacterStats.PreferredAscension, orCreateCharacterStats.MaxAscension), sync);
 			LobbyListener.MaxAscensionChanged();
 			_logger.Info($"{characterId} ascension set to preferred: {Ascension}");
 		}
-		if (GameMode == GameMode.Standard && GetMaxAscensionAcrossAllCharacters() > 0 && !SaveManager.Instance.SeenPopup("ascension_singleplayer_ftue"))
-		{
-			NAscensionSingleplayerFtue nAscensionSingleplayerFtue = NAscensionSingleplayerFtue.Create();
-			if (nAscensionSingleplayerFtue != null)
-			{
-				NModalContainer.Instance.Add(nAscensionSingleplayerFtue);
-			}
-		}
 	}
 
-	private int GetMaxAscensionAcrossAllCharacters()
+	public int GetMaxAscensionAcrossAllCharacters()
 	{
 		int num = 0;
 		foreach (CharacterStats value in SaveManager.Instance.Progress.CharacterStats.Values)
@@ -591,19 +663,34 @@ public class StartRunLobby
 		{
 			return SaveManager.Instance.IsEpochRevealed<Necrobinder4Epoch>();
 		}
+		if (characterId == ModelDb.GetId<Fool>())
+		{
+			return SaveManager.Instance.IsEpochRevealed<Fool4Epoch>();
+		}
 		return true;
 	}
 
 	/// <summary>
-	/// Updates the preferred Ascension.
+	/// Updates the preferred Ascension. Does nothing for Daily and Dread.
 	/// </summary>
 	private void UpdatePreferredAscension()
 	{
-		if (GameMode == GameMode.Daily)
+		GameMode gameMode = GameMode;
+		if ((uint)(gameMode - 2) <= 1u)
 		{
 			return;
 		}
-		if (NetService.Type == NetGameType.Singleplayer)
+		if (GameMode == GameMode.Blitz && NetService.Type != NetGameType.Client)
+		{
+			ProgressState progress = SaveManager.Instance.Progress;
+			if (progress.PreferredBlitzAscension != Ascension)
+			{
+				_logger.Info($"Setting preferred blitz ascension to {Ascension}");
+				progress.PreferredBlitzAscension = Ascension;
+				SaveManager.Instance.SaveProgressFile();
+			}
+		}
+		else if (NetService.Type == NetGameType.Singleplayer)
 		{
 			if (Players.Count != 0)
 			{
@@ -618,11 +705,11 @@ public class StartRunLobby
 		}
 		else if (NetService.Type == NetGameType.Host)
 		{
-			ProgressState progress = SaveManager.Instance.Progress;
-			if (progress.PreferredMultiplayerAscension != Ascension)
+			ProgressState progress2 = SaveManager.Instance.Progress;
+			if (progress2.PreferredMultiplayerAscension != Ascension)
 			{
 				_logger.Info($"Setting preferred multiplayer ascension to {Ascension}");
-				progress.PreferredMultiplayerAscension = Ascension;
+				progress2.PreferredMultiplayerAscension = Ascension;
 				SaveManager.Instance.SaveProgressFile();
 			}
 		}
@@ -631,13 +718,16 @@ public class StartRunLobby
 	/// <summary>
 	/// Sets the character chosen by the local player and replicates that to all peers.
 	/// </summary>
-	/// <param name="character"></param>
-	public void SetLocalCharacter(CharacterModel character)
+	/// <param name="character">The character the player is now playing as.</param>
+	/// <param name="isRotatingDread">If playing dread and the local player is doing a rotating streak (either beginning
+	/// or continuing one), then this should be set to true so that state is saved correctly.</param>
+	public void SetLocalCharacter(CharacterModel character, bool isRotatingDread = false)
 	{
-		ChangeCharacter(NetService.NetId, character);
+		ChangeCharacter(NetService.NetId, character, isRotatingDread);
 		LobbyPlayerChangedCharacterMessage message = new LobbyPlayerChangedCharacterMessage
 		{
-			character = character
+			character = character,
+			isRotatingDread = isRotatingDread
 		};
 		NetService.SendMessage(message);
 		SetSingleplayerAscensionAfterCharacterChanged(character.Id);
@@ -694,6 +784,53 @@ public class StartRunLobby
 	}
 
 	/// <summary>
+	/// Sets the game mode that will be played during the run, replicating it to peers.
+	/// </summary>
+	public void SetGameMode(GameMode gameMode)
+	{
+		NetGameType type = NetService.Type;
+		if ((uint)(type - 1) > 1u)
+		{
+			throw new InvalidOperationException("Can only be called on host or singleplayer");
+		}
+		if (_isBeginningRun)
+		{
+			Log.Warn("Tried to change game mode while run was already starting! Ignoring");
+			return;
+		}
+		GameMode = gameMode;
+		if (GameMode == GameMode.Dread)
+		{
+			MaxAscension = 10;
+			Ascension = MaxAscension;
+		}
+		else if (NetService.Type.IsMultiplayer() || GameMode == GameMode.Blitz)
+		{
+			if (GameMode == GameMode.Blitz)
+			{
+				Ascension = SaveManager.Instance.Progress.PreferredBlitzAscension;
+			}
+			else
+			{
+				Ascension = SaveManager.Instance.Progress.PreferredMultiplayerAscension;
+			}
+			UpdateMaxSharedAscension(sync: false);
+		}
+		else
+		{
+			SetSingleplayerAscensionAfterCharacterChanged(LocalPlayer.character.Id, sync: false);
+		}
+		LobbyGameModeChangedMessage message = new LobbyGameModeChangedMessage
+		{
+			gameMode = gameMode,
+			ascension = Ascension,
+			maxAscension = MaxAscension
+		};
+		NetService.SendMessage(message);
+		LobbyListener.GameModeChanged();
+	}
+
+	/// <summary>
 	/// Sets the local player to be ready or unready and syncs the state to all peers.
 	/// This is called for both Singleplayer and Multiplayer (singleplayer uses a local lobby).
 	/// </summary>
@@ -718,7 +855,7 @@ public class StartRunLobby
 			ready = ready
 		};
 		NetService.SendMessage(message);
-		LobbyListener.PlayerChanged(LocalPlayer, isRandomCharacterResolution: false);
+		LobbyListener.PlayerChanged(LocalPlayer);
 		_logger.Info($"Local player {LocalPlayer.id} is ready");
 		BeginRunForAllPlayersIfAllReady();
 	}
@@ -770,27 +907,39 @@ public class StartRunLobby
 		{
 			throw new InvalidOperationException("Client attempted to change ascension level!");
 		}
-		if (Ascension != ascension)
+		if (_isBeginningRun)
 		{
-			if (_isBeginningRun)
+			Log.Warn($"Tried to set ascension to {ascension} while run was already starting! Ignoring");
+		}
+		else
+		{
+			SetAscensionInternal(ascension);
+		}
+	}
+
+	private void SetAscensionInternal(int ascension, bool sync = true)
+	{
+		if (Ascension == ascension)
+		{
+			return;
+		}
+		Ascension = ascension;
+		if (sync)
+		{
+			if (NetService.IsConnected)
 			{
-				Log.Warn($"Tried to set ascension to {ascension} while run was already starting! Ignoring");
-			}
-			else
-			{
-				Ascension = ascension;
 				LobbyAscensionChangedMessage message = new LobbyAscensionChangedMessage
 				{
 					ascension = ascension
 				};
 				NetService.SendMessage(message);
-				UpdatePreferredAscension();
-				LobbyListener.AscensionChanged();
 			}
+			UpdatePreferredAscension();
+			LobbyListener.AscensionChanged();
 		}
 	}
 
-	private StartRunLobbyPlayer? TryAddPlayerInFirstAvailableSlot(SerializableUnlockState unlockState, int maxAscensionUnlocked, bool isModded, ulong playerId)
+	private StartRunLobbyPlayer? TryAddPlayerInFirstAvailableSlot(SerializableUnlockState unlockState, int maxStandardAscension, int maxBlitzAscension, bool isModded, ulong playerId)
 	{
 		int num = -1;
 		int i;
@@ -812,7 +961,8 @@ public class StartRunLobby
 			character = ModelDb.Character<Ironclad>(),
 			id = playerId,
 			slotId = num,
-			maxMultiplayerAscensionUnlocked = maxAscensionUnlocked,
+			maxBlitzAscension = maxBlitzAscension,
+			maxStandardAscension = maxStandardAscension,
 			unlockState = unlockState,
 			isModded = isModded
 		};
@@ -825,8 +975,7 @@ public class StartRunLobby
 		_logger.Info($"Client {playerId} connected. Sending initial game info message");
 		InitialGameInfoMessage message = new InitialGameInfoMessage
 		{
-			sessionState = RunSessionState.InLobby,
-			gameMode = GameMode
+			sessionState = RunSessionState.InLobby
 		};
 		if (_isBeginningRun)
 		{
@@ -877,21 +1026,46 @@ public class StartRunLobby
 		int num = Players.FindIndex((StartRunLobbyPlayer p) => p.id == playerId);
 		if (num < 0)
 		{
-			_logger.Info($"Player {playerId} not found in players list. Assuming they disconnected before sending the initial message response");
-			return;
+			_logger.Info($"Player {playerId} not found in players list. Assuming they disconnected before fully finishing connection");
+			if ((object)info.ConnectionExtraInfo == null)
+			{
+				ConnectionFailureExtraInfo connectionFailureExtraInfo = new ConnectionFailureExtraInfo
+				{
+					localIsHost = true
+				};
+				ConnectionFailureExtraInfo connectionFailureExtraInfo2 = connectionFailureExtraInfo;
+				info.ConnectionExtraInfo = connectionFailureExtraInfo;
+			}
+			OnClientConnectionFailed(playerId, info);
 		}
-		StartRunLobbyPlayer startRunLobbyPlayer = Players[num];
-		PlayerLeftMessage message = new PlayerLeftMessage
+		else
 		{
-			playerId = playerId
-		};
-		NetService.SendMessage(message);
-		Players.RemoveAt(num);
-		InputSynchronizer.OnPlayerDisconnected(startRunLobbyPlayer.id);
-		LobbyListener.RemotePlayerDisconnected(startRunLobbyPlayer);
-		PlayerDisconnected?.Invoke(startRunLobbyPlayer);
-		UpdateMaxMultiplayerAscension();
-		BeginRunForAllPlayersIfAllReady();
+			StartRunLobbyPlayer startRunLobbyPlayer = Players[num];
+			PlayerLeftMessage message = new PlayerLeftMessage
+			{
+				playerId = playerId
+			};
+			NetService.SendMessage(message);
+			Players.RemoveAt(num);
+			InputSynchronizer.OnPlayerDisconnected(startRunLobbyPlayer.id);
+			LobbyListener.RemotePlayerDisconnected(startRunLobbyPlayer);
+			PlayerDisconnected?.Invoke(startRunLobbyPlayer);
+			UpdateMaxSharedAscension();
+			BeginRunForAllPlayersIfAllReady();
+		}
+	}
+
+	public List<Player> GeneratePlayers(string seed)
+	{
+		List<Player> list = new List<Player>();
+		for (int i = 0; i < Players.Count; i++)
+		{
+			StartRunLobbyPlayer startRunLobbyPlayer = Players[i];
+			Player player = Player.CreateForNewRun(startRunLobbyPlayer.character, UnlockState.FromSerializable(startRunLobbyPlayer.unlockState), startRunLobbyPlayer.id);
+			player.ExtraFields.IsPlayingRotatingCharacter = startRunLobbyPlayer.isRotatingDread;
+			list.Add(player);
+		}
+		return list;
 	}
 
 	private void OnClientConnectionFailed(ulong playerId, NetErrorInfo info)

@@ -18,6 +18,8 @@ public sealed class SicEmPower : PowerModel
 
 	public override PowerStackType StackType => PowerStackType.Counter;
 
+	public override PowerInstanceType InstanceType => PowerInstanceType.InstancedPerApplier;
+
 	protected override IEnumerable<IHoverTip> ExtraHoverTips => new _003C_003Ez__ReadOnlySingleElementList<IHoverTip>(HoverTipFactory.Static(StaticHoverTip.SummonStatic));
 
 	public override async Task AfterDamageGiven(PlayerChoiceContext choiceContext, Creature? dealer, DamageResult result, ValueProp props, Creature target, CardModel? cardSource)

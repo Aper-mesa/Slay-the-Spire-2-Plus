@@ -272,7 +272,7 @@ public class EventRoomHandler : IRoomHandler, IHandler
 			{
 				int childCount = eventRoom.GetChildCount();
 				AutoSlayLog.Info($"Waiting for event options: {childCount} children in event room");
-				AutoSlayer.CurrentWatchdog?.Reset("Waiting for event options to load");
+				Watchdog.Current?.Reset("Waiting for event options to load");
 			}
 			return UiHelper.FindAll<NEventOptionButton>(eventRoom).Count > 0;
 		}, ct, TimeSpan.FromSeconds(30L), "Event options not loaded");
@@ -326,7 +326,7 @@ public class EventRoomHandler : IRoomHandler, IHandler
 				continue;
 			}
 			AutoSlayLog.Info($"Clicking Ancient dialogue (click {clicks + 1})");
-			AutoSlayer.CurrentWatchdog?.Reset("Clicking Ancient event dialogue");
+			Watchdog.Current?.Reset("Clicking Ancient event dialogue");
 			nodeOrNull.EmitSignal(NClickableControl.SignalName.Released, nodeOrNull);
 			clicks++;
 			await Task.Delay(500, ct);

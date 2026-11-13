@@ -35,7 +35,9 @@ public class MegaSkeletonDataResource : MegaSpineBinding
 	/// </summary>
 	public bool HasAnimation(string animName)
 	{
-		return Call("find_animation", animName).AsGodotObject() != null;
+		using Variant variant = Call("find_animation", animName);
+		using GodotObject godotObject = variant.AsGodotObject();
+		return godotObject != null;
 	}
 
 	/// <summary>
@@ -45,11 +47,13 @@ public class MegaSkeletonDataResource : MegaSpineBinding
 	/// </summary>
 	public IReadOnlyList<string> GetAnimationNames()
 	{
-		Array<GodotObject> array = (Array<GodotObject>)Call("get_animations");
+		using Variant variant = Call("get_animations");
+		using Array array = variant.AsGodotArray();
 		List<string> list = new List<string>(array.Count);
-		foreach (GodotObject item in array)
+		for (int i = 0; i < array.Count; i++)
 		{
-			MegaAnimation megaAnimation = new MegaAnimation(item);
+			using Variant native = array[i];
+			using MegaAnimation megaAnimation = new MegaAnimation(native);
 			list.Add(megaAnimation.GetName());
 		}
 		return list;

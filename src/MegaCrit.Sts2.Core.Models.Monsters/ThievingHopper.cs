@@ -53,18 +53,7 @@ public sealed class ThievingHopper : MonsterModel
 			}
 			return flag2;
 		},
-		(CardModel c) =>
-		{
-			bool flag = !(c.Enchantment is Imbued);
-			bool flag2 = flag;
-			if (flag2)
-			{
-				CardRarity rarity = c.Rarity;
-				bool flag3 = ((rarity == CardRarity.Basic || rarity == CardRarity.Quest) ? true : false);
-				flag2 = flag3;
-			}
-			return flag2;
-		},
+		(CardModel c) => !(c.Enchantment is Imbued) && c.Rarity == CardRarity.Basic,
 		(CardModel c) => c.Rarity == CardRarity.Ancient || c.Enchantment is Imbued
 	};
 
@@ -205,7 +194,7 @@ public sealed class ThievingHopper : MonsterModel
 				continue;
 			}
 			List<CardModel> list = (from c in CardPile.GetCards(target.Player ?? target.PetOwner, PileType.Draw, PileType.Discard)
-				where c.DeckVersion != null
+				where c.DeckVersion != null && c.Rarity != CardRarity.Quest
 				select c).ToList();
 			IEnumerable<CardModel> enumerable = list;
 			Func<CardModel, bool>[] stealPriorities = _stealPriorities;
@@ -220,7 +209,7 @@ public sealed class ThievingHopper : MonsterModel
 			}
 			if (enumerable.Any())
 			{
-				CardModel cardToSteal = RunRng.CombatCardGeneration.NextItem(enumerable);
+				CardModel cardToSteal = RunRng.CombatCardSelection.NextItem(enumerable);
 				await CardPileCmd.RemoveFromCombat(cardToSteal);
 				cardsToSteal.Add(cardToSteal);
 			}
@@ -276,7 +265,9 @@ public sealed class ThievingHopper : MonsterModel
 
 	private async Task EscapeMove(IReadOnlyList<Creature> targets)
 	{
-		NCombatRoom.Instance?.GetCreatureNode(Creature)?.ToggleIsInteractable(on: false);
+		NCreature creatureNode = Creature.GetCreatureNode();
+		creatureNode?.SetIsInteractable(on: false, changeVisibilityImmediately: false);
+		creatureNode?.AnimateOutStateDisplay();
 		SfxCmd.Play(FleeSfx);
 		await CreatureCmd.TriggerAnim(Creature, "Flee", 0.85f);
 		if (IsHovering)

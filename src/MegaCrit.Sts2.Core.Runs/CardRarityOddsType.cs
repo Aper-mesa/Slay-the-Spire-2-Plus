@@ -35,5 +35,13 @@ public enum CardRarityOddsType
 	/// Forces rolling all cards in the pool unweighted - rarity is not taken into account.
 	/// Use this if you are limiting the rarity in the pool passed to the generation.
 	/// </summary>
-	Uniform
+	Uniform,
+	/// <summary>
+	/// Rolls for rarity for generating cards in the Blitz shop.
+	/// </summary>
+	Blitz,
+	/// <summary>
+	/// Rolls for rarity for generating cards in the Blitz Neow starting set.
+	/// </summary>
+	BlitzNeow
 }

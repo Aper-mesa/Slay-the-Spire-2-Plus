@@ -40,6 +40,11 @@ public class NResolutionDropdown : NSettingsDropdown
 		public static readonly StringName RefreshCurrentlySelectedResolution = "RefreshCurrentlySelectedResolution";
 
 		/// <summary>
+		/// Cached name for the 'FormatResolution' method.
+		/// </summary>
+		public static readonly StringName FormatResolution = "FormatResolution";
+
+		/// <summary>
 		/// Cached name for the 'PopulateDropdownItems' method.
 		/// </summary>
 		public static readonly StringName PopulateDropdownItems = "PopulateDropdownItems";
@@ -127,8 +132,17 @@ public class NResolutionDropdown : NSettingsDropdown
 		if (IsEnabled)
 		{
 			_currentResolution = DisplayServer.WindowGetSize();
-			_currentOptionLabel.SetTextAutoSize($"{_currentResolution.X} x {_currentResolution.Y}");
+			_currentOptionLabel.SetTextAutoSize(FormatResolution(_currentResolution));
 		}
+	}
+
+	/// <summary>
+	/// Formats a resolution as "1920 x 1080". The text is wrapped in a left-to-right isolate (LRI ... PDI) so that
+	/// right-to-left labels don't reorder the numbers and the "x" into "x 1080 1920".
+	/// </summary>
+	public static string FormatResolution(Vector2I resolution)
+	{
+		return $"\u2066{resolution.X} x {resolution.Y}\u2069";
 	}
 
 	/// <summary>
@@ -275,10 +289,14 @@ public class NResolutionDropdown : NSettingsDropdown
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(10);
+		List<MethodInfo> list = new List<MethodInfo>(11);
 		list.Add(new MethodInfo(MethodName._EnterTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.RefreshCurrentlySelectedResolution, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.FormatResolution, new PropertyInfo(Variant.Type.String, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Vector2I, "resolution", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
 		list.Add(new MethodInfo(MethodName.PopulateDropdownItems, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnWindowChange, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
@@ -319,6 +337,11 @@ public class NResolutionDropdown : NSettingsDropdown
 		{
 			RefreshCurrentlySelectedResolution();
 			ret = default;
+			return true;
+		}
+		if (method == MethodName.FormatResolution && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<string>(FormatResolution(VariantUtils.ConvertTo<Vector2I>(in args[0])));
 			return true;
 		}
 		if (method == MethodName.PopulateDropdownItems && args.Count == 0)
@@ -368,6 +391,11 @@ public class NResolutionDropdown : NSettingsDropdown
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static bool InvokeGodotClassStaticMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
 	{
+		if (method == MethodName.FormatResolution && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<string>(FormatResolution(VariantUtils.ConvertTo<Vector2I>(in args[0])));
+			return true;
+		}
 		if (method == MethodName.DoesResolutionFit && args.Count == 2)
 		{
 			ret = VariantUtils.CreateFrom<bool>(DoesResolutionFit(VariantUtils.ConvertTo<Vector2I>(in args[0]), VariantUtils.ConvertTo<Vector2I>(in args[1])));
@@ -390,6 +418,10 @@ public class NResolutionDropdown : NSettingsDropdown
 			return true;
 		}
 		if (method == MethodName.RefreshCurrentlySelectedResolution)
+		{
+			return true;
+		}
+		if (method == MethodName.FormatResolution)
 		{
 			return true;
 		}

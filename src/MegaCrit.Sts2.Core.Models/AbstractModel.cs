@@ -8,6 +8,7 @@ using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Entities.CardRewardAlternatives;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.FoolArrows;
 using MegaCrit.Sts2.Core.Entities.Merchant;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.RestSite;
@@ -15,6 +16,7 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Models.Exceptions;
+using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Rooms;
@@ -215,6 +217,44 @@ public abstract class AbstractModel : IComparable<AbstractModel>
 	/// </summary>
 	/// <param name="card">Card that would've been added.</param>
 	public virtual Task AfterAddToDeckPrevented(CardModel card)
+	{
+		return Task.CompletedTask;
+	}
+
+	/// <summary>
+	/// Runs after an arrow has been dislodged from a creature.
+	/// </summary>
+	/// <param name="power">The power instance of impalement.</param>
+	/// <param name="arrow">The arrow being dislodged. It is no longer in <paramref name="power" />'s arrows.</param>
+	/// <param name="context">Choice context in which the arrow is being dislodged.</param>
+	/// <param name="source">Card Model (typically an attack) that caused the dislodge</param>
+	public virtual Task AfterArrowDislodged(ImpaledPower power, ArrowSlot arrow, PlayerChoiceContext context, CardModel? source)
+	{
+		return Task.CompletedTask;
+	}
+
+	/// <summary>
+	/// Runs after an arrow impales a target
+	/// </summary>
+	/// <param name="power">The power instance of impalement.</param>
+	/// <param name="arrow">Arrow that was impaled</param>
+	/// <param name="context">Choice context in which the arrow is being impaled.</param>
+	/// <param name="source">Card that caused the creature to be impaled.</param>
+	/// <returns></returns>
+	public virtual Task AfterArrowImpaled(ImpaledPower power, ArrowSlot arrow, PlayerChoiceContext context, CardModel? source)
+	{
+		return Task.CompletedTask;
+	}
+
+	/// <summary>
+	/// Runs after an arrow was attempted to be shot by a player
+	/// </summary>
+	/// <param name="owner">The player who owns the arrow</param>
+	/// <param name="arrow">The arrow that was shot. null if the shot was not successful.</param>
+	/// <param name="context">Choice context in which the arrow is being shot.</param>
+	/// <param name="source">Card that caused the player to shoot.</param>
+	/// <returns></returns>
+	public virtual Task AfterArrowShot(Player owner, ArrowSlot? arrow, PlayerChoiceContext context, CardModel? source)
 	{
 		return Task.CompletedTask;
 	}
@@ -657,6 +697,7 @@ public abstract class AbstractModel : IComparable<AbstractModel>
 	/// </summary>
 	/// <param name="choiceContext">The context that is signalled in the event of a player choice.</param>
 	/// <param name="creature">Creature who died.</param>
+	/// <param name="source">Card that caused the death.</param>
 	/// <param name="wasRemovalPrevented">
 	/// Whether the creature's removal from combat was prevented. Usually false, but true for things like reviving
 	/// powers.
@@ -665,7 +706,7 @@ public abstract class AbstractModel : IComparable<AbstractModel>
 	/// Number of seconds the creature's death animation will last. Good for delaying visuals until the animation
 	/// is over.
 	/// </param>
-	public virtual Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public virtual Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		return Task.CompletedTask;
 	}
@@ -1213,7 +1254,7 @@ public abstract class AbstractModel : IComparable<AbstractModel>
 	}
 
 	/// <summary>
-	/// Runs after the player takes an extra turn.
+	/// Runs on the model that granted the player's extra turn, after that turn is selected.
 	/// Combat-only hook.
 	/// <param name="player">Player that took the extra turn.</param>
 	/// </summary>
@@ -1616,6 +1657,26 @@ public abstract class AbstractModel : IComparable<AbstractModel>
 	}
 
 	/// <summary>
+	/// CAREFUL! You should usually use ModifyDamageMultiplicative instead of this.
+	/// Multiply the amount of damage that will be dealt.
+	/// Works just like ModifyDamageMultiplicative, but runs after it.
+	/// This runs before damage caps are applied.
+	/// </summary>
+	/// <param name="target">Creature who will receive the damage.</param>
+	/// <param name="amount">Current amount of damage that will be dealt.</param>
+	/// <param name="props">ValueProp for damage.</param>
+	/// <param name="dealer">Creature who will deal the damage.</param>
+	/// <param name="cardSource">Card that will be dealing the damage.</param>
+	/// <param name="cardPlay">The object which represents a card play, or null if this damage is not part of card play.
+	/// Note that cardSource is set both when previewing AND when the card is played, but this is only set when the card
+	/// is played.</param>
+	/// <returns>Amount that the damage should be multiplied by.</returns>
+	public virtual decimal ModifyDamageMultiplicativeLate(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
+	{
+		return 1m;
+	}
+
+	/// <summary>
 	/// When the player is about to gain energy, modify the amount that they should gain.
 	/// </summary>
 	/// <param name="player">Player who will gain energy.</param>
@@ -1905,6 +1966,23 @@ public abstract class AbstractModel : IComparable<AbstractModel>
 	}
 
 	/// <summary>
+	/// Modify the creature that will receive damage before block resolution.
+	/// Typically, damage always goes to block first. If any creature is returned from this, then damage will go to that
+	/// creature first.
+	/// Note that damage redirected this way currently goes through all block on the receiving creature.
+	/// </summary>
+	/// <param name="originalTarget">The creature that was originally targeted.</param>
+	/// <param name="target">Creature who will receive the damage.</param>
+	/// <param name="amount">Amount of damage to be dealt.</param>
+	/// <param name="props">ValueProp for amount.</param>
+	/// <param name="dealer">Creature who will be dealing the damage.</param>
+	/// <returns>New creature to receive the unblocked damage.</returns>
+	public virtual Creature? ModifyPreBlockDamageTarget(Creature originalTarget, Creature? target, decimal amount, ValueProp props, Creature? dealer)
+	{
+		return target;
+	}
+
+	/// <summary>
 	/// Modify the creature that will receive unblocked damage.
 	/// </summary>
 	/// <param name="target">Creature who will receive the damage.</param>
@@ -2143,6 +2221,22 @@ public abstract class AbstractModel : IComparable<AbstractModel>
 	}
 
 	/// <summary>
+	/// Supply the rewards for a room instead of the default ones, for run modes that hand out their own rewards.
+	/// This runs before the default rewards are generated, so the relics and cards they would have used stay in the
+	/// run. Use <see cref="M:MegaCrit.Sts2.Core.Models.AbstractModel.TryModifyRewards(MegaCrit.Sts2.Core.Entities.Players.Player,System.Collections.Generic.List{MegaCrit.Sts2.Core.Rewards.Reward},MegaCrit.Sts2.Core.Rooms.AbstractRoom)" /> to adjust rewards that already exist.
+	/// Only one model should replace the rewards for a given room. Everything added here is offered, so anything that
+	/// contributed a reward earlier, such as Forbidden Grimoire, is kept.
+	/// </summary>
+	/// <param name="player">The player being offered rewards.</param>
+	/// <param name="rewards">An empty list to add the replacement rewards to.</param>
+	/// <param name="room">The room which the rewards are generated for.</param>
+	/// <returns>Whether this model supplied the rewards.</returns>
+	public virtual bool TryReplaceDefaultRoomRewards(Player player, List<Reward> rewards, AbstractRoom room)
+	{
+		return false;
+	}
+
+	/// <summary>
 	/// CAREFUL! You should usually use TryModifyRewards instead of this.
 	/// Modify the rewards offered to the player after completing a particular room/encounter.
 	/// Works just like TryModifyRewards, but runs after it.
@@ -2165,6 +2259,19 @@ public abstract class AbstractModel : IComparable<AbstractModel>
 	/// <param name="currentExtraText">The current extra text that will be displayed.</param>
 	/// <returns>The new extra text that will be displayed.</returns>
 	public virtual IReadOnlyList<LocString> ModifyExtraRestSiteHealText(Player player, IReadOnlyList<LocString> currentExtraText)
+	{
+		return currentExtraText;
+	}
+
+	/// <summary>
+	/// Modify the extra text that will be displayed on the Mend option at the rest site (healing a teammate).
+	/// This text is shown before a target is chosen, so it must not depend on who will be mended.
+	/// Most implementors use this to add extra lines of text.
+	/// </summary>
+	/// <param name="player">The player who is at the rest site (the one doing the mending).</param>
+	/// <param name="currentExtraText">The current extra text that will be displayed.</param>
+	/// <returns>The new extra text that will be displayed.</returns>
+	public virtual IReadOnlyList<LocString> ModifyExtraRestSiteMendText(Player player, IReadOnlyList<LocString> currentExtraText)
 	{
 		return currentExtraText;
 	}
@@ -2427,6 +2534,18 @@ public abstract class AbstractModel : IComparable<AbstractModel>
 	/// </summary>
 	/// <returns>Whether combat should be marked as about to end</returns>
 	public virtual bool ShouldStopCombatFromEnding()
+	{
+		return false;
+	}
+
+	/// <summary>
+	/// CAREFUL! You should usually use ShouldTakeExtraTurn instead of this.
+	/// If the player should be allowed to take an extra turn.
+	/// Works just like ShouldTakeExtraTurn, but runs before it.
+	/// </summary>
+	/// <param name="player">Player ending turn.</param>
+	/// <returns>Whether to allow it.</returns>
+	public virtual bool ShouldTakeExtraTurnEarly(Player player)
 	{
 		return false;
 	}

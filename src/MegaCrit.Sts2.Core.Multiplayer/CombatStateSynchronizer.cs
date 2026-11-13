@@ -30,6 +30,8 @@ public class CombatStateSynchronizer : IDisposable
 
 	private SerializableRelicGrabBag? _sharedRelicGrabBag;
 
+	private bool _hasSentRngSet;
+
 	private readonly Logger _logger = new Logger("CombatStateSynchronizer", LogType.GameSync);
 
 	private TaskCompletionSource? _syncCompletionSource;
@@ -115,6 +117,9 @@ public class CombatStateSynchronizer : IDisposable
 	/// This should be called early before beginning animations for entering a combat room. Then, WaitForSync should be
 	/// called just before entering the combat room.
 	/// Between this and WaitForSync, no player or RNG state should be modified.
+	/// The host snapshots its RNG here but only sends it once it holds every player's data. Clients cannot finish
+	/// syncing before that message, and reliable messages are delivered in order, so any action a player requested
+	/// before sending their own sync data has been relayed to every client before any client can enter the room.
 	/// </summary>
 	public void StartSync()
 	{
@@ -135,12 +140,6 @@ public class CombatStateSynchronizer : IDisposable
 			{
 				_rngSet = me.RunState.Rng.ToSerializable();
 				_sharedRelicGrabBag = me.RunState.SharedRelicGrabBag.ToSerializable();
-				SyncRngMessage message2 = new SyncRngMessage
-				{
-					rng = _rngSet,
-					sharedRelicGrabBag = _sharedRelicGrabBag
-				};
-				_netService.SendMessage(message2);
 			}
 			CheckSyncCompleted();
 		}
@@ -197,6 +196,7 @@ public class CombatStateSynchronizer : IDisposable
 		_rngSet = null;
 		_sharedRelicGrabBag = null;
 		_syncCompletionSource = null;
+		_hasSentRngSet = false;
 	}
 
 	/// <summary>
@@ -224,6 +224,21 @@ public class CombatStateSynchronizer : IDisposable
 			{
 				return;
 			}
+		}
+		if (_netService.Type == NetGameType.Host && !_hasSentRngSet)
+		{
+			if (_rngSet == null || _sharedRelicGrabBag == null)
+			{
+				throw new InvalidOperationException("Host RNG set was not captured in StartSync!");
+			}
+			_logger.Debug("All player data received. Sending RNG sync message to all peers");
+			_hasSentRngSet = true;
+			SyncRngMessage message = new SyncRngMessage
+			{
+				rng = _rngSet,
+				sharedRelicGrabBag = _sharedRelicGrabBag
+			};
+			_netService.SendMessage(message);
 		}
 		if (_rngSet != null)
 		{

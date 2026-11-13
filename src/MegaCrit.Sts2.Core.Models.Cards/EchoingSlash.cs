@@ -22,6 +22,7 @@ public sealed class EchoingSlash : CardModel
 
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
+		await CreatureCmd.TriggerAnim(Owner.Creature, "Attack", Owner.Character.AttackAnimDelay);
 		await using AttackContext attackContext = await AttackCommand.CreateContextAsync(CombatState, choiceContext, cardPlay);
 		int attackCount = 1;
 		while (attackCount > 0)

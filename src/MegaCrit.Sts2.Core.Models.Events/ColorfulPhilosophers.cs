@@ -15,11 +15,12 @@ namespace MegaCrit.Sts2.Core.Models.Events;
 
 public sealed class ColorfulPhilosophers : EventModel
 {
-	private static IEnumerable<CardPoolModel> CardPoolColorOrder => new _003C_003Ez__ReadOnlyArray<CardPoolModel>(new CardPoolModel[5]
+	private static IEnumerable<CardPoolModel> CardPoolColorOrder => new _003C_003Ez__ReadOnlyArray<CardPoolModel>(new CardPoolModel[6]
 	{
 		ModelDb.CardPool<NecrobinderCardPool>(),
 		ModelDb.CardPool<IroncladCardPool>(),
 		ModelDb.CardPool<RegentCardPool>(),
+		ModelDb.CardPool<FoolCardPool>(),
 		ModelDb.CardPool<SilentCardPool>(),
 		ModelDb.CardPool<DefectCardPool>()
 	});
@@ -28,7 +29,7 @@ public sealed class ColorfulPhilosophers : EventModel
 
 	public override bool IsAllowed(IRunState runState)
 	{
-		return runState.Players.All((Player p) => p.UnlockState.CharacterCardPools.Count() > 1);
+		return runState.Players.All((Player p) => p.UnlockState.CharacterCardPools.Count((CardPoolModel c) => !(c is FoolCardPool)) > 1);
 	}
 
 	protected override IReadOnlyList<EventOption> GenerateInitialOptions()

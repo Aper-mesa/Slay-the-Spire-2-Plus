@@ -9,7 +9,6 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
-using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Potions;
 using MegaCrit.Sts2.Core.GameActions;
@@ -108,11 +107,6 @@ public abstract class PotionModel : AbstractModel
 
 	public PotionPoolModel Pool => ModelDb.AllPotionPools.First((PotionPoolModel p) => p.AllPotionIds.Contains(Id));
 
-	/// <summary>
-	/// Get the player that owns this relic.
-	/// Will technically be null on a canonical relic model, but we should never be checking that, so we leave this as
-	/// non-nullable for convenience.
-	/// </summary>
 	public Player Owner
 	{
 		get
@@ -149,24 +143,8 @@ public abstract class PotionModel : AbstractModel
 
 	public bool IsQueued { get; private set; }
 
-	/// <summary>
-	/// Whether or not using this potion can heal the player or their pets (like Fruit Juice), or do other restricted
-	/// actions (like Fairy in a Bottle's resurrection).
-	///
-	/// Used primarily to filter potions out of random in-combat generation effects, to avoid making annoying
-	/// "optimal play" behavior.
-	/// </summary>
 	public virtual bool CanBeGeneratedInCombat => true;
 
-	/// <summary>
-	/// Whether or not this potion passes its custom usability check.
-	/// By default, there are no custom checks, so this always returns true.
-	/// Subclasses can override this to add custom checks.
-	/// </summary>
-	/// <example>
-	/// <see cref="T:MegaCrit.Sts2.Core.Models.Potions.FoulPotion" /> makes sure that we're either in combat, at the Merchant, or in the
-	/// <see cref="T:MegaCrit.Sts2.Core.Models.Events.FakeMerchant" /> event.
-	/// </example>
 	public virtual bool PassesCustomUsabilityCheck => true;
 
 	public HoverTip HoverTip
@@ -182,6 +160,8 @@ public abstract class PotionModel : AbstractModel
 	public IEnumerable<IHoverTip> HoverTips => new IHoverTip[1] { HoverTip }.Concat(ExtraHoverTips);
 
 	public virtual IEnumerable<IHoverTip> ExtraHoverTips => Array.Empty<IHoverTip>();
+
+	protected IHoverTip ArrowHoverTip => HoverTipFactory.ForArrow(IsMutable ? _owner : null);
 
 	public PotionModel CanonicalInstance
 	{
@@ -202,9 +182,6 @@ public abstract class PotionModel : AbstractModel
 
 	public override bool ShouldReceiveCombatHooks => true;
 
-	/// <summary>
-	/// Set to true when this potion is removed from a player's potion belt.
-	/// </summary>
 	public bool HasBeenRemovedFromState { get; private set; }
 
 	public event Action? BeforeUse;
@@ -230,9 +207,6 @@ public abstract class PotionModel : AbstractModel
 		HasBeenRemovedFromState = true;
 	}
 
-	/// <summary>
-	/// Remove this potion as part of using it.
-	/// </summary>
 	public void RemoveBeforeUse()
 	{
 		Owner.RemoveUsedPotionInternal(this);
@@ -252,11 +226,6 @@ public abstract class PotionModel : AbstractModel
 		RunManager.Instance.ActionQueueSynchronizer.RequestEnqueue(action);
 	}
 
-	/// <summary>
-	/// Returns true if target is valid for this potion.
-	/// NOTE: This operates differently than cards! Do not try to unify this with CardModel.IsValidTarget unless you
-	/// change UI targeting; namely, CardModel's TargetType.Self does not pass a target, whereas potions do.
-	/// </summary>
 	public bool IsValidTarget(Creature? target)
 	{
 		if (target == null)
@@ -330,7 +299,7 @@ public abstract class PotionModel : AbstractModel
 		CombatId? effectCombatId = CombatManager.Instance.BeginCardOrPotionEffect(Owner);
 		try
 		{
-			BranchingPlayerChoiceContext branchingPlayerChoiceContext = new BranchingPlayerChoiceContext(this, LocalContext.NetId.Value, GameActionType.Combat, choiceContext);
+			BranchingPlayerChoiceContext branchingPlayerChoiceContext = new BranchingPlayerChoiceContext(this, LocalContext.NetId.Value, choiceContext);
 			branchingPlayerChoiceContext.PushModel(this);
 			Task task = OnUse(branchingPlayerChoiceContext, target);
 			await branchingPlayerChoiceContext.AssignTaskAndWaitForPauseOrCompletion(task);
@@ -378,10 +347,6 @@ public abstract class PotionModel : AbstractModel
 		return SaveUtil.PotionOrDeprecated(save.Id).ToMutable();
 	}
 
-	/// <summary>
-	/// Ensure that the target is valid (non-null) for a targeted potion.
-	/// </summary>
-	/// <exception cref="T:System.ArgumentNullException">Thrown if the target is null.</exception>
 	protected static void AssertValidForTargetedPotion([NotNull] Creature? target)
 	{
 		if (target == null)

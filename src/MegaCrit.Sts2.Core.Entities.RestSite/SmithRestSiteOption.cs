@@ -8,7 +8,6 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Hooks;
-using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -26,26 +25,6 @@ public sealed class SmithRestSiteOption : RestSiteOption
 
 	public override IEnumerable<string> AssetPaths => base.AssetPaths.Concat(NCardSmithVfx.AssetPaths);
 
-	public int SmithCount { get; set; } = 1;
-
-	public override LocString Description
-	{
-		get
-		{
-			LocString locString;
-			if (IsEnabled)
-			{
-				locString = new LocString("rest_site_ui", "OPTION_" + OptionId + ".description");
-				locString.Add("Count", SmithCount);
-			}
-			else
-			{
-				locString = new LocString("rest_site_ui", "OPTION_" + OptionId + ".descriptionDisabled");
-			}
-			return locString;
-		}
-	}
-
 	public override bool IsEnabled => Owner.Deck.UpgradableCardCount != 0;
 
 	public SmithRestSiteOption(Player owner)
@@ -55,7 +34,7 @@ public sealed class SmithRestSiteOption : RestSiteOption
 
 	public override async Task<bool> OnSelect()
 	{
-		CardSelectorPrefs prefs = new CardSelectorPrefs(CardSelectorPrefs.UpgradeSelectionPrompt, SmithCount)
+		CardSelectorPrefs prefs = new CardSelectorPrefs(CardSelectorPrefs.UpgradeSelectionPrompt, 1)
 		{
 			Cancelable = true,
 			RequireManualConfirmation = true

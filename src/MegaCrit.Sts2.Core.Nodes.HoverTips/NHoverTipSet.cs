@@ -6,6 +6,7 @@ using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.Relics;
@@ -26,6 +27,16 @@ public class NHoverTipSet : Control
 		/// Cached name for the 'SetFollowOwner' method.
 		/// </summary>
 		public static readonly StringName SetFollowOwner = "SetFollowOwner";
+
+		/// <summary>
+		/// Cached name for the 'ReplaceExistingTip' method.
+		/// </summary>
+		public static readonly StringName ReplaceExistingTip = "ReplaceExistingTip";
+
+		/// <summary>
+		/// Cached name for the 'ConnectTreeExiting' method.
+		/// </summary>
+		public static readonly StringName ConnectTreeExiting = "ConnectTreeExiting";
 
 		/// <summary>
 		/// Cached name for the 'CreateAndShowMapPointHistory' method.
@@ -148,7 +159,7 @@ public class NHoverTipSet : Control
 
 	private const float _hoverTipSpacing = 5f;
 
-	private const float _hoverTipWidth = 360f;
+	public const float hoverTipWidth = 360f;
 
 	private const string _tipScenePath = "res://scenes/ui/hover_tip.tscn";
 
@@ -156,7 +167,15 @@ public class NHoverTipSet : Control
 
 	private const string _debuffMatPath = "res://materials/ui/hover_tip_debuff.tres";
 
+	/// <summary>
+	/// A replacement drops the tip entry and keeps the handler entry, which is how
+	/// <see cref="M:MegaCrit.Sts2.Core.Nodes.HoverTips.NHoverTipSet.ConnectTreeExiting(Godot.Control)" /> knows the owner is already connected. So a handler with no tip is
+	/// ordinary; a tip with no handler is not, and every path that adds to the first must call
+	/// ConnectTreeExiting.
+	/// </summary>
 	private static readonly Dictionary<Control, NHoverTipSet> _activeHoverTips = new Dictionary<Control, NHoverTipSet>();
+
+	private static readonly Dictionary<Control, Callable> _treeExitingHandlers = new Dictionary<Control, Callable>();
 
 	private VFlowContainer _textHoverTipContainer;
 
@@ -170,7 +189,12 @@ public class NHoverTipSet : Control
 
 	private Vector2 _extraOffset = Vector2.Zero;
 
-	private static Node HoverTipsContainer => NGame.Instance.HoverTipsContainer;
+	/// <summary>
+	/// Tests have no <see cref="T:MegaCrit.Sts2.Core.Nodes.NGame" />, so they supply their own container. Null in the running game.
+	/// </summary>
+	internal static Node? ContainerForTests { get; set; }
+
+	private static Node HoverTipsContainer => ContainerForTests ?? NGame.Instance.HoverTipsContainer;
 
 	private Vector2 TextHoverTipDimensions => _textHoverTipContainer.Size;
 
@@ -194,10 +218,22 @@ public class NHoverTipSet : Control
 
 	public static NHoverTipSet? CreateAndShow(Control owner, IEnumerable<IHoverTip> hoverTips, HoverTipAlignment alignment = HoverTipAlignment.None)
 	{
+		NHoverTipSet nHoverTipSet = CreateAndRegister(owner, hoverTips);
+		nHoverTipSet?.SetAlignment(owner, alignment);
+		return nHoverTipSet;
+	}
+
+	/// <summary>
+	/// Builds the tip node and takes the owner's slot in <see cref="F:MegaCrit.Sts2.Core.Nodes.HoverTips.NHoverTipSet._activeHoverTips" />. Split out from
+	/// CreateAndShow because aligning needs a live <see cref="T:MegaCrit.Sts2.Core.Nodes.NGame" /> and this does not.
+	/// </summary>
+	internal static NHoverTipSet? CreateAndRegister(Control owner, IEnumerable<IHoverTip> hoverTips)
+	{
 		if (shouldBlockHoverTips)
 		{
 			return null;
 		}
+		ReplaceExistingTip(owner);
 		NHoverTipSet nHoverTipSet = PreloadManager.Cache.GetScene("res://scenes/ui/hover_tip_set.tscn").Instantiate<NHoverTipSet>(PackedScene.GenEditState.Disabled);
 		HoverTipsContainer.AddChildSafely(nHoverTipSet);
 		_activeHoverTips.Add(owner, nHoverTipSet);
@@ -206,29 +242,55 @@ public class NHoverTipSet : Control
 		{
 			nHoverTipSet.Visible = false;
 		}
-		owner.Connect(Node.SignalName.TreeExiting, Callable.From(() =>
-		{
-			Remove(owner);
-		}));
-		nHoverTipSet.SetAlignment(owner, alignment);
+		ConnectTreeExiting(owner);
 		return nHoverTipSet;
+	}
+
+	/// <summary>
+	/// Frees the tip an owner is already showing, if any, so the new one can take its place. A control may only
+	/// have one tip, and callers reach this from both the mouse and the focus path, so the previous one is not
+	/// always cleared first.
+	/// </summary>
+	private static void ReplaceExistingTip(Control owner)
+	{
+		if (_activeHoverTips.Remove(owner, out NHoverTipSet value))
+		{
+			value.QueueFreeSafely();
+		}
+	}
+
+	/// <summary>
+	/// The handler is stored so <see cref="M:MegaCrit.Sts2.Core.Nodes.HoverTips.NHoverTipSet.Remove(Godot.Control)" /> can disconnect it again, and is trusted only while the
+	/// owner still reports it connected, so a disconnect from elsewhere costs a reconnect rather than leaving
+	/// the owner with no handler at all.
+	/// </summary>
+	private static void ConnectTreeExiting(Control owner)
+	{
+		if (!_treeExitingHandlers.TryGetValue(owner, out var value) || !owner.IsConnected(Node.SignalName.TreeExiting, value))
+		{
+			Callable callable = Callable.From(() =>
+			{
+				Remove(owner);
+			});
+			_treeExitingHandlers[owner] = callable;
+			owner.Connect(Node.SignalName.TreeExiting, callable);
+		}
 	}
 
 	public static NHoverTipSet CreateAndShowMapPointHistory(Control owner, NMapPointHistoryHoverTip historyHoverTip)
 	{
+		ReplaceExistingTip(owner);
 		NHoverTipSet nHoverTipSet = PreloadManager.Cache.GetScene("res://scenes/ui/hover_tip_set.tscn").Instantiate<NHoverTipSet>(PackedScene.GenEditState.Disabled);
 		nHoverTipSet._owner = owner;
 		HoverTipsContainer.AddChildSafely(nHoverTipSet);
 		_activeHoverTips.Add(owner, nHoverTipSet);
 		nHoverTipSet._textHoverTipContainer.AddChildSafely(historyHoverTip);
+		historyHoverTip.ApplyRtlLayout();
 		if (NGame.IsDebugHidingHoverTips)
 		{
 			nHoverTipSet.Visible = false;
 		}
-		owner.Connect(Node.SignalName.TreeExiting, Callable.From(() =>
-		{
-			Remove(owner);
-		}));
+		ConnectTreeExiting(owner);
 		return nHoverTipSet;
 	}
 
@@ -261,6 +323,7 @@ public class NHoverTipSet : Control
 			{
 				Control control = PreloadManager.Cache.GetScene("res://scenes/ui/hover_tip.tscn").Instantiate<Control>(PackedScene.GenEditState.Disabled);
 				_textHoverTipContainer.AddChildSafely(control);
+				control.ApplyRtlLayout();
 				MegaLabel node = control.GetNode<MegaLabel>("%Title");
 				if (hoverTip.Title == null)
 				{
@@ -321,27 +384,43 @@ public class NHoverTipSet : Control
 	/// ie: top left side of the node, Top right side of the node</param>
 	public void SetAlignment(Control node, HoverTipAlignment alignment)
 	{
-		if (alignment != HoverTipAlignment.None)
+		switch (alignment)
 		{
+		case HoverTipAlignment.Center:
 			_textHoverTipContainer.Position = Vector2.Zero;
-			switch (alignment)
-			{
-			case HoverTipAlignment.Left:
-				_textHoverTipContainer.GlobalPosition = node.GlobalPosition;
-				_textHoverTipContainer.Position += Vector2.Left * _textHoverTipContainer.Size.X;
-				_textHoverTipContainer.ReverseFill = true;
-				_cardHoverTipContainer.LayoutResizeAndReposition(node.GlobalPosition + new Vector2(node.Size.X, 0f) * node.Scale, HoverTipAlignment.Right);
-				break;
-			case HoverTipAlignment.Right:
-				_cardHoverTipContainer.LayoutResizeAndReposition(node.GlobalPosition, HoverTipAlignment.Left);
-				_textHoverTipContainer.GlobalPosition = node.GlobalPosition + new Vector2(node.Size.X, 0f) * node.Scale;
-				break;
-			case HoverTipAlignment.Center:
-				GlobalPosition = node.GlobalPosition + Vector2.Down * node.Size.Y * 1.5f;
-				_cardHoverTipContainer.GlobalPosition += Vector2.Down * _textHoverTipContainer.Size.Y;
-				_cardHoverTipContainer.LayoutResizeAndReposition(_cardHoverTipContainer.GlobalPosition, alignment);
-				break;
-			}
+			GlobalPosition = node.GlobalPosition + Vector2.Down * node.Size.Y * 1.5f;
+			_cardHoverTipContainer.GlobalPosition += Vector2.Down * _textHoverTipContainer.Size.Y;
+			_cardHoverTipContainer.LayoutResizeAndReposition(_cardHoverTipContainer.GlobalPosition, alignment);
+			break;
+		default:
+			SetAlignment(new Rect2(node.GlobalPosition, node.Size * node.Scale), alignment);
+			return;
+		case HoverTipAlignment.None:
+			break;
+		}
+		CorrectVerticalOverflow();
+		CorrectHorizontalOverflow();
+	}
+
+	/// <summary>
+	/// Left/Right alignment against an arbitrary global rect. Useful when the target is mid-tween and
+	/// we want to align to where it will end up rather than where it currently is.
+	/// </summary>
+	public void SetAlignment(Rect2 globalRect, HoverTipAlignment alignment)
+	{
+		_textHoverTipContainer.Position = Vector2.Zero;
+		switch (alignment)
+		{
+		case HoverTipAlignment.Left:
+			_textHoverTipContainer.GlobalPosition = globalRect.Position;
+			_textHoverTipContainer.Position += Vector2.Left * _textHoverTipContainer.Size.X;
+			_textHoverTipContainer.ReverseFill = true;
+			_cardHoverTipContainer.LayoutResizeAndReposition(globalRect.Position + new Vector2(globalRect.Size.X, 0f), HoverTipAlignment.Right);
+			break;
+		case HoverTipAlignment.Right:
+			_cardHoverTipContainer.LayoutResizeAndReposition(globalRect.Position, HoverTipAlignment.Left);
+			_textHoverTipContainer.GlobalPosition = globalRect.Position + new Vector2(globalRect.Size.X, 0f);
+			break;
 		}
 		CorrectVerticalOverflow();
 		CorrectHorizontalOverflow();
@@ -468,10 +547,13 @@ public class NHoverTipSet : Control
 
 	public static void Remove(Control owner)
 	{
-		if (_activeHoverTips.TryGetValue(owner, out NHoverTipSet value))
+		if (_activeHoverTips.Remove(owner, out NHoverTipSet value))
 		{
 			value.QueueFreeSafely();
-			_activeHoverTips.Remove(owner);
+		}
+		if (_treeExitingHandlers.Remove(owner, out var value2) && GodotObject.IsInstanceValid(owner) && owner.IsConnected(Node.SignalName.TreeExiting, value2))
+		{
+			owner.Disconnect(Node.SignalName.TreeExiting, value2);
 		}
 	}
 
@@ -493,8 +575,16 @@ public class NHoverTipSet : Control
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(12);
+		List<MethodInfo> list = new List<MethodInfo>(14);
 		list.Add(new MethodInfo(MethodName.SetFollowOwner, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.ReplaceExistingTip, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Object, "owner", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName.ConnectTreeExiting, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Object, "owner", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
+		}, null));
 		list.Add(new MethodInfo(MethodName.CreateAndShowMapPointHistory, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "owner", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false),
@@ -539,6 +629,18 @@ public class NHoverTipSet : Control
 		if (method == MethodName.SetFollowOwner && args.Count == 0)
 		{
 			SetFollowOwner();
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.ReplaceExistingTip && args.Count == 1)
+		{
+			ReplaceExistingTip(VariantUtils.ConvertTo<Control>(in args[0]));
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.ConnectTreeExiting && args.Count == 1)
+		{
+			ConnectTreeExiting(VariantUtils.ConvertTo<Control>(in args[0]));
 			ret = default;
 			return true;
 		}
@@ -613,6 +715,18 @@ public class NHoverTipSet : Control
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static bool InvokeGodotClassStaticMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
 	{
+		if (method == MethodName.ReplaceExistingTip && args.Count == 1)
+		{
+			ReplaceExistingTip(VariantUtils.ConvertTo<Control>(in args[0]));
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.ConnectTreeExiting && args.Count == 1)
+		{
+			ConnectTreeExiting(VariantUtils.ConvertTo<Control>(in args[0]));
+			ret = default;
+			return true;
+		}
 		if (method == MethodName.CreateAndShowMapPointHistory && args.Count == 2)
 		{
 			ret = VariantUtils.CreateFrom<NHoverTipSet>(CreateAndShowMapPointHistory(VariantUtils.ConvertTo<Control>(in args[0]), VariantUtils.ConvertTo<NMapPointHistoryHoverTip>(in args[1])));
@@ -639,6 +753,14 @@ public class NHoverTipSet : Control
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
 		if (method == MethodName.SetFollowOwner)
+		{
+			return true;
+		}
+		if (method == MethodName.ReplaceExistingTip)
+		{
+			return true;
+		}
+		if (method == MethodName.ConnectTreeExiting)
 		{
 			return true;
 		}

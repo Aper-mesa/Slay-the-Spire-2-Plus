@@ -14,7 +14,7 @@ public sealed class MinionDiveBomb : CardModel
 {
 	protected override HashSet<CardTag> CanonicalTags => new HashSet<CardTag> { CardTag.Minion };
 
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new DamageVar(13m, ValueProp.Move));
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new DamageVar(11m, ValueProp.Move));
 
 	public override IEnumerable<CardKeyword> CanonicalKeywords => new _003C_003Ez__ReadOnlySingleElementList<CardKeyword>(CardKeyword.Exhaust);
 
@@ -34,6 +34,6 @@ public sealed class MinionDiveBomb : CardModel
 
 	protected override void OnUpgrade()
 	{
-		DynamicVars.Damage.UpgradeValueBy(3m);
+		DynamicVars.Damage.UpgradeValueBy(2m);
 	}
 }

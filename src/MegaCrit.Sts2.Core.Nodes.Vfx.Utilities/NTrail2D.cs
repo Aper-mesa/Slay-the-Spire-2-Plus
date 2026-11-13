@@ -37,11 +37,6 @@ public class NTrail2D : Line2D
 	public new class PropertyName : Line2D.PropertyName
 	{
 		/// <summary>
-		/// Cached name for the '_maxSegments' field.
-		/// </summary>
-		public static readonly StringName _maxSegments = "_maxSegments";
-
-		/// <summary>
 		/// Cached name for the '_parent' field.
 		/// </summary>
 		public static readonly StringName _parent = "_parent";
@@ -59,7 +54,7 @@ public class NTrail2D : Line2D
 	{
 	}
 
-	private int _maxSegments = 20;
+	private const int _maxSegments = 20;
 
 	private Node2D _parent;
 
@@ -89,11 +84,12 @@ public class NTrail2D : Line2D
 		if (_isActive)
 		{
 			_pointQueue.Insert(0, _parent.GlobalPosition);
-			if (_pointQueue.Count >= _maxSegments)
+			if (_pointQueue.Count >= 20)
 			{
 				_pointQueue.RemoveAt(_pointQueue.Count - 1);
 			}
-			Points = _pointQueue.Select((Vector2 point) => GetParent<Node2D>().ToLocal(point)).ToArray();
+			Node2D parent = GetParent<Node2D>();
+			Points = _pointQueue.Select((Vector2 point) => parent.ToLocal(point)).ToArray();
 		}
 	}
 
@@ -163,11 +159,6 @@ public class NTrail2D : Line2D
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool SetGodotClassPropertyValue(in godot_string_name name, in godot_variant value)
 	{
-		if (name == PropertyName._maxSegments)
-		{
-			_maxSegments = VariantUtils.ConvertTo<int>(in value);
-			return true;
-		}
 		if (name == PropertyName._parent)
 		{
 			_parent = VariantUtils.ConvertTo<Node2D>(in value);
@@ -185,11 +176,6 @@ public class NTrail2D : Line2D
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
-		if (name == PropertyName._maxSegments)
-		{
-			value = VariantUtils.CreateFrom(in _maxSegments);
-			return true;
-		}
 		if (name == PropertyName._parent)
 		{
 			value = VariantUtils.CreateFrom(in _parent);
@@ -212,7 +198,6 @@ public class NTrail2D : Line2D
 	internal static List<PropertyInfo> GetGodotPropertyList()
 	{
 		List<PropertyInfo> list = new List<PropertyInfo>();
-		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._maxSegments, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._parent, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isActive, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
@@ -223,7 +208,6 @@ public class NTrail2D : Line2D
 	protected override void SaveGodotObjectData(GodotSerializationInfo info)
 	{
 		base.SaveGodotObjectData(info);
-		info.AddProperty(PropertyName._maxSegments, Variant.From(in _maxSegments));
 		info.AddProperty(PropertyName._parent, Variant.From(in _parent));
 		info.AddProperty(PropertyName._isActive, Variant.From(in _isActive));
 	}
@@ -233,17 +217,13 @@ public class NTrail2D : Line2D
 	protected override void RestoreGodotObjectData(GodotSerializationInfo info)
 	{
 		base.RestoreGodotObjectData(info);
-		if (info.TryGetProperty(PropertyName._maxSegments, out var value))
+		if (info.TryGetProperty(PropertyName._parent, out var value))
 		{
-			_maxSegments = value.As<int>();
+			_parent = value.As<Node2D>();
 		}
-		if (info.TryGetProperty(PropertyName._parent, out var value2))
+		if (info.TryGetProperty(PropertyName._isActive, out var value2))
 		{
-			_parent = value2.As<Node2D>();
-		}
-		if (info.TryGetProperty(PropertyName._isActive, out var value3))
-		{
-			_isActive = value3.As<bool>();
+			_isActive = value2.As<bool>();
 		}
 	}
 }

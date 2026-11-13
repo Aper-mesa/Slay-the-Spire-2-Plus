@@ -376,8 +376,7 @@ public class LoadRunLobby
 		_logger.Info($"Client {playerId} connected. Sending initial game info message");
 		InitialGameInfoMessage message = new InitialGameInfoMessage
 		{
-			sessionState = RunSessionState.InLoadedLobby,
-			gameMode = GameMode
+			sessionState = RunSessionState.InLoadedLobby
 		};
 		if (_isBeginningRun)
 		{

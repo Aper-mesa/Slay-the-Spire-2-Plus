@@ -8,6 +8,7 @@ using Godot.Bridge;
 using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Ascension;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Helpers;
@@ -21,6 +22,7 @@ using MegaCrit.Sts2.Core.Nodes.Audio;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Multiplayer;
+using MegaCrit.Sts2.Core.Nodes.Screens.Dread;
 using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 using MegaCrit.Sts2.Core.Nodes.Vfx.Ui;
 using MegaCrit.Sts2.Core.Platform;
@@ -132,6 +134,11 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		public static readonly StringName _hp = "_hp";
 
 		/// <summary>
+		/// Cached name for the '_goldContainer' field.
+		/// </summary>
+		public static readonly StringName _goldContainer = "_goldContainer";
+
+		/// <summary>
 		/// Cached name for the '_gold' field.
 		/// </summary>
 		public static readonly StringName _gold = "_gold";
@@ -145,6 +152,21 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		/// Cached name for the '_bgContainer' field.
 		/// </summary>
 		public static readonly StringName _bgContainer = "_bgContainer";
+
+		/// <summary>
+		/// Cached name for the '_grayScaler' field.
+		/// </summary>
+		public static readonly StringName _grayScaler = "_grayScaler";
+
+		/// <summary>
+		/// Cached name for the '_blitzTitle' field.
+		/// </summary>
+		public static readonly StringName _blitzTitle = "_blitzTitle";
+
+		/// <summary>
+		/// Cached name for the '_rotatingImage' field.
+		/// </summary>
+		public static readonly StringName _rotatingImage = "_rotatingImage";
 
 		/// <summary>
 		/// Cached name for the '_confirmButton' field.
@@ -207,11 +229,19 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 
 	private MegaLabel _hp;
 
+	private Control _goldContainer;
+
 	private MegaLabel _gold;
 
 	private NCharacterSelectButton? _selectedButton;
 
 	private Control _bgContainer;
+
+	private Control _grayScaler;
+
+	private Control _blitzTitle;
+
+	private Control _rotatingImage;
 
 	private NConfirmButton _confirmButton;
 
@@ -254,10 +284,14 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		_infoPanel = GetNode<Control>("InfoPanel");
 		_name = GetNode<MegaLabel>("InfoPanel/VBoxContainer/Name");
 		_hp = GetNode<MegaLabel>("InfoPanel/VBoxContainer/HpGoldSpacer/HpGold/Hp/Label");
+		_goldContainer = GetNode<Control>("InfoPanel/VBoxContainer/HpGoldSpacer/HpGold/Gold");
 		_gold = GetNode<MegaLabel>("InfoPanel/VBoxContainer/HpGoldSpacer/HpGold/Gold/Label");
 		_actLabel = GetNode<MegaRichTextLabel>("InfoPanel/VBoxContainer/RunLocation/ActLabel");
 		_floorLabel = GetNode<MegaRichTextLabel>("InfoPanel/VBoxContainer/RunLocation/FloorLabel");
-		_bgContainer = GetNode<Control>("AnimatedBg");
+		_bgContainer = GetNode<Control>("%AnimatedBg");
+		_grayScaler = GetNode<Control>("%GrayScaler");
+		_blitzTitle = GetNode<Control>("%BlitzPlaceholder");
+		_rotatingImage = GetNode<Control>("%RotatingImage");
 		_ascensionPanel = GetNode<NAscensionPanel>("%AscensionPanel");
 		_remotePlayerContainer = GetNode<NRemoteLoadLobbyPlayerContainer>("RemotePlayerLoadContainer");
 		_confirmButton = GetNode<NConfirmButton>("ConfirmButton");
@@ -266,6 +300,9 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		_confirmButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnEmbarkPressed));
 		_unreadyButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnUnreadyPressed));
 		_unreadyButton.Disable();
+		Tween tween = CreateTween();
+		tween.TweenProperty(_rotatingImage, "rotation", (float)Math.PI * 2f, 10.0).From(0f).SetTrans(Tween.TransitionType.Linear);
+		tween.SetLoops();
 	}
 
 	public void InitializeAsHost(INetGameService gameService, SerializableRun run)
@@ -302,8 +339,8 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		base.OnSubmenuOpened();
 		_confirmButton.Enable();
 		_remotePlayerContainer.Initialize(_runLobby, displayLocalPlayer: false);
-		_ascensionPanel.Initialize(MultiplayerUiMode.Load);
-		_ascensionPanel.SetAscensionLevel(_runLobby.Run.Ascension);
+		_ascensionPanel.Initialize(MultiplayerUiMode.Load, _runLobby.Run.GameMode);
+		_ascensionPanel.SetAscensionLevel(AscensionManager.ClampToMode(_runLobby.Run.GameMode, _runLobby.Run.Ascension));
 	}
 
 	public override void OnSubmenuClosed()
@@ -475,9 +512,19 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		Control control = PreloadManager.Cache.GetScene(byId.CharacterSelectBg).Instantiate<Control>(PackedScene.GenEditState.Disabled);
 		control.Name = byId.Id.Entry + "_bg";
 		_bgContainer.AddChildSafely(control);
+		_grayScaler.Visible = _runLobby.Run.GameMode == GameMode.Dread;
+		_blitzTitle.Visible = _runLobby.Run.GameMode == GameMode.Blitz;
+		_goldContainer.Visible = _runLobby.Run.GameMode != GameMode.Blitz;
+		_rotatingImage.Visible = serializablePlayer.ExtraFields.IsPlayingRotatingCharacter;
+		ShaderMaterial shaderMaterial = (ShaderMaterial)_grayScaler.Material;
+		shaderMaterial.SetShaderParameter(NDreadScreen.shaderParameterBrightness, byId.DreadBgBrightness);
+		shaderMaterial.SetShaderParameter(NDreadScreen.shaderParameterContrast, byId.DreadBgContrast);
 		_name.SetTextAutoSize(byId.Title.GetFormattedText());
 		_hp.SetTextAutoSize($"{serializablePlayer.CurrentHp}/{serializablePlayer.MaxHp}");
-		_gold.SetTextAutoSize($"{serializablePlayer.Gold}");
+		if (_goldContainer.Visible)
+		{
+			_gold.SetTextAutoSize($"{serializablePlayer.Gold}");
+		}
 		LocString locString = new LocString("main_menu_ui", "MULTIPLAYER_LOAD_MENU.FLOOR");
 		locString.Add("floor", _runLobby.Run.VisitedMapCoords.Count);
 		_floorLabel.Text = locString.GetFormattedText();
@@ -708,6 +755,11 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 			_hp = VariantUtils.ConvertTo<MegaLabel>(in value);
 			return true;
 		}
+		if (name == PropertyName._goldContainer)
+		{
+			_goldContainer = VariantUtils.ConvertTo<Control>(in value);
+			return true;
+		}
 		if (name == PropertyName._gold)
 		{
 			_gold = VariantUtils.ConvertTo<MegaLabel>(in value);
@@ -721,6 +773,21 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		if (name == PropertyName._bgContainer)
 		{
 			_bgContainer = VariantUtils.ConvertTo<Control>(in value);
+			return true;
+		}
+		if (name == PropertyName._grayScaler)
+		{
+			_grayScaler = VariantUtils.ConvertTo<Control>(in value);
+			return true;
+		}
+		if (name == PropertyName._blitzTitle)
+		{
+			_blitzTitle = VariantUtils.ConvertTo<Control>(in value);
+			return true;
+		}
+		if (name == PropertyName._rotatingImage)
+		{
+			_rotatingImage = VariantUtils.ConvertTo<Control>(in value);
 			return true;
 		}
 		if (name == PropertyName._confirmButton)
@@ -795,6 +862,11 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 			value = VariantUtils.CreateFrom(in _hp);
 			return true;
 		}
+		if (name == PropertyName._goldContainer)
+		{
+			value = VariantUtils.CreateFrom(in _goldContainer);
+			return true;
+		}
 		if (name == PropertyName._gold)
 		{
 			value = VariantUtils.CreateFrom(in _gold);
@@ -808,6 +880,21 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		if (name == PropertyName._bgContainer)
 		{
 			value = VariantUtils.CreateFrom(in _bgContainer);
+			return true;
+		}
+		if (name == PropertyName._grayScaler)
+		{
+			value = VariantUtils.CreateFrom(in _grayScaler);
+			return true;
+		}
+		if (name == PropertyName._blitzTitle)
+		{
+			value = VariantUtils.CreateFrom(in _blitzTitle);
+			return true;
+		}
+		if (name == PropertyName._rotatingImage)
+		{
+			value = VariantUtils.CreateFrom(in _rotatingImage);
 			return true;
 		}
 		if (name == PropertyName._confirmButton)
@@ -870,9 +957,13 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._name, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._infoPanel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._hp, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._goldContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._gold, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._selectedButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._bgContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._grayScaler, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._blitzTitle, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._rotatingImage, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._confirmButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._backButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._unreadyButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -894,9 +985,13 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		info.AddProperty(PropertyName._name, Variant.From(in _name));
 		info.AddProperty(PropertyName._infoPanel, Variant.From(in _infoPanel));
 		info.AddProperty(PropertyName._hp, Variant.From(in _hp));
+		info.AddProperty(PropertyName._goldContainer, Variant.From(in _goldContainer));
 		info.AddProperty(PropertyName._gold, Variant.From(in _gold));
 		info.AddProperty(PropertyName._selectedButton, Variant.From(in _selectedButton));
 		info.AddProperty(PropertyName._bgContainer, Variant.From(in _bgContainer));
+		info.AddProperty(PropertyName._grayScaler, Variant.From(in _grayScaler));
+		info.AddProperty(PropertyName._blitzTitle, Variant.From(in _blitzTitle));
+		info.AddProperty(PropertyName._rotatingImage, Variant.From(in _rotatingImage));
 		info.AddProperty(PropertyName._confirmButton, Variant.From(in _confirmButton));
 		info.AddProperty(PropertyName._backButton, Variant.From(in _backButton));
 		info.AddProperty(PropertyName._unreadyButton, Variant.From(in _unreadyButton));
@@ -925,53 +1020,69 @@ public class NMultiplayerLoadGameScreen : NSubmenu, ILoadRunLobbyListener
 		{
 			_hp = value3.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._gold, out var value4))
+		if (info.TryGetProperty(PropertyName._goldContainer, out var value4))
 		{
-			_gold = value4.As<MegaLabel>();
+			_goldContainer = value4.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._selectedButton, out var value5))
+		if (info.TryGetProperty(PropertyName._gold, out var value5))
 		{
-			_selectedButton = value5.As<NCharacterSelectButton>();
+			_gold = value5.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._bgContainer, out var value6))
+		if (info.TryGetProperty(PropertyName._selectedButton, out var value6))
 		{
-			_bgContainer = value6.As<Control>();
+			_selectedButton = value6.As<NCharacterSelectButton>();
 		}
-		if (info.TryGetProperty(PropertyName._confirmButton, out var value7))
+		if (info.TryGetProperty(PropertyName._bgContainer, out var value7))
 		{
-			_confirmButton = value7.As<NConfirmButton>();
+			_bgContainer = value7.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._backButton, out var value8))
+		if (info.TryGetProperty(PropertyName._grayScaler, out var value8))
 		{
-			_backButton = value8.As<NBackButton>();
+			_grayScaler = value8.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._unreadyButton, out var value9))
+		if (info.TryGetProperty(PropertyName._blitzTitle, out var value9))
 		{
-			_unreadyButton = value9.As<NBackButton>();
+			_blitzTitle = value9.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._ascensionPanel, out var value10))
+		if (info.TryGetProperty(PropertyName._rotatingImage, out var value10))
 		{
-			_ascensionPanel = value10.As<NAscensionPanel>();
+			_rotatingImage = value10.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._floorLabel, out var value11))
+		if (info.TryGetProperty(PropertyName._confirmButton, out var value11))
 		{
-			_floorLabel = value11.As<MegaRichTextLabel>();
+			_confirmButton = value11.As<NConfirmButton>();
 		}
-		if (info.TryGetProperty(PropertyName._actLabel, out var value12))
+		if (info.TryGetProperty(PropertyName._backButton, out var value12))
 		{
-			_actLabel = value12.As<MegaRichTextLabel>();
+			_backButton = value12.As<NBackButton>();
 		}
-		if (info.TryGetProperty(PropertyName._remotePlayerContainer, out var value13))
+		if (info.TryGetProperty(PropertyName._unreadyButton, out var value13))
 		{
-			_remotePlayerContainer = value13.As<NRemoteLoadLobbyPlayerContainer>();
+			_unreadyButton = value13.As<NBackButton>();
 		}
-		if (info.TryGetProperty(PropertyName._infoPanelTween, out var value14))
+		if (info.TryGetProperty(PropertyName._ascensionPanel, out var value14))
 		{
-			_infoPanelTween = value14.As<Tween>();
+			_ascensionPanel = value14.As<NAscensionPanel>();
 		}
-		if (info.TryGetProperty(PropertyName._infoPanelPosFinalVal, out var value15))
+		if (info.TryGetProperty(PropertyName._floorLabel, out var value15))
 		{
-			_infoPanelPosFinalVal = value15.As<Vector2>();
+			_floorLabel = value15.As<MegaRichTextLabel>();
+		}
+		if (info.TryGetProperty(PropertyName._actLabel, out var value16))
+		{
+			_actLabel = value16.As<MegaRichTextLabel>();
+		}
+		if (info.TryGetProperty(PropertyName._remotePlayerContainer, out var value17))
+		{
+			_remotePlayerContainer = value17.As<NRemoteLoadLobbyPlayerContainer>();
+		}
+		if (info.TryGetProperty(PropertyName._infoPanelTween, out var value18))
+		{
+			_infoPanelTween = value18.As<Tween>();
+		}
+		if (info.TryGetProperty(PropertyName._infoPanelPosFinalVal, out var value19))
+		{
+			_infoPanelPosFinalVal = value19.As<Vector2>();
 		}
 	}
 }

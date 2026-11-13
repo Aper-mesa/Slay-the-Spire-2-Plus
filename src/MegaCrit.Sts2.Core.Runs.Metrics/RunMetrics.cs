@@ -9,6 +9,8 @@ public class RunMetrics
 
 	public required string PlayerId { get; init; }
 
+	public required string GameMode { get; init; }
+
 	public required ModelId Character { get; init; }
 
 	public required bool Win { get; init; }

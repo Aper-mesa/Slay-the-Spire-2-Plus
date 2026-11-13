@@ -77,6 +77,11 @@ public class NPotionPopup : Control
 		public static readonly StringName DisconnectSignals = "DisconnectSignals";
 
 		/// <summary>
+		/// Cached name for the 'CanEnableUseButton' method.
+		/// </summary>
+		public static readonly StringName CanEnableUseButton = "CanEnableUseButton";
+
+		/// <summary>
 		/// Cached name for the 'RefreshButtons' method.
 		/// </summary>
 		public static readonly StringName RefreshButtons = "RefreshButtons";
@@ -171,7 +176,7 @@ public class NPotionPopup : Control
 			NPlayerHand? instance = NPlayerHand.Instance;
 			if (instance == null || !instance.IsInCardSelection)
 			{
-				return NOverlayStack.Instance?.Peek() is ICardSelector;
+				return NOverlayStack.Instance?.Peek() is ICardSelectionScreen;
 			}
 			return true;
 		}
@@ -249,7 +254,9 @@ public class NPotionPopup : Control
 			}
 			_subscribedPlayer = Potion.Owner;
 			_subscribedPlayer.CanUseOrRemovePotionsChanged += RefreshButtons;
-			if (!Potion.Owner.CanUseOrRemovePotions)
+			RunManager.Instance.OnIsChangingRoomsModified += RefreshButtons;
+			CombatManager.Instance.CombatBegan += OnCombatBegan;
+			if (!Potion.Owner.CanUseOrRemovePotions || RunManager.Instance.IsPotionUseLocked)
 			{
 				_useButton.Disable();
 				_discardButton.Disable();
@@ -392,6 +399,8 @@ public class NPotionPopup : Control
 		if (_subscribedPlayer != null)
 		{
 			_subscribedPlayer.CanUseOrRemovePotionsChanged -= RefreshButtons;
+			RunManager.Instance.OnIsChangingRoomsModified -= RefreshButtons;
+			CombatManager.Instance.CombatBegan -= OnCombatBegan;
 		}
 		if (NOverlayStack.Instance != null)
 		{
@@ -423,6 +432,33 @@ public class NPotionPopup : Control
 		RefreshButtons();
 	}
 
+	private void OnCombatBegan(CombatState _)
+	{
+		RefreshButtons();
+	}
+
+	/// <summary>
+	/// Whether the use button can be enabled for a potion with the given usage. Automatic potions such as Fairy in a
+	/// Bottle are used by the game, never by the player, so their use button stays disabled no matter how many times
+	/// the buttons are refreshed during combat. A potion that fails its own usability check, such as Foul Potion
+	/// outside combat and away from a merchant, stays disabled too.
+	/// </summary>
+	public static bool CanEnableUseButton(PotionUsage usage, bool canUseInCombatNow, bool passesCustomUsabilityCheck)
+	{
+		if (!passesCustomUsabilityCheck)
+		{
+			return false;
+		}
+		return usage switch
+		{
+			PotionUsage.AnyTime => true,
+			PotionUsage.CombatOnly => canUseInCombatNow,
+			PotionUsage.Automatic => false,
+			PotionUsage.None => throw new InvalidOperationException("No potions should have 'None' usage."),
+			_ => throw new ArgumentOutOfRangeException("usage"),
+		};
+	}
+
 	private void RefreshButtons()
 	{
 		if (IsMarkedForRemoval)
@@ -431,12 +467,8 @@ public class NPotionPopup : Control
 		}
 		Creature creature = Potion?.Owner.Creature;
 		_discardButton.Enable();
-		PotionModel? potion = Potion;
-		if (potion != null && potion.Usage == PotionUsage.AnyTime)
-		{
-			_useButton.Enable();
-		}
-		else if (creature != null && CombatManager.Instance.IsInProgress && creature.CombatState?.CurrentSide == creature.Side && creature.IsAlive && !InACardSelectScreen && !CombatManager.Instance.PlayerActionsDisabled)
+		bool canUseInCombatNow = creature != null && CombatManager.Instance.IsInProgress && creature.CombatState?.CurrentSide == creature.Side && creature.IsAlive && !InACardSelectScreen && !CombatManager.Instance.PlayerActionsDisabled;
+		if (Potion != null && CanEnableUseButton(Potion.Usage, canUseInCombatNow, Potion.PassesCustomUsabilityCheck))
 		{
 			_useButton.Enable();
 		}
@@ -444,16 +476,23 @@ public class NPotionPopup : Control
 		{
 			_useButton.Disable();
 		}
-		PotionModel potion2 = Potion;
-		if (potion2 != null)
+		PotionModel potion = Potion;
+		if (potion != null)
 		{
-			Player owner = potion2.Owner;
+			Player owner = potion.Owner;
 			if (owner != null && !owner.CanUseOrRemovePotions)
 			{
-				_useButton.Disable();
-				_discardButton.Disable();
+				goto IL_0104;
 			}
 		}
+		if (!RunManager.Instance.IsPotionUseLocked)
+		{
+			return;
+		}
+		goto IL_0104;
+		IL_0104:
+		_useButton.Disable();
+		_discardButton.Disable();
 	}
 
 	/// <summary>
@@ -464,7 +503,7 @@ public class NPotionPopup : Control
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(9);
+		List<MethodInfo> list = new List<MethodInfo>(10);
 		list.Add(new MethodInfo(MethodName.Create, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "holder", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
@@ -485,6 +524,12 @@ public class NPotionPopup : Control
 		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.Remove, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.DisconnectSignals, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.CanEnableUseButton, new PropertyInfo(Variant.Type.Bool, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Int, "usage", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false),
+			new PropertyInfo(Variant.Type.Bool, "canUseInCombatNow", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false),
+			new PropertyInfo(Variant.Type.Bool, "passesCustomUsabilityCheck", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
 		list.Add(new MethodInfo(MethodName.RefreshButtons, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		return list;
 	}
@@ -540,6 +585,11 @@ public class NPotionPopup : Control
 			ret = default;
 			return true;
 		}
+		if (method == MethodName.CanEnableUseButton && args.Count == 3)
+		{
+			ret = VariantUtils.CreateFrom<bool>(CanEnableUseButton(VariantUtils.ConvertTo<PotionUsage>(in args[0]), VariantUtils.ConvertTo<bool>(in args[1]), VariantUtils.ConvertTo<bool>(in args[2])));
+			return true;
+		}
 		if (method == MethodName.RefreshButtons && args.Count == 0)
 		{
 			RefreshButtons();
@@ -555,6 +605,11 @@ public class NPotionPopup : Control
 		if (method == MethodName.Create && args.Count == 1)
 		{
 			ret = VariantUtils.CreateFrom<NPotionPopup>(Create(VariantUtils.ConvertTo<NPotionHolder>(in args[0])));
+			return true;
+		}
+		if (method == MethodName.CanEnableUseButton && args.Count == 3)
+		{
+			ret = VariantUtils.CreateFrom<bool>(CanEnableUseButton(VariantUtils.ConvertTo<PotionUsage>(in args[0]), VariantUtils.ConvertTo<bool>(in args[1]), VariantUtils.ConvertTo<bool>(in args[2])));
 			return true;
 		}
 		ret = default;
@@ -594,6 +649,10 @@ public class NPotionPopup : Control
 			return true;
 		}
 		if (method == MethodName.DisconnectSignals)
+		{
+			return true;
+		}
+		if (method == MethodName.CanEnableUseButton)
 		{
 			return true;
 		}

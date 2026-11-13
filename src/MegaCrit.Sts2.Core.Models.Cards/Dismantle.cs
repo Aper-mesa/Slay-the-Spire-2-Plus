@@ -17,7 +17,11 @@ public sealed class Dismantle : CardModel
 {
 	protected override bool ShouldGlowGoldInternal => CombatState?.HittableEnemies.Any((Creature e) => e.HasPower<VulnerablePower>()) ?? false;
 
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new DamageVar(8m, ValueProp.Move));
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[2]
+	{
+		new DamageVar(8m, ValueProp.Move),
+		new HitCountVar(2)
+	});
 
 	protected override IEnumerable<IHoverTip> ExtraHoverTips => new _003C_003Ez__ReadOnlySingleElementList<IHoverTip>(HoverTipFactory.FromPower<VulnerablePower>());
 
@@ -29,7 +33,7 @@ public sealed class Dismantle : CardModel
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay.Target, "cardPlay.Target");
-		int hitCount = ((!cardPlay.Target.HasPower<VulnerablePower>()) ? 1 : 2);
+		int hitCount = ((!cardPlay.Target.HasPower<VulnerablePower>()) ? 1 : DynamicVars.HitCount.IntValue);
 		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(hitCount).FromCard(this, cardPlay)
 			.Targeting(cardPlay.Target)
 			.WithHitFx("vfx/vfx_attack_blunt", null, "heavy_attack.mp3")

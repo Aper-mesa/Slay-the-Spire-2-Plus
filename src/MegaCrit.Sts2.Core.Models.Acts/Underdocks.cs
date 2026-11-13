@@ -23,7 +23,7 @@ public sealed class Underdocks : ActModel
 
 	public override string ChestOpenSfx => "event:/sfx/ui/treasure/treasure_act1";
 
-	public override IEnumerable<EventModel> AllEvents => new _003C_003Ez__ReadOnlyArray<EventModel>(new EventModel[10]
+	public override IEnumerable<EventModel> AllEvents => new _003C_003Ez__ReadOnlyArray<EventModel>(new EventModel[12]
 	{
 		ModelDb.Event<AbyssalBaths>(),
 		ModelDb.Event<DrowningBeacon>(),
@@ -34,7 +34,9 @@ public sealed class Underdocks : ActModel
 		ModelDb.Event<SunkenTreasury>(),
 		ModelDb.Event<DoorsOfLightAndDark>(),
 		ModelDb.Event<TrashHeap>(),
-		ModelDb.Event<WaterloggedScriptorium>()
+		ModelDb.Event<WaterfallOfObviousSecrets>(),
+		ModelDb.Event<WaterloggedScriptorium>(),
+		ModelDb.Event<WuppyInTrouble>()
 	});
 
 	protected override int NumberOfWeakEncounters => 3;
@@ -45,9 +47,9 @@ public sealed class Underdocks : ActModel
 
 	public override bool IsDefault => false;
 
-	public override string[] BgMusicOptions => new string[1] { "event:/music/act1_b1_v1" };
+	public override string[] BgMusicOptions => new string[2] { "event:/music/act1_b1_v1", "event:/music/act1_b2_v1" };
 
-	public override string[] MusicBankPaths => new string[1] { "res://banks/desktop/act1_b1.bank" };
+	public override string[] MusicBankPaths => new string[2] { "res://banks/desktop/act1_b1.bank", "res://banks/desktop/act1_b2.bank" };
 
 	public override string AmbientSfx => "event:/sfx/ambience/act3_ambience";
 

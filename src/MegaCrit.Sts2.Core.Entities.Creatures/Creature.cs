@@ -10,7 +10,6 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Singleton;
 using MegaCrit.Sts2.Core.MonsterMoves.Intents;
 using MegaCrit.Sts2.Core.MonsterMoves.MonsterMoveStateMachine;
 using MegaCrit.Sts2.Core.Nodes.Combat;
@@ -764,12 +763,16 @@ public class Creature
 		NCreature? nCreature = NCombatRoom.Instance?.GetCreatureNode(this);
 		if (nCreature == null)
 		{
-			NBestiary? instance = NBestiary.Instance;
-			if (instance == null)
+			nCreature = NBestiary.Instance?.GetCreatureNode(this);
+			if (nCreature == null)
 			{
-				return null;
+				NCombatRoom? instance = NCombatRoom.Instance;
+				if (instance == null)
+				{
+					return null;
+				}
+				nCreature = instance.RemovingCreatureNodes.FirstOrDefault((NCreature n) => n.Entity == this);
 			}
-			nCreature = instance.GetCreatureNode(this);
 		}
 		return nCreature;
 	}

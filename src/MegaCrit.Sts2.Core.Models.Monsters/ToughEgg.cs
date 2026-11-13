@@ -158,7 +158,7 @@ public sealed class ToughEgg : MonsterModel
 		await PowerCmd.Remove<HatchPower>(Creature);
 		_hatched = true;
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/tough_egg/tough_egg_hatch");
-		List<PowerModel> list = Creature.Powers.Where((PowerModel p) => !(p is MinionPower)).ToList();
+		List<PowerModel> list = Creature.Powers.Where((PowerModel p) => !(p is MinionPower) && !(p is ImpaledPower)).ToList();
 		foreach (PowerModel item in list)
 		{
 			await PowerCmd.Remove(item);

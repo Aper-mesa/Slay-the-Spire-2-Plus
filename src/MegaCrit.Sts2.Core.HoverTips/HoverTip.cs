@@ -13,22 +13,22 @@ public record struct HoverTip : IHoverTip
 
 	public string Description { get; private set; }
 
-	public string Id { get; set; }
+	public string Id { get; }
 
-	public bool IsSmart { get; set; }
+	public bool IsSmart { get; }
 
-	public bool IsDebuff { get; set; }
+	public bool IsDebuff { get; }
 
-	public bool IsInstanced { get; set; }
+	public bool IsInstanced { get; }
 
 	public AbstractModel? CanonicalModel { get; private set; }
 
 	/// <summary>
-	/// Defines whether or now we want to word wrap the description text on the hover tip node
+	/// Defines whether we want to word wrap the description text on the hover tip node
 	/// or if we want the text to stretch the HoverTip horizontally. This is useful for situations
 	/// like our map point entry hover tips in the run history screen, that can be pretty long.
 	/// </summary>
-	public bool ShouldOverrideTextOverflow { get; set; }
+	public bool ShouldOverrideTextOverflow { get; init; }
 
 	public HoverTip(LocString description, Texture2D? icon = null)
 	{
@@ -101,7 +101,7 @@ public record struct HoverTip : IHoverTip
 	/// <param name="power">Power to create the HoverTip for.</param>
 	/// <param name="description">string to use in the description field.</param>
 	/// <param name="isSmart">
-	///     Whether or not the power description is "smart".
+	///     Whether the power description is "smart".
 	///     For example, when the Strength HoverTip is displayed on the Body Slam card, it should be "dumb" because it's
 	///     just referring to the concept of Strength, rather than a specific amount.
 	///     On the flip side, when the Strength HoverTip is displayed when hovering over a creature with 3 Strength, it

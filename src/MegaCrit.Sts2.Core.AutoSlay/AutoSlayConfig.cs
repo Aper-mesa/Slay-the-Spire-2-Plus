@@ -36,14 +36,25 @@ public static class AutoSlayConfig
 	/// </summary>
 	public static readonly TimeSpan mapPointEnabledTimeout = TimeSpan.FromSeconds(30L);
 
+	/// <summary>
+	/// Timeout for the room to be entered after a map click. The watchdog is reset before the map
+	/// handler and checked on every slice of this wait, so in AutoSlay it always reports first and
+	/// this bound only applies when no watchdog is installed. Equal to <see cref="F:MegaCrit.Sts2.Core.AutoSlay.AutoSlayConfig.watchdogTimeout" />
+	/// rather than lower, so it can never fail a run the watchdog would have let through.
+	/// </summary>
+	public static readonly TimeSpan roomEnterTimeout = TimeSpan.FromSeconds(30L);
+
 	/// <summary>Polling interval for condition checks.</summary>
 	public static readonly TimeSpan pollingInterval = TimeSpan.FromMilliseconds(100L, 0L);
 
 	/// <summary>Delay between button interactions.</summary>
 	public static readonly TimeSpan buttonClickDelay = TimeSpan.FromMilliseconds(100L, 0L);
 
-	/// <summary>Maximum floor to play to (floor 49 is the final boss).</summary>
-	public const int maxFloor = 49;
+	/// <summary>
+	/// Floor at which a run that has not ended is abandoned. Seed 1 won on floor 48 in Standard and on floor 49 in
+	/// Dread, whose act 3 has a second boss, so this is well above both.
+	/// </summary>
+	public const int maxFloor = 60;
 
 	/// <summary>
 	/// Turn at which AutoSlay starts ramping up Strength. Fights that end before this play out with

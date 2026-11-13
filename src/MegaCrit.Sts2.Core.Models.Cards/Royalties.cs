@@ -12,6 +12,8 @@ public sealed class Royalties : CardModel
 {
 	public override bool CanBeGeneratedInCombat => false;
 
+	public override bool IsAllowedInBlitz => false;
+
 	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new GoldVar(30));
 
 	public Royalties()

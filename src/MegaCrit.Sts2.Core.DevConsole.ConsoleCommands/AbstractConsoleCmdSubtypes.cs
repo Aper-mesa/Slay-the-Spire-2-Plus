@@ -103,35 +103,38 @@ public static class AbstractConsoleCmdSubtypes
 	private static readonly Type _t31 = typeof(RoomConsoleCmd);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t32 = typeof(SentryConsoleCmd);
+	private static readonly Type _t32 = typeof(ScreenshotConsoleCmd);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t33 = typeof(StarsConsoleCmd);
+	private static readonly Type _t33 = typeof(SentryConsoleCmd);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t34 = typeof(TrailerConsoleCmd);
+	private static readonly Type _t34 = typeof(StarsConsoleCmd);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t35 = typeof(TravelConsoleCmd);
+	private static readonly Type _t35 = typeof(TrailerConsoleCmd);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t36 = typeof(UnlockConsoleCmd);
+	private static readonly Type _t36 = typeof(TravelConsoleCmd);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t37 = typeof(UpgradeCardConsoleCmd);
+	private static readonly Type _t37 = typeof(UnlockConsoleCmd);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t38 = typeof(WinConsoleCmd);
+	private static readonly Type _t38 = typeof(UpgradeCardConsoleCmd);
 
-	private static readonly Type[] _subtypes = new Type[39]
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+	private static readonly Type _t39 = typeof(WinConsoleCmd);
+
+	private static readonly Type[] _subtypes = new Type[40]
 	{
 		_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9,
 		_t10, _t11, _t12, _t13, _t14, _t15, _t16, _t17, _t18, _t19,
 		_t20, _t21, _t22, _t23, _t24, _t25, _t26, _t27, _t28, _t29,
-		_t30, _t31, _t32, _t33, _t34, _t35, _t36, _t37, _t38
+		_t30, _t31, _t32, _t33, _t34, _t35, _t36, _t37, _t38, _t39
 	};
 
-	public static int Count => 39;
+	public static int Count => 40;
 
 	public static IReadOnlyList<Type> All => _subtypes;
 

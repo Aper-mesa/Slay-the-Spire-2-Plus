@@ -116,7 +116,7 @@ public class NRadialBlurVfx : BackBufferCopy
 		_tween.TweenProperty(_blurShader, "shader_parameter/blur_power", 0.005f, 0.10000000149011612);
 		_tween.Chain();
 		_tween.TweenProperty(_blurShader, "shader_parameter/blur_power", 0f, 0.8999999761581421).SetEase(Tween.EaseType.In).SetTrans(Tween.TransitionType.Cubic);
-		if (await _tween.AwaitFinished(this))
+		if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			Visible = false;
 		}

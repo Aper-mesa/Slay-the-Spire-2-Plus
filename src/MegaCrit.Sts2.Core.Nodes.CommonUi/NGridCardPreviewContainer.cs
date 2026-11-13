@@ -70,7 +70,7 @@ public class NGridCardPreviewContainer : Control
 
 	private void ReformatElements(Node _)
 	{
-		Vector2 vector = Size / 2f + Vector2.Down * 50f;
+		Vector2 vector = Size * 0.5f + Vector2.Down * 50f;
 		int childCount = GetChildCount();
 		int num = Mathf.FloorToInt(GetViewportRect().Size.X / (NCard.defaultSize.X + 25f));
 		int num2 = Mathf.CeilToInt((float)childCount / (float)num);

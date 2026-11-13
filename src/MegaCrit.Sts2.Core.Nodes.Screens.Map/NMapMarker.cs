@@ -5,65 +5,37 @@ using Godot.Bridge;
 using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Runs;
 
 namespace MegaCrit.Sts2.Core.Nodes.Screens.Map;
 
-/// <summary>
-/// The little arrow which indicates where you are on the map.
-/// </summary>
 [ScriptPath("res://src/Core/Nodes/Screens/Map/NMapMarker.cs")]
 public class NMapMarker : TextureRect
 {
-	/// <summary>
-	/// Cached StringNames for the methods contained in this class, for fast lookup.
-	/// </summary>
 	public new class MethodName : TextureRect.MethodName
 	{
-		/// <summary>
-		/// Cached name for the '_Ready' method.
-		/// </summary>
 		public new static readonly StringName _Ready = "_Ready";
 
-		/// <summary>
-		/// Cached name for the 'ResetMapPoint' method.
-		/// </summary>
+		public static readonly StringName Invert = "Invert";
+
 		public static readonly StringName ResetMapPoint = "ResetMapPoint";
 
-		/// <summary>
-		/// Cached name for the 'HideMapPoint' method.
-		/// </summary>
 		public static readonly StringName HideMapPoint = "HideMapPoint";
 
-		/// <summary>
-		/// Cached name for the 'SetMapPoint' method.
-		/// </summary>
 		public static readonly StringName SetMapPoint = "SetMapPoint";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the properties and fields contained in this class, for fast lookup.
-	/// </summary>
 	public new class PropertyName : TextureRect.PropertyName
 	{
-		/// <summary>
-		/// Cached name for the '_tween' field.
-		/// </summary>
 		public static readonly StringName _tween = "_tween";
 
-		/// <summary>
-		/// Cached name for the '_posOffset' field.
-		/// </summary>
 		public static readonly StringName _posOffset = "_posOffset";
 
-		/// <summary>
-		/// Cached name for the '_isEnabled' field.
-		/// </summary>
 		public static readonly StringName _isEnabled = "_isEnabled";
+
+		public static readonly StringName _isInverted = "_isInverted";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the signals contained in this class, for fast lookup.
-	/// </summary>
 	public new class SignalName : TextureRect.SignalName
 	{
 	}
@@ -74,14 +46,23 @@ public class NMapMarker : TextureRect
 
 	private bool _isEnabled;
 
+	private bool _isInverted;
+
 	public override void _Ready()
 	{
-		_posOffset = new Vector2((0f - Size.X) / 2f, -35f);
+		_posOffset = new Vector2((0f - Size.X) * 0.5f, -35f);
+	}
+
+	public void Invert()
+	{
+		_isInverted = !_isInverted;
+		_posOffset.Y = 0f - _posOffset.Y;
 	}
 
 	public void Initialize(Player player)
 	{
-		_isEnabled = player.RunState.Players.Count == 1;
+		IRunState runState = player.RunState;
+		_isEnabled = runState.Players.Count == 1 || runState.GameMode == GameMode.Blitz;
 		Texture = player.Character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("topIcon") : player.Character.MapMarker;
 		Visible = false;
 	}
@@ -105,19 +86,22 @@ public class NMapMarker : TextureRect
 		}
 	}
 
-	public void SetMapPoint(NMapPoint node)
+	public void SetMapPoint(Control node)
 	{
 		if (_isEnabled)
 		{
 			_tween?.FastForwardToCompletion();
 			if (!Visible)
 			{
+				float num = ((!_isInverted) ? 1 : (-1));
 				Visible = true;
-				Vector2 vector = new Vector2(node.Size.X / 2f, 0f);
+				Vector2 vector = new Vector2(node.Size.X * 0.5f, 0f);
 				Position = node.Position + vector + _posOffset;
+				Scale = new Vector2(0f, num);
+				Vector2 vector2 = new Vector2(1f, num);
 				_tween = CreateTween();
-				_tween.TweenProperty(this, "scale", Vector2.One, 0.20000000298023224).From(Vector2.Down);
-				_tween.Parallel().TweenProperty(this, "position", Position + Vector2.Up * 25f, 0.20000000298023224).SetEase(Tween.EaseType.In)
+				_tween.TweenProperty(this, "scale", vector2, 0.20000000298023224);
+				_tween.Parallel().TweenProperty(this, "position", Position + Vector2.Up * 25f * num, 0.20000000298023224).SetEase(Tween.EaseType.In)
 					.SetTrans(Tween.TransitionType.Sine)
 					.FromCurrent();
 				_tween.TweenProperty(this, "position", Position, 0.75).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Elastic);
@@ -125,16 +109,12 @@ public class NMapMarker : TextureRect
 		}
 	}
 
-	/// <summary>
-	/// Get the method information for all the methods declared in this class.
-	/// This method is used by Godot to register the available methods in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(4);
+		List<MethodInfo> list = new List<MethodInfo>(5);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.Invert, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.ResetMapPoint, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.HideMapPoint, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.SetMapPoint, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
@@ -144,13 +124,18 @@ public class NMapMarker : TextureRect
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool InvokeGodotClassMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
 	{
 		if (method == MethodName._Ready && args.Count == 0)
 		{
 			_Ready();
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.Invert && args.Count == 0)
+		{
+			Invert();
 			ret = default;
 			return true;
 		}
@@ -168,18 +153,21 @@ public class NMapMarker : TextureRect
 		}
 		if (method == MethodName.SetMapPoint && args.Count == 1)
 		{
-			SetMapPoint(VariantUtils.ConvertTo<NMapPoint>(in args[0]));
+			SetMapPoint(VariantUtils.ConvertTo<Control>(in args[0]));
 			ret = default;
 			return true;
 		}
 		return base.InvokeGodotClassMethod(in method, args, out ret);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
 		if (method == MethodName._Ready)
+		{
+			return true;
+		}
+		if (method == MethodName.Invert)
 		{
 			return true;
 		}
@@ -198,7 +186,6 @@ public class NMapMarker : TextureRect
 		return base.HasGodotClassMethod(in method);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool SetGodotClassPropertyValue(in godot_string_name name, in godot_variant value)
 	{
@@ -217,10 +204,14 @@ public class NMapMarker : TextureRect
 			_isEnabled = VariantUtils.ConvertTo<bool>(in value);
 			return true;
 		}
+		if (name == PropertyName._isInverted)
+		{
+			_isInverted = VariantUtils.ConvertTo<bool>(in value);
+			return true;
+		}
 		return base.SetGodotClassPropertyValue(in name, in value);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
@@ -239,14 +230,14 @@ public class NMapMarker : TextureRect
 			value = VariantUtils.CreateFrom(in _isEnabled);
 			return true;
 		}
+		if (name == PropertyName._isInverted)
+		{
+			value = VariantUtils.CreateFrom(in _isInverted);
+			return true;
+		}
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
-	/// <summary>
-	/// Get the property information for all the properties declared in this class.
-	/// This method is used by Godot to register the available properties in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<PropertyInfo> GetGodotPropertyList()
 	{
@@ -254,10 +245,10 @@ public class NMapMarker : TextureRect
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._tween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Vector2, PropertyName._posOffset, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isEnabled, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isInverted, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void SaveGodotObjectData(GodotSerializationInfo info)
 	{
@@ -265,9 +256,9 @@ public class NMapMarker : TextureRect
 		info.AddProperty(PropertyName._tween, Variant.From(in _tween));
 		info.AddProperty(PropertyName._posOffset, Variant.From(in _posOffset));
 		info.AddProperty(PropertyName._isEnabled, Variant.From(in _isEnabled));
+		info.AddProperty(PropertyName._isInverted, Variant.From(in _isInverted));
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void RestoreGodotObjectData(GodotSerializationInfo info)
 	{
@@ -283,6 +274,10 @@ public class NMapMarker : TextureRect
 		if (info.TryGetProperty(PropertyName._isEnabled, out var value3))
 		{
 			_isEnabled = value3.As<bool>();
+		}
+		if (info.TryGetProperty(PropertyName._isInverted, out var value4))
+		{
+			_isInverted = value4.As<bool>();
 		}
 	}
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
@@ -22,7 +23,17 @@ public class Rng
 	/// Good for when we need to randomize things that don't impact gameplay.
 	/// We use this instead of the GD.Rand functions because they're extremely slow when called from C#.
 	/// </summary>
-	public static Rng Chaotic { get; } = new Rng((ulong)DateTimeOffset.Now.ToUnixTimeSeconds());
+	public static Rng Chaotic { get; } = new Rng(CreateChaoticSeed());
+
+	/// <summary>
+	/// Returns a seed from the operating system's cryptographic random source. Use this wherever a generator must
+	/// differ between game instances. Do not seed from the clock: two game instances launched in the same second
+	/// would then draw the same unseeded run seed.
+	/// </summary>
+	public static ulong CreateChaoticSeed()
+	{
+		return BitConverter.ToUInt64(RandomNumberGenerator.GetBytes(8));
+	}
 
 	public Rng(ulong seed = 0uL)
 	{
@@ -332,25 +343,6 @@ public class Rng
 			}
 		}
 		return fallback;
-	}
-
-	/// <summary>
-	/// Shuffles a list in place using the Fisher-Yates algorithm.
-	/// </summary>
-	/// <param name="list">The list to shuffle.</param>
-	/// <typeparam name="T">Type of items in the list.</typeparam>
-	public void Shuffle<T>(IList<T> list)
-	{
-		for (int num = list.Count - 1; num > 0; num--)
-		{
-			int num2 = NextInt(num + 1);
-			int index = num;
-			int index2 = num2;
-			T value = list[num2];
-			T value2 = list[num];
-			list[index] = value;
-			list[index2] = value2;
-		}
 	}
 
 	public SerializableRng ToSerializable()

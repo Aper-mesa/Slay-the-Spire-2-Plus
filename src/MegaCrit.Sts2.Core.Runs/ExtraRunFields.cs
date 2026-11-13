@@ -27,13 +27,28 @@ public class ExtraRunFields
 	/// </summary>
 	public bool FreedRepy { get; set; }
 
+	/// <summary>
+	/// Whether a debug tool changed this run. Run metrics are not uploaded for such a run.
+	/// </summary>
+	public bool UsedDebugCommand { get; private set; }
+
+	/// <summary>
+	/// Call this from anything that lets the player change a run outside normal play, such as a debug console
+	/// command or a dropped run file.
+	/// </summary>
+	public void MarkDebugToolUsed()
+	{
+		UsedDebugCommand = true;
+	}
+
 	public SerializableExtraRunFields ToSerializable()
 	{
 		return new SerializableExtraRunFields
 		{
 			StartedWithNeow = StartedWithNeow,
 			TestSubjectKills = TestSubjectKills,
-			FreedRepy = FreedRepy
+			FreedRepy = FreedRepy,
+			UsedDebugCommand = UsedDebugCommand
 		};
 	}
 
@@ -43,7 +58,8 @@ public class ExtraRunFields
 		{
 			StartedWithNeow = save.StartedWithNeow,
 			TestSubjectKills = save.TestSubjectKills,
-			FreedRepy = save.FreedRepy
+			FreedRepy = save.FreedRepy,
+			UsedDebugCommand = save.UsedDebugCommand
 		};
 	}
 }

@@ -44,6 +44,10 @@ public sealed class ArchaicTooth : RelicModel
 		{
 			ModelDb.Card<Dualcast>().Id,
 			ModelDb.Card<Quadcast>()
+		},
+		{
+			ModelDb.Card<FoolishShot>().Id,
+			ModelDb.Card<DivineShot>()
 		}
 	};
 

@@ -164,16 +164,16 @@ public class NTopBarRoomIcon : NClickableControl
 	{
 		return GetCurrentMapPointType() switch
 		{
-			MapPointType.Unassigned => "ROOM_MAP", 
-			MapPointType.Unknown => GetHoverTipPrefixForUnknownRoomType(), 
-			MapPointType.Shop => "ROOM_MERCHANT", 
-			MapPointType.Treasure => "ROOM_TREASURE", 
-			MapPointType.RestSite => "ROOM_REST", 
-			MapPointType.Monster => "ROOM_ENEMY", 
-			MapPointType.Elite => "ROOM_ELITE", 
-			MapPointType.Boss => "ROOM_BOSS", 
-			MapPointType.Ancient => "ROOM_ANCIENT", 
-			_ => throw new ArgumentOutOfRangeException(), 
+			MapPointType.Unassigned => "ROOM_MAP",
+			MapPointType.Unknown => GetHoverTipPrefixForUnknownRoomType(),
+			MapPointType.Shop => "ROOM_MERCHANT",
+			MapPointType.Treasure => "ROOM_TREASURE",
+			MapPointType.RestSite => "ROOM_REST",
+			MapPointType.Monster => "ROOM_ENEMY",
+			MapPointType.Elite => "ROOM_ELITE",
+			MapPointType.Boss => "ROOM_BOSS",
+			MapPointType.Ancient => "ROOM_ANCIENT",
+			_ => throw new ArgumentOutOfRangeException(),
 		};
 	}
 
@@ -182,11 +182,12 @@ public class NTopBarRoomIcon : NClickableControl
 		AbstractRoom baseRoom = _runState.BaseRoom;
 		return baseRoom.RoomType switch
 		{
-			RoomType.Monster => "ROOM_UNKNOWN_ENEMY", 
-			RoomType.Treasure => "ROOM_UNKNOWN_TREASURE", 
-			RoomType.Shop => "ROOM_UNKNOWN_MERCHANT", 
-			RoomType.Event => "ROOM_UNKNOWN_EVENT", 
-			_ => throw new ArgumentOutOfRangeException(), 
+			RoomType.Elite => "ROOM_UNKNOWN_ELITE",
+			RoomType.Monster => "ROOM_UNKNOWN_ENEMY",
+			RoomType.Treasure => "ROOM_UNKNOWN_TREASURE",
+			RoomType.Shop => "ROOM_UNKNOWN_MERCHANT",
+			RoomType.Event => "ROOM_UNKNOWN_EVENT",
+			_ => throw new ArgumentOutOfRangeException(),
 		};
 	}
 

@@ -124,7 +124,7 @@ public sealed class TransferRelicAction : GameAction
 			Cancel();
 			return;
 		}
-		await CreatureCmd.LoseMaxHp(context, Player.Creature, _maxHpCost, isFromCard: false);
+		await CreatureCmd.LoseMaxHp(context, Player.Creature, _maxHpCost, cardSource: null);
 		await TransferState.GiveRelicAsync(Player, target, relic);
 		TransferState.MarkRelicTransfer(Player, playerCombatState.TurnNumber);
 	}

@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
@@ -8,6 +11,7 @@ using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
+using MegaCrit.Sts2.Core.Models.Dread;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace MegaCrit.Sts2.Core.HoverTips;
@@ -20,7 +24,14 @@ public static class HoverTipFactory
 
 	public static IEnumerable<IHoverTip> FromEnchantment<T>(int amount = 1) where T : EnchantmentModel
 	{
-		EnchantmentModel enchantmentModel = ModelDb.Enchantment<T>().ToMutable();
+		EnchantmentModel enchantment = ModelDb.Enchantment<T>();
+		return FromEnchantment(enchantment, amount);
+	}
+
+	public static IEnumerable<IHoverTip> FromEnchantment(EnchantmentModel enchantment, int amount = 1)
+	{
+		enchantment.AssertCanonical();
+		EnchantmentModel enchantmentModel = enchantment.ToMutable();
 		enchantmentModel.Amount = amount;
 		enchantmentModel.RecalculateValues();
 		return enchantmentModel.HoverTips;
@@ -58,7 +69,7 @@ public static class HoverTipFactory
 	/// </summary>
 	public static IEnumerable<IHoverTip> FromPowerWithPowerHoverTips<T>(int? amount = null) where T : PowerModel
 	{
-		return new IHoverTip[1] { FromPower<T>(amount) }.Concat(ModelDb.Power<T>().HoverTips);
+		return new IHoverTip[1] { FromPower<T>(amount) }.Concat(ModelDb.Power<T>().GetExtraHoverTips());
 	}
 
 	public static IHoverTip FromPotion<T>() where T : PotionModel
@@ -108,6 +119,26 @@ public static class HoverTipFactory
 	public static IEnumerable<IHoverTip> FromCardWithCardHoverTips<T>(bool upgrade = false) where T : CardModel
 	{
 		return new IHoverTip[1] { FromCard<T>(upgrade) }.Concat(ModelDb.Card<T>().HoverTips);
+	}
+
+	/// <summary>
+	/// Same as FromCardWithHoverTips but allow you to omit some keywords.
+	/// Use when there are TOO MANY TIPS. Example: CeremonialBeastDominion
+	/// </summary>
+	public static IEnumerable<IHoverTip> FromCardWithCardHoverTips<T>(IEnumerable<CardKeyword> excludedKeywords, bool upgrade = false) where T : CardModel
+	{
+		HashSet<string> excludedIds = excludedKeywords.Select((CardKeyword keyword) => FromKeyword(keyword).Id).ToHashSet();
+		return from tip in FromCardWithCardHoverTips<T>(upgrade)
+			where !excludedIds.Contains(tip.Id)
+			select tip;
+	}
+
+	/// <summary>
+	/// Same as FromCardWithHoverTips but allows you to pass a specific card rather than the canonical one.
+	/// </summary>
+	public static IEnumerable<IHoverTip> FromCardWithCardHoverTips(CardModel card, bool upgrade = false)
+	{
+		return new IHoverTip[1] { FromCard(card, upgrade) }.Concat(card.HoverTips);
 	}
 
 	/// <summary>
@@ -178,10 +209,37 @@ public static class HoverTipFactory
 		return ForEnergyWithIconPath(EnergyIconHelper.GetPath(relic));
 	}
 
+	public static IHoverTip ForEnergy(DominionModel dominion)
+	{
+		return ForEnergyWithIconPath(EnergyIconHelper.GetPath(dominion));
+	}
+
 	private static IHoverTip ForEnergyWithIconPath(string path)
 	{
 		string localCharacterEnergyIconPrefix = RunManager.Instance.GetLocalCharacterEnergyIconPrefix();
 		return new HoverTip(L10NStatic("ENERGY.title"), L10NStatic("ENERGY.description"), PreloadManager.Cache.GetTexture2D((localCharacterEnergyIconPrefix != null) ? EnergyIconHelper.GetPath(localCharacterEnergyIconPrefix) : path));
+	}
+
+	/// <summary>
+	/// Special hovertip logic for the Fool's arrows.
+	/// Handles multiplayer, arrow count, no arrows, and when hovering the empty arrow slot.
+	/// </summary>
+	public static IHoverTip ForArrow(Player? player, bool isImpaled = false)
+	{
+		bool flag = CombatManager.Instance.IsInProgress && player?.PlayerCombatState != null && LocalContext.IsMe(player);
+		LocString locString = L10NStatic(isImpaled ? "ARROW.missing.description" : "ARROW.description");
+		locString.Add("ShowArrowCount", flag);
+		if (flag)
+		{
+			LocString locString2 = L10NStatic("ARROW.count");
+			locString2.Add("Arrows", ArrowCmd.GetAvailableArrowCount(player));
+			locString.Add("ArrowCount", locString2);
+		}
+		else
+		{
+			locString.Add("ArrowCount", string.Empty);
+		}
+		return new HoverTip(L10NStatic("ARROW.title"), locString);
 	}
 
 	public static IEnumerable<IHoverTip> FromForge()

@@ -99,7 +99,7 @@ public class NFailedJoinVfx : Control
 		_tween.TweenInterval(3.0);
 		_tween.Chain();
 		_tween.TweenProperty(this, "modulate:a", 0f, 0.5);
-		if (await _tween.AwaitFinished(this))
+		if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			this.QueueFreeSafely();
 		}

@@ -32,7 +32,7 @@ public sealed class Ambergris : PotionModel
 		await CreatureCmd.Heal(target, (decimal)target.MaxHp * DynamicVars["HealPercent"].BaseValue / 100m);
 		if (CombatManager.Instance.IsInProgress)
 		{
-			await PowerCmd.Apply<AmbergrisPower>(choiceContext, target, 1m, Owner.Creature, null);
+			await PowerCmd.Apply<ExtraTurnPower>(choiceContext, target, 1m, Owner.Creature, null);
 		}
 	}
 }

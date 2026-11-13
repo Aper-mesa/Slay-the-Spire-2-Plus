@@ -36,7 +36,7 @@ public class TreasureRoomHandler : IRoomHandler, IHandler
 		List<NTreasureRoomRelicHolder> list = UiHelper.FindAll<NTreasureRoomRelicHolder>(room);
 		foreach (NTreasureRoomRelicHolder item in list)
 		{
-			if (item.IsEnabled && item.Visible)
+			if (item.IsEnabled && item.IsVisibleInTree())
 			{
 				AutoSlayLog.Action("Picking up relic");
 				await UiHelper.Click(item);

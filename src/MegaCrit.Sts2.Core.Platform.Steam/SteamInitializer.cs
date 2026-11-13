@@ -15,7 +15,7 @@ public static class SteamInitializer
 {
 	public const ulong steamAppId = 2868840uL;
 
-	private static CancellationTokenSource _disconnectCts = new CancellationTokenSource();
+	private static readonly CancellationTokenSource _disconnectCts = new CancellationTokenSource();
 
 	public static bool Initialized { get; private set; }
 

@@ -174,7 +174,7 @@ public class NPauseMenuButton : NButton
 
 	protected override void OnEnable()
 	{
-		base.OnDisable();
+		base.OnEnable();
 		Modulate = Colors.White;
 	}
 

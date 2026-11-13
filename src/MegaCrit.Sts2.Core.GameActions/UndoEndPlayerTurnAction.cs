@@ -37,7 +37,7 @@ public class UndoEndPlayerTurnAction : GameAction
 		int turnNumber = _player.PlayerCombatState.TurnNumber;
 		if (turnNumber == _turnNumber)
 		{
-			CombatManager.Instance.UndoReadyToEndTurn(_player);
+			CombatManager.Instance.TryUndoReadyToEndTurn(_player);
 		}
 		else
 		{

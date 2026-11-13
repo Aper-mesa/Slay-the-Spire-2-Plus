@@ -155,6 +155,8 @@ public abstract class Reward
 		{
 		case RewardType.RemoveCard:
 			return new CardRemovalReward(player);
+		case RewardType.UpgradeCard:
+			return new CardUpgradeReward(player);
 		case RewardType.SpecialCard:
 		{
 			CardModel cardModel = CardModel.FromSerializable(save.SpecialCard);

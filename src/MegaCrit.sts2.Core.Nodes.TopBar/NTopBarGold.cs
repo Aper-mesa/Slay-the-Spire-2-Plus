@@ -154,10 +154,21 @@ public class NTopBarGold : NClickableControl
 		_alreadyRunning = true;
 		try
 		{
-			Tween tween = CreateTween().SetParallel();
-			tween.TweenProperty(_goldPopupLabel, "modulate:a", 1f, 0.15000000596046448);
-			tween.TweenProperty(_goldPopupLabel, "position:y", _goldPopupLabel.Position.Y + 30f, 0.25);
-			await tween.AwaitFinished(ct);
+			float restingY = _goldPopupLabel.Position.Y;
+			Tween tweenIn = CreateTween().SetParallel();
+			tweenIn.TweenProperty(_goldPopupLabel, "modulate:a", 1f, 0.15000000596046448);
+			tweenIn.TweenProperty(_goldPopupLabel, "position:y", restingY + 30f, 0.25);
+			if (await tweenIn.AwaitFinished(this, ct) != TweenOutcome.Finished)
+			{
+				tweenIn.Kill();
+				if (this.IsValid() && GodotObject.IsInstanceValid(_goldPopupLabel))
+				{
+					_goldPopupLabel.Modulate = Colors.Transparent;
+					_goldPopupLabel.Position = new Vector2(_goldPopupLabel.Position.X, restingY);
+					_goldLabel.SetTextAutoSize($"{_player.Gold}");
+				}
+				return;
+			}
 			await Task.Delay(150, ct);
 			while (_additionalGold != 0)
 			{
@@ -177,9 +188,9 @@ public class NTopBarGold : NClickableControl
 				await Task.Delay((int)Mathf.Lerp(10f, 20f, Mathf.Max(0, 10 - Mathf.Abs(_additionalGold))), ct);
 			}
 			await Task.Delay(250, ct);
-			Tween tween2 = CreateTween().SetParallel();
-			tween2.TweenProperty(_goldPopupLabel, "modulate:a", 0f, 0.10000000149011612);
-			tween2.TweenProperty(_goldPopupLabel, "position:y", _goldPopupLabel.Position.Y - 30f, 0.25).FromCurrent();
+			Tween tween = CreateTween().SetParallel();
+			tween.TweenProperty(_goldPopupLabel, "modulate:a", 0f, 0.10000000149011612);
+			tween.TweenProperty(_goldPopupLabel, "position:y", _goldPopupLabel.Position.Y - 30f, 0.25).FromCurrent();
 			_goldLabel.SetTextAutoSize($"{_player.Gold}");
 		}
 		catch (OperationCanceledException)

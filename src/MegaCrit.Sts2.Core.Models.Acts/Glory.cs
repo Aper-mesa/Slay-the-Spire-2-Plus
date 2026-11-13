@@ -27,15 +27,17 @@ public sealed class Glory : ActModel
 		ModelDb.AncientEvent<Vakuu>()
 	});
 
-	public override IEnumerable<EventModel> AllEvents => new _003C_003Ez__ReadOnlyArray<EventModel>(new EventModel[7]
+	public override IEnumerable<EventModel> AllEvents => new _003C_003Ez__ReadOnlyArray<EventModel>(new EventModel[9]
 	{
 		ModelDb.Event<BattlewornDummy>(),
 		ModelDb.Event<GraveOfTheForgotten>(),
 		ModelDb.Event<HungryForMushrooms>(),
 		ModelDb.Event<Reflections>(),
 		ModelDb.Event<RoundTeaParty>(),
-		ModelDb.Event<Trial>(),
-		ModelDb.Event<TinkerTime>()
+		ModelDb.Event<ShrineOfTheWarlord>(),
+		ModelDb.Event<ThermaeNonupeipe>(),
+		ModelDb.Event<TinkerTime>(),
+		ModelDb.Event<Trial>()
 	});
 
 	protected override int NumberOfWeakEncounters => 2;

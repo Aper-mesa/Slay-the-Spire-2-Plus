@@ -16,147 +16,66 @@ using MegaCrit.Sts2.Core.Saves;
 
 namespace MegaCrit.Sts2.Core.Nodes.CommonUi;
 
-/// <summary>
-/// Listens for keyboard and controller inputs, and map them into input events that the UX
-/// can listen for (for navigation or hotkeys)
-/// That map can be edited to rebind different keyboard/controller inputs to different UX events
-/// </summary>
 [ScriptPath("res://src/Core/Nodes/CommonUi/NInputManager.cs")]
 public class NInputManager : Node
 {
 	[Signal]
 	public delegate void InputReboundEventHandler();
 
-	/// <summary>
-	/// Cached StringNames for the methods contained in this class, for fast lookup.
-	/// </summary>
 	public new class MethodName : Node.MethodName
 	{
-		/// <summary>
-		/// Cached name for the '_EnterTree' method.
-		/// </summary>
 		public new static readonly StringName _EnterTree = "_EnterTree";
 
-		/// <summary>
-		/// Cached name for the '_Ready' method.
-		/// </summary>
 		public new static readonly StringName _Ready = "_Ready";
 
-		/// <summary>
-		/// Cached name for the '_UnhandledKeyInput' method.
-		/// </summary>
 		public new static readonly StringName _UnhandledKeyInput = "_UnhandledKeyInput";
 
-		/// <summary>
-		/// Cached name for the 'ProcessDebugKeyInput' method.
-		/// </summary>
 		public static readonly StringName ProcessDebugKeyInput = "ProcessDebugKeyInput";
 
-		/// <summary>
-		/// Cached name for the 'ProcessHotkeyInput' method.
-		/// </summary>
 		public static readonly StringName ProcessHotkeyInput = "ProcessHotkeyInput";
 
-		/// <summary>
-		/// Cached name for the 'ProcessFkbInput' method.
-		/// </summary>
 		public static readonly StringName ProcessFkbInput = "ProcessFkbInput";
 
-		/// <summary>
-		/// Cached name for the '_UnhandledInput' method.
-		/// </summary>
 		public new static readonly StringName _UnhandledInput = "_UnhandledInput";
 
-		/// <summary>
-		/// Cached name for the 'GetCurrentHotkey' method.
-		/// </summary>
 		public static readonly StringName GetCurrentHotkey = "GetCurrentHotkey";
 
-		/// <summary>
-		/// Cached name for the 'GetMKbHotkey' method.
-		/// </summary>
 		public static readonly StringName GetMKbHotkey = "GetMKbHotkey";
 
-		/// <summary>
-		/// Cached name for the 'GetKbOnlyHotkey' method.
-		/// </summary>
 		public static readonly StringName GetKbOnlyHotkey = "GetKbOnlyHotkey";
 
-		/// <summary>
-		/// Cached name for the 'GetHotkeyIcon' method.
-		/// </summary>
+		public static readonly StringName IsKbOnlyDirectionalKey = "IsKbOnlyDirectionalKey";
+
 		public static readonly StringName GetHotkeyIcon = "GetHotkeyIcon";
 
-		/// <summary>
-		/// Cached name for the 'ModifyMKbKey' method.
-		/// </summary>
 		public static readonly StringName ModifyMKbKey = "ModifyMKbKey";
 
-		/// <summary>
-		/// Cached name for the 'EnsureEndTurnAndConfirmMkbKeyAreTheSame' method.
-		/// </summary>
 		public static readonly StringName EnsureEndTurnAndConfirmMkbKeyAreTheSame = "EnsureEndTurnAndConfirmMkbKeyAreTheSame";
 
-		/// <summary>
-		/// Cached name for the 'ModifyKbOnlyKey' method.
-		/// </summary>
 		public static readonly StringName ModifyKbOnlyKey = "ModifyKbOnlyKey";
 
-		/// <summary>
-		/// Cached name for the 'ModifyControllerButton' method.
-		/// </summary>
 		public static readonly StringName ModifyControllerButton = "ModifyControllerButton";
 
-		/// <summary>
-		/// Cached name for the 'EnsureEndTurnAndConfirmControllerInputAreTheSame' method.
-		/// </summary>
 		public static readonly StringName EnsureEndTurnAndConfirmControllerInputAreTheSame = "EnsureEndTurnAndConfirmControllerInputAreTheSame";
 
-		/// <summary>
-		/// Cached name for the 'ResetToDefaults' method.
-		/// </summary>
 		public static readonly StringName ResetToDefaults = "ResetToDefaults";
 
-		/// <summary>
-		/// Cached name for the 'OnControllerTypeChanged' method.
-		/// </summary>
 		public static readonly StringName OnControllerTypeChanged = "OnControllerTypeChanged";
 
-		/// <summary>
-		/// Cached name for the 'SaveControllerInputMapping' method.
-		/// </summary>
 		public static readonly StringName SaveControllerInputMapping = "SaveControllerInputMapping";
 
-		/// <summary>
-		/// Cached name for the 'SaveMKbInputMapping' method.
-		/// </summary>
 		public static readonly StringName SaveMKbInputMapping = "SaveMKbInputMapping";
 
-		/// <summary>
-		/// Cached name for the 'SaveFKbInputMapping' method.
-		/// </summary>
 		public static readonly StringName SaveFKbInputMapping = "SaveFKbInputMapping";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the properties and fields contained in this class, for fast lookup.
-	/// </summary>
 	public new class PropertyName : Node.PropertyName
 	{
-		/// <summary>
-		/// Cached name for the 'ControllerManager' property.
-		/// </summary>
 		public static readonly StringName ControllerManager = "ControllerManager";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the signals contained in this class, for fast lookup.
-	/// </summary>
 	public new class SignalName : Node.SignalName
 	{
-		/// <summary>
-		/// Cached name for the 'InputRebound' signal.
-		/// </summary>
 		public static readonly StringName InputRebound = "InputRebound";
 	}
 
@@ -246,6 +165,14 @@ public class NInputManager : Node
 			Key.U,
 			DebugHotkey.unlockCharacters
 		}
+	};
+
+	public static readonly IReadOnlyList<StringName> directionalInputs = new List<StringName>
+	{
+		MegaInput.up,
+		MegaInput.down,
+		MegaInput.left,
+		MegaInput.right
 	};
 
 	public static readonly IReadOnlyList<StringName> remappableMKbInputs = new List<StringName>
@@ -563,7 +490,6 @@ public class NInputManager : Node
 
 	public NControllerManager ControllerManager { get; private set; }
 
-	/// <inheritdoc cref="T:MegaCrit.Sts2.Core.Nodes.CommonUi.NInputManager.InputReboundEventHandler" />
 	public event InputReboundEventHandler InputRebound
 	{
 		add
@@ -640,13 +566,6 @@ public class NInputManager : Node
 		SaveControllerInputMapping();
 	}
 
-	/// <summary>
-	/// Overlays a saved controller mapping onto the defaults, ignoring any saved binding whose
-	/// value is not a registered InputMap action. A binding can point at a missing action when a
-	/// save was migrated forward by a newer build and then loaded by an older one, or when a save
-	/// was hand-edited. Applying it would make <see cref="M:MegaCrit.Sts2.Core.Nodes.CommonUi.NInputManager._UnhandledInput(Godot.InputEvent)" /> call
-	/// <c>IsActionPressed</c> on a nonexistent action and spam errors, so the default is kept.
-	/// </summary>
 	public static Dictionary<StringName, StringName> MergeSavedControllerBindings(Dictionary<StringName, StringName> defaults, Dictionary<string, string> savedMapping)
 	{
 		Dictionary<StringName, StringName> dictionary = new Dictionary<StringName, StringName>(defaults);
@@ -789,6 +708,27 @@ public class NInputManager : Node
 		return value;
 	}
 
+	public bool IsKbOnlyDirectionalKey(Key keycode)
+	{
+		return IsDirectionalKey(keycode, _fKbInputMap);
+	}
+
+	public static bool IsDirectionalKey(Key keycode, IReadOnlyDictionary<StringName, Key> bindings)
+	{
+		if (keycode == Key.None)
+		{
+			return false;
+		}
+		foreach (StringName directionalInput in directionalInputs)
+		{
+			if (bindings.TryGetValue(directionalInput, out var value) && value == keycode)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public Texture2D? GetHotkeyIcon(string hotkey)
 	{
 		if (_controllerInputMap.TryGetValue(hotkey, out StringName value))
@@ -813,9 +753,6 @@ public class NInputManager : Node
 		EmitSignalInputRebound();
 	}
 
-	/// <summary>
-	/// Ensures that in Mkb mapping, the input for confirm is the same as the input for end turn
-	/// </summary>
 	private void EnsureEndTurnAndConfirmMkbKeyAreTheSame(StringName input, Key shortcutKey)
 	{
 		if (input == MegaInput.confirm)
@@ -856,9 +793,6 @@ public class NInputManager : Node
 		EmitSignalInputRebound();
 	}
 
-	/// <summary>
-	/// Ensures that in Controller Input mapping, the input for confirm is the same as the input for end turn
-	/// </summary>
 	private void EnsureEndTurnAndConfirmControllerInputAreTheSame(StringName input, StringName controllerInput)
 	{
 		if (input == MegaInput.confirm)
@@ -926,15 +860,10 @@ public class NInputManager : Node
 		SaveManager.Instance.SaveSettings();
 	}
 
-	/// <summary>
-	/// Get the method information for all the methods declared in this class.
-	/// This method is used by Godot to register the available methods in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(21);
+		List<MethodInfo> list = new List<MethodInfo>(22);
 		list.Add(new MethodInfo(MethodName._EnterTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._UnhandledKeyInput, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
@@ -968,6 +897,10 @@ public class NInputManager : Node
 		list.Add(new MethodInfo(MethodName.GetKbOnlyHotkey, new PropertyInfo(Variant.Type.Int, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.StringName, "input", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName.IsKbOnlyDirectionalKey, new PropertyInfo(Variant.Type.Bool, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Int, "keycode", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.GetHotkeyIcon, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Texture2D"), exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
@@ -1006,7 +939,6 @@ public class NInputManager : Node
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool InvokeGodotClassMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
 	{
@@ -1065,6 +997,11 @@ public class NInputManager : Node
 		if (method == MethodName.GetKbOnlyHotkey && args.Count == 1)
 		{
 			ret = VariantUtils.CreateFrom<Key>(GetKbOnlyHotkey(VariantUtils.ConvertTo<StringName>(in args[0])));
+			return true;
+		}
+		if (method == MethodName.IsKbOnlyDirectionalKey && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<bool>(IsKbOnlyDirectionalKey(VariantUtils.ConvertTo<Key>(in args[0])));
 			return true;
 		}
 		if (method == MethodName.GetHotkeyIcon && args.Count == 1)
@@ -1135,7 +1072,6 @@ public class NInputManager : Node
 		return base.InvokeGodotClassMethod(in method, args, out ret);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
@@ -1176,6 +1112,10 @@ public class NInputManager : Node
 			return true;
 		}
 		if (method == MethodName.GetKbOnlyHotkey)
+		{
+			return true;
+		}
+		if (method == MethodName.IsKbOnlyDirectionalKey)
 		{
 			return true;
 		}
@@ -1226,7 +1166,6 @@ public class NInputManager : Node
 		return base.HasGodotClassMethod(in method);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool SetGodotClassPropertyValue(in godot_string_name name, in godot_variant value)
 	{
@@ -1238,7 +1177,6 @@ public class NInputManager : Node
 		return base.SetGodotClassPropertyValue(in name, in value);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
@@ -1250,11 +1188,6 @@ public class NInputManager : Node
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
-	/// <summary>
-	/// Get the property information for all the properties declared in this class.
-	/// This method is used by Godot to register the available properties in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<PropertyInfo> GetGodotPropertyList()
 	{
@@ -1263,7 +1196,6 @@ public class NInputManager : Node
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void SaveGodotObjectData(GodotSerializationInfo info)
 	{
@@ -1272,7 +1204,6 @@ public class NInputManager : Node
 		info.AddSignalEventDelegate(SignalName.InputRebound, backing_InputRebound);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void RestoreGodotObjectData(GodotSerializationInfo info)
 	{
@@ -1287,11 +1218,6 @@ public class NInputManager : Node
 		}
 	}
 
-	/// <summary>
-	/// Get the signal information for all the signals declared in this class.
-	/// This method is used by Godot to register the available signals in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotSignalList()
 	{
@@ -1305,7 +1231,6 @@ public class NInputManager : Node
 		EmitSignal(SignalName.InputRebound);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void RaiseGodotClassSignalCallbacks(in godot_string_name signal, NativeVariantPtrArgs args)
 	{
@@ -1319,7 +1244,6 @@ public class NInputManager : Node
 		}
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool HasGodotClassSignal(in godot_string_name signal)
 	{

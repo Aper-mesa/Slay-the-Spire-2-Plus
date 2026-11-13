@@ -51,8 +51,8 @@ public sealed class UnrestSite : EventModel
 
 	private async Task Kill()
 	{
-		await CreatureCmd.LoseMaxHp(new ThrowingPlayerChoiceContext(), Owner.Creature, DynamicVars["MaxHpLoss"].BaseValue, isFromCard: false);
-		RelicModel relic = RelicFactory.PullNextRelicFromFront(Owner).ToMutable();
+		await CreatureCmd.LoseMaxHp(new ThrowingPlayerChoiceContext(), Owner.Creature, DynamicVars["MaxHpLoss"].BaseValue, null);
+		RelicModel relic = RelicFactory.PullNextRelicFromFront(Owner, Rng).ToMutable();
 		await RelicCmd.Obtain(relic, Owner);
 		SetEventFinished(L10NLookup("UNREST_SITE.pages.KILL.description"));
 	}

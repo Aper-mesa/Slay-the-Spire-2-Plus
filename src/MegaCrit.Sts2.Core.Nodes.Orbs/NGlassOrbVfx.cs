@@ -60,7 +60,7 @@ public class NGlassOrbVfx : NOrbVfx
 	[Export(PropertyHint.None, "")]
 	private float _basePassiveChromaticAberrationStength = 0.01f;
 
-	private decimal _basePassiveVal = 4m;
+	private const decimal _basePassiveVal = 4m;
 
 	private static readonly StringName _aberrationStrengthString = new StringName("instance_shader_parameters/base_intensity");
 
@@ -69,7 +69,7 @@ public class NGlassOrbVfx : NOrbVfx
 		if (!(passiveVal <= 0m))
 		{
 			base.OnPassiveActivated(passiveVal, evokeVal);
-			float num = (float)(passiveVal / _basePassiveVal);
+			float num = (float)(passiveVal / 4m);
 			_passiveChromaticAberration.Set(_aberrationStrengthString, Mathf.Lerp(0f, _basePassiveChromaticAberrationStength, num));
 			ShakeOrb(num, 0.5f);
 		}

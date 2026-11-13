@@ -52,7 +52,7 @@ public sealed class CeremonialBeast : MonsterModel
 
 	private MoveState _beastCryState;
 
-	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 262, 252);
+	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 262, 252) + (AscensionHelper.IsDread() ? 30 : 0);
 
 	public override int MaxInitialHp => MinInitialHp;
 
@@ -60,7 +60,29 @@ public sealed class CeremonialBeast : MonsterModel
 
 	private int PlowDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 20, 18);
 
-	private int PlowStrength => 2;
+	private int PlowStrength
+	{
+		get
+		{
+			if (!AscensionHelper.IsDread())
+			{
+				return 2;
+			}
+			return 3;
+		}
+	}
+
+	private int RitualAmount
+	{
+		get
+		{
+			if (!AscensionHelper.IsDread())
+			{
+				return 0;
+			}
+			return 2;
+		}
+	}
 
 	private int StompDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 17, 15);
 
@@ -202,7 +224,10 @@ public sealed class CeremonialBeast : MonsterModel
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/ceremonial_beast/ceremonial_beast_plow_end");
 		await CreatureCmd.TriggerAnim(Creature, "EndPlow", 0f);
 		await Cmd.Wait(0.5f);
-		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, PlowStrength, Creature, null);
+		if (Creature.HasPower<PlowPower>())
+		{
+			await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, PlowStrength, Creature, null);
+		}
 	}
 
 	public async Task SetStunned()
@@ -211,6 +236,10 @@ public sealed class CeremonialBeast : MonsterModel
 		IsInSecondPhase = true;
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/ceremonial_beast/ceremonial_beast_stun");
 		await CreatureCmd.TriggerAnim(Creature, "Stun", 0.6f);
+		if (RitualAmount > 0)
+		{
+			await PowerCmd.Apply<RitualPower>(new ThrowingPlayerChoiceContext(), Creature, RitualAmount, Creature, null);
+		}
 	}
 
 	public async Task StunnedMove(IReadOnlyList<Creature> targets)

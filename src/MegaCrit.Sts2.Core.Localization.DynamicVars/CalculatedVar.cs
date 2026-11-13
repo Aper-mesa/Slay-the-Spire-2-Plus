@@ -104,16 +104,6 @@ public class CalculatedVar : DynamicVar
 		return ((CardModel)_owner).DynamicVars.CalculationExtra;
 	}
 
-	protected override decimal GetBaseValueForIConvertible()
-	{
-		return Calculate(null);
-	}
-
-	public override string ToString()
-	{
-		return Calculate(null).ToString();
-	}
-
 	private void UpdateValues()
 	{
 		if (_owner != null)

@@ -72,6 +72,7 @@ public static class FileDropHandler
 		serializablePlayer.Potions.AddRange(runHistoryPlayer.Potions);
 		RunManager.Instance.CleanUp();
 		RunState loadedState = RunState.FromSerializable(savedRun);
+		loadedState.ExtraFields.MarkDebugToolUsed();
 		await RunManager.Instance.SetUpSavedSingleplayer(loadedState, savedRun);
 		NGame.Instance.ReactionContainer.InitializeNetworking(new NetSingleplayerGameService());
 		await NGame.Instance.LoadRun(loadedState, savedRun.PreFinishedRoom);

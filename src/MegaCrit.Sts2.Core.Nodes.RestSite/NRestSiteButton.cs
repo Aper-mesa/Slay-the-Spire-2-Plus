@@ -199,8 +199,7 @@ public class NRestSiteButton : NButton
 	{
 		Tween tween = CreateTween();
 		tween.TweenProperty(this, "modulate", Colors.White, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
-		await tween.AwaitFinished(_cts.Token);
-		if (this.IsValid())
+		if (await tween.AwaitFinished(this, _cts.Token) == TweenOutcome.Finished && this.IsValid())
 		{
 			MouseFilter = MouseFilterEnum.Stop;
 		}

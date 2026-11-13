@@ -19,7 +19,7 @@ public class Terminal : ModifierModel
 				Creature creature = player.Creature;
 				if (creature == null || creature.CurrentHp > 1 || creature.MaxHp > 1)
 				{
-					await CreatureCmd.LoseMaxHp(new ThrowingPlayerChoiceContext(), player.Creature, 1m, isFromCard: false);
+					await CreatureCmd.LoseMaxHp(new ThrowingPlayerChoiceContext(), player.Creature, 1m, null);
 				}
 			}
 		}

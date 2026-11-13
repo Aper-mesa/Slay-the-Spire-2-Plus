@@ -17,6 +17,11 @@ public sealed class CaptainsWheel : RelicModel
 
 	protected override IEnumerable<IHoverTip> ExtraHoverTips => new _003C_003Ez__ReadOnlySingleElementList<IHoverTip>(HoverTipFactory.Static(StaticHoverTip.Block));
 
+	/// <summary>
+	/// The relic does not gray out after it triggers. Nothing is consumed and it triggers again on turn 3 of every
+	/// combat, so it never sets <see cref="P:MegaCrit.Sts2.Core.Models.RelicModel.Status" />. Permafrost is the same. Closed as designed in
+	/// PRG-5964, PRG-5712 and PRG-5628.
+	/// </summary>
 	public override async Task AfterBlockCleared(Creature creature)
 	{
 		if (creature == Owner.Creature && Owner.PlayerCombatState.TurnNumber == 3)

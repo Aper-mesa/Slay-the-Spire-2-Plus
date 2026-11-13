@@ -36,7 +36,7 @@ public sealed class Sacrifice : CardModel
 		{
 			decimal blockGain = DynamicVars.CalculatedBlock.Calculate(cardPlay.Target);
 			await CreatureCmd.TriggerAnim(Owner.Creature, "Cast", Owner.Character.CastAnimDelay);
-			await CreatureCmd.Kill(Owner.Osty);
+			await CreatureCmd.Kill(Owner.Osty, this);
 			await CreatureCmd.GainBlock(Owner.Creature, blockGain, DynamicVars.CalculatedBlock.Props, cardPlay);
 		}
 	}

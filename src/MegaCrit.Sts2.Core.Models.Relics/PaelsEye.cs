@@ -106,7 +106,7 @@ public sealed class PaelsEye : RelicModel
 		return Task.CompletedTask;
 	}
 
-	public override bool ShouldTakeExtraTurn(Player player)
+	public override bool ShouldTakeExtraTurnEarly(Player player)
 	{
 		if (!UsedThisCombat && !AnyCardsPlayedThisTurn() && WasOwnerPartOfLastPlayerTurn)
 		{

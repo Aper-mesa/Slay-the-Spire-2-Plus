@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Combat.History.Entries;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -15,8 +16,6 @@ namespace MegaCrit.Sts2.Core.Models.Relics;
 
 public sealed class VelvetChoker : RelicModel
 {
-	private int _cardsPlayedThisTurn;
-
 	public override RelicRarity Rarity => RelicRarity.Ancient;
 
 	public override bool ShowCounter => CombatManager.Instance.IsInProgress;
@@ -27,7 +26,7 @@ public sealed class VelvetChoker : RelicModel
 		{
 			if (!IsCanonical)
 			{
-				return _cardsPlayedThisTurn;
+				return GetCardsPlayedThisTurn();
 			}
 			return 0;
 		}
@@ -41,7 +40,16 @@ public sealed class VelvetChoker : RelicModel
 
 	protected override IEnumerable<IHoverTip> ExtraHoverTips => new _003C_003Ez__ReadOnlySingleElementList<IHoverTip>(HoverTipFactory.ForEnergy(this));
 
-	private bool ShouldPreventCardPlay => _cardsPlayedThisTurn >= DynamicVars.Cards.IntValue;
+	private bool ShouldPreventCardPlay => GetCardsPlayedThisTurn() >= DynamicVars.Cards.IntValue;
+
+	private int GetCardsPlayedThisTurn()
+	{
+		if (!CombatManager.Instance.IsInProgress)
+		{
+			return 0;
+		}
+		return CombatManager.Instance.History.CardPlaysStarted.Count((CardPlayStartedEntry e) => e.HappenedThisTurn(Owner.Creature.CombatState) && e.CardPlay.Player == Owner);
+	}
 
 	public override decimal ModifyMaxEnergy(Player player, decimal amount)
 	{
@@ -63,10 +71,6 @@ public sealed class VelvetChoker : RelicModel
 
 	public override Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
-		if (cardPlay.Card.Owner == Owner)
-		{
-			_cardsPlayedThisTurn++;
-		}
 		InvokeDisplayAmountChanged();
 		return Task.CompletedTask;
 	}
@@ -77,14 +81,12 @@ public sealed class VelvetChoker : RelicModel
 		{
 			return Task.CompletedTask;
 		}
-		_cardsPlayedThisTurn = 0;
 		InvokeDisplayAmountChanged();
 		return Task.CompletedTask;
 	}
 
 	public override Task AfterCombatEnd(CombatRoom room)
 	{
-		_cardsPlayedThisTurn = 0;
 		InvokeDisplayAmountChanged();
 		return Task.CompletedTask;
 	}
@@ -95,7 +97,6 @@ public sealed class VelvetChoker : RelicModel
 		{
 			return Task.CompletedTask;
 		}
-		_cardsPlayedThisTurn = 0;
 		InvokeDisplayAmountChanged();
 		return Task.CompletedTask;
 	}

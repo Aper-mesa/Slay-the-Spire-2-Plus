@@ -185,7 +185,8 @@ public static class CardCmd
 		CardPile discardPile = PileType.Discard.GetPile(discardCards[0].Owner);
 		foreach (CardModel card in discardCards)
 		{
-			if (card.IsSlyThisTurn)
+			CardPile? pile = card.Pile;
+			if (pile != null && pile.Type == PileType.Hand && card.IsSlyThisTurn)
 			{
 				slyCards.Add(card);
 			}
@@ -237,6 +238,10 @@ public static class CardCmd
 	public static async Task<CardPileAddResult?> Exhaust(PlayerChoiceContext choiceContext, CardModel card, bool causedByEthereal = false, bool skipVisuals = false)
 	{
 		if (CombatManager.Instance.IsOverOrEnding)
+		{
+			return null;
+		}
+		if (card.Owner.Creature.IsDead)
 		{
 			return null;
 		}
@@ -333,7 +338,7 @@ public static class CardCmd
 	/// <param name="original">Card to transform from.</param>
 	/// <param name="style">How the transformed card is displayed to the player.</param>
 	/// <typeparam name="T">Card type to transform to.</typeparam>
-	/// <returns>The replacement card.</returns>
+	/// <returns>The replacement card, or null if nothing was transformed because combat is ending.</returns>
 	public static async Task<CardPileAddResult?> TransformTo<T>(CardModel original, CardPreviewStyle style = CardPreviewStyle.HorizontalLayout) where T : CardModel
 	{
 		CardModel replacement = original.CardScope.CreateCard<T>(original.Owner);
@@ -346,10 +351,10 @@ public static class CardCmd
 	/// <param name="original">Card to transform from.</param>
 	/// <param name="replacement">Card to transform to.</param>
 	/// <param name="style">How the transformed card is displayed to the player.</param>
-	/// <returns>The replacement card.</returns>
+	/// <returns>The replacement card, or null if nothing was transformed because combat is ending.</returns>
 	public static async Task<CardPileAddResult?> Transform(CardModel original, CardModel replacement, CardPreviewStyle style = CardPreviewStyle.HorizontalLayout)
 	{
-		return (await Transform(new CardTransformation(original, replacement).Yield(), null, style)).FirstOrDefault();
+		return (await Transform(new CardTransformation(original, replacement).Yield(), null, style)).Select((Func<CardPileAddResult, CardPileAddResult?>)((CardPileAddResult r) => r)).FirstOrDefault();
 	}
 
 	/// <summary>
@@ -450,8 +455,8 @@ public static class CardCmd
 			}
 			await Hook.AfterCardChangedPiles(runState, combatState, replacement2, pile2.Type, null);
 			pile2.InvokeCardAddFinished();
-			original.AfterTransformedFrom();
-			replacement2.AfterTransformedTo();
+			original.AfterThisWasTransformedInto(replacement2);
+			replacement2.AfterThisWasTransformedFrom(original);
 			results.Add(result);
 		}
 		List<Task> vfxTasks = new List<Task>();
@@ -461,41 +466,64 @@ public static class CardCmd
 			CardModel cardAdded2 = results[j].cardAdded;
 			if (!LocalContext.IsMine(cardAdded2))
 			{
+				CardPile? pile3 = cardAdded2.Pile;
+				if (pile3 != null && pile3.Type == PileType.Play)
+				{
+					NCard nCard = NCard.FindOnTable(original2, PileType.Play);
+					if (nCard != null)
+					{
+						nCard.Model = cardAdded2;
+						nCard.UpdateVisuals(PileType.Play, CardPreviewMode.Normal);
+					}
+				}
 				continue;
 			}
-			if (cardAdded2.Pile.Type == PileType.Hand)
+			PileType type2 = cardAdded2.Pile.Type;
+			if ((type2 == PileType.Hand || type2 == PileType.Play) ? true : false)
 			{
-				if (!TestMode.IsOn)
+				if (TestMode.IsOn)
 				{
-					NCardPlayQueue playQueue = NCombatRoom.Instance.Ui.PlayQueue;
-					NPlayerHand hand = NCombatRoom.Instance.Ui.Hand;
-					NCard nCard = NCard.FindOnTable(original2, PileType.Hand);
-					if (nCard == null)
+					continue;
+				}
+				NCardPlayQueue playQueue = NCombatRoom.Instance.Ui.PlayQueue;
+				NCard nCard2 = NCard.FindOnTable(original2, cardAdded2.Pile.Type);
+				if (nCard2 == null)
+				{
+					throw new InvalidOperationException($"Couldn't get hand node for original card {transformationsArr[j].Original}!");
+				}
+				if (cardAdded2.Pile.Type == PileType.Hand)
+				{
+					if (playQueue.IsAncestorOf(nCard2))
 					{
-						throw new InvalidOperationException($"Couldn't get hand node for original card {transformationsArr[j].Original}!");
+						playQueue.RemoveCardFromQueueForCancellation(nCard2, forceReturnToHand: true);
 					}
-					if (playQueue.IsAncestorOf(nCard))
-					{
-						playQueue.RemoveCardFromQueueForCancellation(nCard, forceReturnToHand: true);
-					}
-					hand.TryCancelCardPlay(original2);
-					NCardTransformShineVfx nCardTransformShineVfx = NCardTransformShineVfx.Create(nCard, cardAdded2, Array.Empty<RelicModel>());
-					if (nCardTransformShineVfx != null)
+					NCombatRoom.Instance.Ui.Hand.TryCancelCardPlay(original2);
+				}
+				NCardTransformShineVfx nCardTransformShineVfx = NCardTransformShineVfx.Create(nCard2, cardAdded2, Array.Empty<RelicModel>());
+				if (nCardTransformShineVfx != null)
+				{
+					if (cardAdded2.Pile.Type == PileType.Hand)
 					{
 						vfxTasks.Add(nCardTransformShineVfx.PlayAnimationWithoutWaitingForEnd());
+						await Cmd.CustomScaledWait(0.1f, 0.25f);
+					}
+					else
+					{
+						await nCardTransformShineVfx.PlayAnimation();
 						await Cmd.CustomScaledWait(0.1f, 0.25f);
 					}
 				}
 			}
 			else if (style != CardPreviewStyle.None && TestMode.IsOff)
 			{
+				NCombatRoom instance = NCombatRoom.Instance;
 				(style switch
 				{
-					CardPreviewStyle.EventLayout => NRun.Instance?.GlobalUi.EventCardPreviewContainer, 
-					CardPreviewStyle.GridLayout => NRun.Instance?.GlobalUi.GridCardPreviewContainer, 
-					CardPreviewStyle.HorizontalLayout => NCombatRoom.Instance?.Ui.CardPreviewContainer ?? NRun.Instance?.GlobalUi.CardPreviewContainer, 
-					CardPreviewStyle.MessyLayout => NCombatRoom.Instance?.Ui.MessyCardPreviewContainer ?? NRun.Instance?.GlobalUi.MessyCardPreviewContainer, 
-					_ => throw new ArgumentOutOfRangeException("style", $"Unexpected {"CardPreviewStyle"} {style}!"), 
+					CardPreviewStyle.EventLayout => NRun.Instance?.GlobalUi.EventCardPreviewContainer,
+					CardPreviewStyle.GridLayout => NRun.Instance?.GlobalUi.GridCardPreviewContainer,
+					CardPreviewStyle.HorizontalLayout => (instance?.Ui.CardPreviewContainer != null && cardAdded2.Pile.IsCombatPile) ? instance.Ui.CardPreviewContainer : NRun.Instance?.GlobalUi.CardPreviewContainer,
+					CardPreviewStyle.MessyLayout => (instance?.Ui.MessyCardPreviewContainer != null && cardAdded2.Pile.IsCombatPile) ? instance.Ui.MessyCardPreviewContainer : NRun.Instance?.GlobalUi.MessyCardPreviewContainer,
+					_ => throw new ArgumentOutOfRangeException("style", $"Unexpected {"CardPreviewStyle"} {style}!"),
 				})?.AddChildSafely(NCardTransformVfx.Create(original2, cardAdded2, results[j].modifyingModels?.OfType<RelicModel>()));
 			}
 		}

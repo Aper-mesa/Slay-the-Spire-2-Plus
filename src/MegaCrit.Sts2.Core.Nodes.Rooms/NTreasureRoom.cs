@@ -31,6 +31,14 @@ namespace MegaCrit.Sts2.Core.Nodes.Rooms;
 [ScriptPath("res://src/Core/Nodes/Rooms/NTreasureRoom.cs")]
 public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 {
+	private enum ProceedButtonState
+	{
+		None,
+		Hidden,
+		Skip,
+		Proceed
+	}
+
 	/// <summary>
 	/// Cached StringNames for the methods contained in this class, for fast lookup.
 	/// </summary>
@@ -52,19 +60,14 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 		public new static readonly StringName _ExitTree = "_ExitTree";
 
 		/// <summary>
-		/// Cached name for the 'OnProceedButtonPressed' method.
+		/// Cached name for the 'OnProceedButtonReleased' method.
 		/// </summary>
-		public static readonly StringName OnProceedButtonPressed = "OnProceedButtonPressed";
+		public static readonly StringName OnProceedButtonReleased = "OnProceedButtonReleased";
 
 		/// <summary>
 		/// Cached name for the 'RefreshVotes' method.
 		/// </summary>
 		public static readonly StringName RefreshVotes = "RefreshVotes";
-
-		/// <summary>
-		/// Cached name for the 'OnProceedButtonReleased' method.
-		/// </summary>
-		public static readonly StringName OnProceedButtonReleased = "OnProceedButtonReleased";
 
 		/// <summary>
 		/// Cached name for the 'OnChestButtonReleased' method.
@@ -138,9 +141,9 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 		public static readonly StringName _isRelicCollectionOpen = "_isRelicCollectionOpen";
 
 		/// <summary>
-		/// Cached name for the '_hasChestBeenOpened' field.
+		/// Cached name for the '_proceedButtonState' field.
 		/// </summary>
-		public static readonly StringName _hasChestBeenOpened = "_hasChestBeenOpened";
+		public static readonly StringName _proceedButtonState = "_proceedButtonState";
 	}
 
 	/// <summary>
@@ -172,7 +175,7 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 
 	private bool _isRelicCollectionOpen;
 
-	private bool _hasChestBeenOpened;
+	private ProceedButtonState _proceedButtonState = ProceedButtonState.Hidden;
 
 	public NProceedButton ProceedButton => _proceedButton;
 
@@ -219,7 +222,8 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 		_skipVoteContainer = GetNode<NMultiplayerVoteContainer>("%SkipMultiplayerVoteContainer");
 		_relicCollection.Initialize(_runState);
 		_relicCollection.Visible = false;
-		_proceedButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnProceedButtonPressed));
+		_proceedButton.Initialize(_runState);
+		_proceedButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnProceedButtonReleased));
 		_proceedButton.UpdateText(NProceedButton.ProceedLoc);
 		_skipVoteContainer.Initialize(IsPlayerVotingForSkip, _runState.Players);
 		_chestButton = GetNode<NTreasureButton>("%Chest");
@@ -245,31 +249,25 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 		NGame.Instance.ClearScreenShakeTarget();
 	}
 
-	private void OnProceedButtonPressed(NButton _)
+	private void OnProceedButtonReleased(NButton _)
 	{
 		if (_proceedButton.IsSkip)
 		{
 			RunManager.Instance.TreasureRoomRelicSynchronizer.SkipRelicLocally();
 			if (_runState.Players.Count == 1)
 			{
-				NMapScreen.Instance.SetTravelEnabled(enabled: true);
-				TaskHelper.RunSafely(RunManager.Instance.ProceedFromTerminalRewardsScreen());
+				RunManager.Instance.ProceedFromTerminalRewardsScreen();
 			}
 		}
 		else
 		{
-			TaskHelper.RunSafely(RunManager.Instance.ProceedFromTerminalRewardsScreen());
+			RunManager.Instance.ProceedFromTerminalRewardsScreen();
 		}
 	}
 
 	private void RefreshVotes()
 	{
 		_skipVoteContainer.RefreshPlayerVotes();
-	}
-
-	private void OnProceedButtonReleased(NButton _)
-	{
-		NMapScreen.Instance.Open();
 	}
 
 	private void OnChestButtonReleased(NButton _)
@@ -314,15 +312,13 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 			_proceedButton.UpdateText(NProceedButton.SkipLoc);
 			TaskHelper.RunSafely(EnableSkipAfterDelay(2.5f, cancelSource.Token));
 		}
-		_hasChestBeenOpened = true;
-		await _relicCollection.RelicPickingBegan();
-		await cancelSource.CancelAsync();
-		_proceedButton.Disable();
 		await _relicCollection.RelicPickingFinished();
+		await cancelSource.CancelAsync();
 		_isRelicCollectionOpen = false;
 		_skipVoteContainer.RefreshPlayerVotes();
 		_proceedButton.UpdateText(NProceedButton.ProceedLoc);
 		_proceedButton.Enable();
+		_proceedButtonState = ProceedButtonState.Proceed;
 		_banner.AnimateOut();
 		NMapScreen.Instance.SetTravelEnabled(enabled: true);
 		_relicCollection.AnimOut();
@@ -334,7 +330,11 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 		await Cmd.Wait(delay, token);
 		if (!token.IsCancellationRequested)
 		{
-			_proceedButton.Enable();
+			_proceedButtonState = ProceedButtonState.Skip;
+			if (ActiveScreenContext.Instance.IsCurrent(this))
+			{
+				_proceedButton.Enable();
+			}
 		}
 	}
 
@@ -344,7 +344,7 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 		{
 			_relicCollection.SetSelectionEnabled(isEnabled: false);
 			await Cmd.Wait(1f, _cts.Token);
-			Control relicReward = ((!_relicCollection.SingleplayerRelicHolder.Visible) ? ((Control)_relicCollection) : ((Control)_relicCollection.SingleplayerRelicHolder));
+			Control relicReward = ((_relicCollection.HoldersInUse.Count != 1) ? _relicCollection : ((Control)_relicCollection.GetChild(0)));
 			_relicCollection.SetSelectionEnabled(isEnabled: true);
 			NModalContainer.Instance.Add(NRelicRewardFtue.Create(relicReward));
 			SaveManager.Instance.MarkFtueAsComplete("obtain_relic_ftue");
@@ -354,7 +354,7 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 	private void OnActiveScreenChanged()
 	{
 		this.UpdateControllerNavEnabled();
-		if (ActiveScreenContext.Instance.IsCurrent(this) && _hasChestBeenOpened)
+		if (ActiveScreenContext.Instance.IsCurrent(this) && _proceedButtonState > ProceedButtonState.Hidden)
 		{
 			_proceedButton.Enable();
 		}
@@ -387,19 +387,15 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(10);
+		List<MethodInfo> list = new List<MethodInfo>(9);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._EnterTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName.OnProceedButtonPressed, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
-		{
-			new PropertyInfo(Variant.Type.Object, "_", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
-		}, null));
-		list.Add(new MethodInfo(MethodName.RefreshVotes, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnProceedButtonReleased, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "_", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
 		}, null));
+		list.Add(new MethodInfo(MethodName.RefreshVotes, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnChestButtonReleased, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "_", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
@@ -432,21 +428,15 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.OnProceedButtonPressed && args.Count == 1)
+		if (method == MethodName.OnProceedButtonReleased && args.Count == 1)
 		{
-			OnProceedButtonPressed(VariantUtils.ConvertTo<NButton>(in args[0]));
+			OnProceedButtonReleased(VariantUtils.ConvertTo<NButton>(in args[0]));
 			ret = default;
 			return true;
 		}
 		if (method == MethodName.RefreshVotes && args.Count == 0)
 		{
 			RefreshVotes();
-			ret = default;
-			return true;
-		}
-		if (method == MethodName.OnProceedButtonReleased && args.Count == 1)
-		{
-			OnProceedButtonReleased(VariantUtils.ConvertTo<NButton>(in args[0]));
 			ret = default;
 			return true;
 		}
@@ -493,15 +483,11 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 		{
 			return true;
 		}
-		if (method == MethodName.OnProceedButtonPressed)
+		if (method == MethodName.OnProceedButtonReleased)
 		{
 			return true;
 		}
 		if (method == MethodName.RefreshVotes)
-		{
-			return true;
-		}
-		if (method == MethodName.OnProceedButtonReleased)
 		{
 			return true;
 		}
@@ -563,9 +549,9 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 			_isRelicCollectionOpen = VariantUtils.ConvertTo<bool>(in value);
 			return true;
 		}
-		if (name == PropertyName._hasChestBeenOpened)
+		if (name == PropertyName._proceedButtonState)
 		{
-			_hasChestBeenOpened = VariantUtils.ConvertTo<bool>(in value);
+			_proceedButtonState = VariantUtils.ConvertTo<ProceedButtonState>(in value);
 			return true;
 		}
 		return base.SetGodotClassPropertyValue(in name, in value);
@@ -620,9 +606,9 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 			value = VariantUtils.CreateFrom(in _isRelicCollectionOpen);
 			return true;
 		}
-		if (name == PropertyName._hasChestBeenOpened)
+		if (name == PropertyName._proceedButtonState)
 		{
-			value = VariantUtils.CreateFrom(in _hasChestBeenOpened);
+			value = VariantUtils.CreateFrom(in _proceedButtonState);
 			return true;
 		}
 		return base.GetGodotClassPropertyValue(in name, out value);
@@ -645,7 +631,7 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._relicCollection, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._skipVoteContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isRelicCollectionOpen, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._hasChestBeenOpened, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._proceedButtonState, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName.DefaultFocusedControl, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
@@ -662,7 +648,7 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 		info.AddProperty(PropertyName._relicCollection, Variant.From(in _relicCollection));
 		info.AddProperty(PropertyName._skipVoteContainer, Variant.From(in _skipVoteContainer));
 		info.AddProperty(PropertyName._isRelicCollectionOpen, Variant.From(in _isRelicCollectionOpen));
-		info.AddProperty(PropertyName._hasChestBeenOpened, Variant.From(in _hasChestBeenOpened));
+		info.AddProperty(PropertyName._proceedButtonState, Variant.From(in _proceedButtonState));
 	}
 
 	/// <inheritdoc />
@@ -698,9 +684,9 @@ public class NTreasureRoom : Control, IScreenContext, IRoomWithProceedButton
 		{
 			_isRelicCollectionOpen = value7.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._hasChestBeenOpened, out var value8))
+		if (info.TryGetProperty(PropertyName._proceedButtonState, out var value8))
 		{
-			_hasChestBeenOpened = value8.As<bool>();
+			_proceedButtonState = value8.As<ProceedButtonState>();
 		}
 	}
 }

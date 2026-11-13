@@ -73,6 +73,12 @@ public sealed class Regent : CharacterModel
 
 	public override Color RemoteTargetingLineOutline => new Color("784000FF");
 
+	public override float DreadBgBrightness => 0.7f;
+
+	public override float DreadBgContrast => 1.1f;
+
+	public override Color DreadNameColor => new Color("FF9326C0");
+
 	public override string CharacterTransitionSfx => "event:/sfx/ui/wipe_ironclad";
 
 	protected override List<(AnimState, string)> AnimationStates => base.AnimationStates.Concat(new _003C_003Ez__ReadOnlySingleElementList<(AnimState, string)>((new AnimState("attack_sovereign"), "sovereignBladeTrigger"))).ToList();

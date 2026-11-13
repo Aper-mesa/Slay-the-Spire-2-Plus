@@ -431,4 +431,3 @@ public sealed class ClassicWatcherLiveForever : ClassicWatcherCardModel
 {
     public ClassicWatcherLiveForever() : base(-2, CardType.Power, CardRarity.Token, TargetType.Self, 0, 0, 6, 0, 0, 2, 0) { }
 }
-

@@ -14,6 +14,7 @@ using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.MonsterMoves.Intents;
 using MegaCrit.Sts2.Core.MonsterMoves.MonsterMoveStateMachine;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
+using MegaCrit.Sts2.Core.Runs;
 
 namespace MegaCrit.Sts2.Core.Models.Monsters;
 
@@ -42,6 +43,19 @@ public sealed class GremlinMerc : MonsterModel
 	private int DoubleSmashRepeat => 2;
 
 	private int HeheDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 9, 8);
+
+	private bool HasSpoken
+	{
+		get
+		{
+			return _hasSpoken;
+		}
+		set
+		{
+			AssertMutable();
+			_hasSpoken = value;
+		}
+	}
 
 	public override async Task AfterAddedToRoom()
 	{
@@ -72,9 +86,9 @@ public sealed class GremlinMerc : MonsterModel
 
 	private async Task GimmeMove(IReadOnlyList<Creature> targets)
 	{
-		if (!_hasSpoken)
+		if (!HasSpoken && CombatState.RunState.GameMode != GameMode.Blitz)
 		{
-			_hasSpoken = true;
+			HasSpoken = true;
 			LocString line = MonsterModel.L10NMonsterLookup("GREMLIN_MERC.moves.GIMME.banter");
 			TalkCmd.Play(line, Creature, VfxColor.Purple, VfxDuration.VeryShort);
 			await Cmd.CustomScaledWait(0.25f, 0.5f);
@@ -86,9 +100,12 @@ public sealed class GremlinMerc : MonsterModel
 			.WithAttackerFx(null, AttackSfx)
 			.WithHitFx("vfx/vfx_attack_slash")
 			.Execute(null);
-		foreach (ThieveryPower powerInstance in Creature.GetPowerInstances<ThieveryPower>())
+		await Steal();
+		if (!HasSpoken && CombatState.RunState.GameMode == GameMode.Blitz)
 		{
-			await powerInstance.Steal();
+			HasSpoken = true;
+			LocString line2 = MonsterModel.L10NMonsterLookup("GREMLIN_MERC.moves.GIMME_BLITZ.banter");
+			TalkCmd.Play(line2, Creature, VfxColor.Purple, VfxDuration.Standard);
 		}
 	}
 
@@ -102,10 +119,7 @@ public sealed class GremlinMerc : MonsterModel
 			.WithAttackerFx(null, AttackSfx)
 			.WithHitFx("vfx/vfx_attack_slash")
 			.Execute(null);
-		foreach (ThieveryPower powerInstance in Creature.GetPowerInstances<ThieveryPower>())
-		{
-			await powerInstance.Steal();
-		}
+		await Steal();
 		await PowerCmd.Apply<WeakPower>(new ThrowingPlayerChoiceContext(), targets, 2m, Creature, null);
 	}
 
@@ -115,11 +129,20 @@ public sealed class GremlinMerc : MonsterModel
 			.WithAttackerFx(null, "event:/sfx/enemy/enemy_attacks/gremlin_merc/gremlin_merc_attack_buff")
 			.WithHitFx("vfx/vfx_attack_slash")
 			.Execute(null);
+		await Steal();
+		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, 2m, Creature, null);
+	}
+
+	private async Task Steal()
+	{
+		if (CombatState.RunState.GameMode == GameMode.Blitz)
+		{
+			return;
+		}
 		foreach (ThieveryPower powerInstance in Creature.GetPowerInstances<ThieveryPower>())
 		{
 			await powerInstance.Steal();
 		}
-		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, 2m, Creature, null);
 	}
 
 	public override CreatureAnimator GenerateAnimator(MegaSprite controller)

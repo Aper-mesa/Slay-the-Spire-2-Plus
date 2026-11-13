@@ -78,6 +78,14 @@ public enum NetError
 	/// </summary>
 	LobbyJoinTimeout = 109,
 	/// <summary>
+	/// Tried to join a Dread lobby, but you don't have the mode unlocked.
+	/// </summary>
+	DreadNotUnlocked = 110,
+	/// <summary>
+	/// Tried to join a Blitz lobby, but you don't have the mode unlocked.
+	/// </summary>
+	BlitzNotUnlocked = 111,
+	/// <summary>
 	/// Couldn't connect to the session, likely because of internet issues.
 	/// </summary>
 	NoInternet = 200,

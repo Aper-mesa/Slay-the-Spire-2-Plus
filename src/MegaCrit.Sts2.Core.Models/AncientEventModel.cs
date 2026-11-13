@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Godot;
 using MegaCrit.Sts2.Core.Assets;
@@ -11,6 +12,7 @@ using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Models.Events;
 using MegaCrit.Sts2.Core.Nodes;
@@ -26,8 +28,6 @@ public abstract class AncientEventModel : EventModel
 	private AncientDialogueSet? _dialogueSet;
 
 	private List<EventOption>? _generatedOptions;
-
-	private string? _customDonePage;
 
 	private string? _debugOption;
 
@@ -61,19 +61,6 @@ public abstract class AncientEventModel : EventModel
 	/// The color of the speech bubble in the Ancient events during Ancient Dialogue.
 	/// </summary>
 	public virtual Color DialogueColor { get; } = new Color("28454f");
-
-	private string? CustomDonePage
-	{
-		get
-		{
-			return _customDonePage;
-		}
-		set
-		{
-			AssertMutable();
-			_customDonePage = value;
-		}
-	}
 
 	public string? DebugOption
 	{
@@ -167,6 +154,14 @@ public abstract class AncientEventModel : EventModel
 		return ModelDb.Character<T>().Id.Entry;
 	}
 
+	/// <summary>
+	/// Called after the background scene is instantiated, before it's added to the tree.
+	/// Override to customize the background (e.g. swap art based on player progress).
+	/// </summary>
+	public virtual void ConfigureBackgroundScene(Control backgroundScene)
+	{
+	}
+
 	protected override async Task BeforeEventStarted(bool isPreFinished)
 	{
 		if (!isPreFinished)
@@ -234,27 +229,13 @@ public abstract class AncientEventModel : EventModel
 
 	public void StartPreFinished()
 	{
-		if (CustomDonePage == null)
-		{
-			SetEventFinished(L10NLookup(Id.Entry + ".pages.DONE.description"));
-		}
-		else
-		{
-			SetEventFinished(L10NLookup(CustomDonePage));
-		}
+		SetEventFinished(L10NLookup(Id.Entry + ".pages.DONE.description"));
 	}
 
 	protected void Done()
 	{
 		UpdateRunHistory();
-		if (CustomDonePage == null)
-		{
-			SetEventFinished(L10NLookup(Id.Entry + ".pages.DONE.description"));
-		}
-		else
-		{
-			SetEventFinished(L10NLookup(CustomDonePage));
-		}
+		SetEventFinished(L10NLookup(Id.Entry + ".pages.DONE.description"));
 	}
 
 	/// <summary>
@@ -263,9 +244,8 @@ public abstract class AncientEventModel : EventModel
 	/// finishes the event.
 	/// </summary>
 	/// <param name="pageName">Name of the page that this option is in, for metrics/gameinfo and loc. INITIAL by default.</param>
-	/// <param name="customDonePage">custom page path that this choice goes to next</param>
 	/// <typeparam name="T">Relic whose title, description, and HoverTips should be used for the event option.</typeparam>
-	protected EventOption RelicOption<T>(string pageName = "INITIAL", string? customDonePage = null) where T : RelicModel
+	protected EventOption RelicOption<T>(string pageName = "INITIAL") where T : RelicModel
 	{
 		return RelicOption(ModelDb.Relic<T>().ToMutable(), pageName);
 	}
@@ -274,16 +254,106 @@ public abstract class AncientEventModel : EventModel
 	/// Generate an event option from a relic.
 	/// This overload also generates an onChosen callback that makes the player obtain the specified relic and then
 	/// finishes the event.
-	/// See <see cref="M:MegaCrit.Sts2.Core.Models.AncientEventModel.RelicOption``1(System.String,System.String)" /> for more details.
+	/// See <see cref="M:MegaCrit.Sts2.Core.Models.AncientEventModel.RelicOption``1(System.String)" /> for more details.
 	/// </summary>
-	protected EventOption RelicOption(RelicModel relic, string pageName = "INITIAL", string? customDonePage = null)
+	protected EventOption RelicOption(RelicModel relic, string pageName = "INITIAL")
 	{
 		return RelicOption(relic, OnChosen, pageName);
 		async Task OnChosen()
 		{
 			await RelicCmd.Obtain(relic, Owner);
-			CustomDonePage = customDonePage;
 			Done();
 		}
+	}
+
+	/// <summary>
+	/// Filters an option pool down to the options whose relic is allowed in the current run.
+	/// Ancient events pick their options from their pools by hand, so every generator that offers relics has to apply
+	/// this. A relic that a game mode bans is otherwise still reachable through the event that offers it.
+	/// </summary>
+	protected List<EventOption> AllowedOptions(IEnumerable<EventOption> options)
+	{
+		return options.Where((EventOption o) => o.Relic?.IsAllowed(Owner.RunState) ?? true).ToList();
+	}
+
+	/// <summary>
+	/// Chooses a random allowed option, or returns null when a game mode bans every relic in the pool.
+	/// </summary>
+	private EventOption? TryChooseRandomAllowedOption(IEnumerable<EventOption> options)
+	{
+		List<EventOption> list = AllowedOptions(options);
+		if (list.Count != 0)
+		{
+			return Rng.NextItem(list);
+		}
+		return null;
+	}
+
+	/// <summary>
+	/// A helper to choose three options, each from a pool.
+	/// This is a common method to choose from ancient event options involving relics.
+	/// This automatically excludes relic options if they are not allowed, e.g. because of the game mode or because of
+	/// multiplayer. If a pool ends up containing no options, then a random option from another pool is chosen instead.
+	/// If there are not enough options to generate three, then less than three relics may be returned.
+	/// </summary>
+	protected List<EventOption> GetOptionsFromThreePools(List<EventOption> pool1, List<EventOption> pool2, List<EventOption> pool3)
+	{
+		List<EventOption> list = new List<EventOption>();
+		EventOption eventOption = TryChooseRandomAllowedOption(pool1);
+		EventOption eventOption2 = TryChooseRandomAllowedOption(pool2);
+		EventOption eventOption3 = TryChooseRandomAllowedOption(pool3);
+		if (eventOption != null)
+		{
+			list.Add(eventOption);
+		}
+		if (eventOption2 != null)
+		{
+			list.Add(eventOption2);
+		}
+		if (eventOption3 != null)
+		{
+			list.Add(eventOption3);
+		}
+		if (list.Count < 3)
+		{
+			int num = pool1.Count + pool2.Count + pool3.Count;
+			List<EventOption> list2 = new List<EventOption>(num);
+			CollectionsMarshal.SetCount(list2, num);
+			Span<EventOption> span = CollectionsMarshal.AsSpan(list2);
+			int num2 = 0;
+			Span<EventOption> span2 = CollectionsMarshal.AsSpan(pool1);
+			span2.CopyTo(span.Slice(num2, span2.Length));
+			num2 += span2.Length;
+			Span<EventOption> span3 = CollectionsMarshal.AsSpan(pool2);
+			span3.CopyTo(span.Slice(num2, span3.Length));
+			num2 += span3.Length;
+			Span<EventOption> span4 = CollectionsMarshal.AsSpan(pool3);
+			span4.CopyTo(span.Slice(num2, span4.Length));
+			num2 += span4.Length;
+			List<EventOption> list3 = list2;
+			foreach (EventOption item in list)
+			{
+				list3.Remove(item);
+			}
+			while (list.Count < 3)
+			{
+				EventOption eventOption4 = TryChooseRandomAllowedOption(list3);
+				if (eventOption4 == null)
+				{
+					break;
+				}
+				list.Add(eventOption4);
+				list3.Remove(eventOption4);
+			}
+		}
+		if (list.Count == 0)
+		{
+			Log.Error("Event " + Id.Entry + " has no allowed options in this run!");
+		}
+		else if (list.Count < 3)
+		{
+			Log.Error("Event " + Id.Entry + " could not generate three options in this run!");
+		}
+		return list;
 	}
 }

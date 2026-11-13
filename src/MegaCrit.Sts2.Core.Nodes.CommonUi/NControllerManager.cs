@@ -67,9 +67,9 @@ public class NControllerManager : Node
 		public static readonly StringName CheckForControllerInput = "CheckForControllerInput";
 
 		/// <summary>
-		/// Cached name for the 'CheckForArrowKeyInput' method.
+		/// Cached name for the 'CheckForDirectionalKeyInput' method.
 		/// </summary>
-		public static readonly StringName CheckForArrowKeyInput = "CheckForArrowKeyInput";
+		public static readonly StringName CheckForDirectionalKeyInput = "CheckForDirectionalKeyInput";
 
 		/// <summary>
 		/// Cached name for the 'ForceMouseMode' method.
@@ -360,7 +360,7 @@ public class NControllerManager : Node
 			}
 			if (InputType != InputType.KeyboardOnlyMode)
 			{
-				CheckForArrowKeyInput(inputEvent);
+				CheckForDirectionalKeyInput(inputEvent);
 			}
 		}
 	}
@@ -402,11 +402,17 @@ public class NControllerManager : Node
 		}
 	}
 
-	private void CheckForArrowKeyInput(InputEvent inputEvent)
+	/// <summary>
+	/// Switches input type when the player presses a directional key. Which keys those are comes
+	/// from the keyboard-only bindings, so remapping the directions moves this along with them.
+	/// <see cref="M:MegaCrit.Sts2.Core.Nodes.CommonUi.NControllerManager._Input(Godot.InputEvent)" /> skips this while we are already in keyboard-only mode, so this only
+	/// ever moves us into keyboard-only mode or out of controller mode, never out of keyboard-only
+	/// mode.
+	/// </summary>
+	private void CheckForDirectionalKeyInput(InputEvent inputEvent)
 	{
-		if (NGame.IsGameFocusedWindow() && inputEvent is InputEventKey inputEventKey && inputEventKey.IsPressed() && (inputEventKey.Keycode == Key.Up || inputEventKey.Keycode == Key.Down || inputEventKey.Keycode == Key.Left || inputEventKey.Keycode == Key.Right))
+		if (NGame.IsGameFocusedWindow() && inputEvent is InputEventKey inputEventKey && inputEventKey.IsPressed() && NInputManager.Instance.IsKbOnlyDirectionalKey(inputEventKey.Keycode))
 		{
-			Viewport viewport = GetViewport();
 			if (SaveManager.Instance.PrefsSave.KeyboardMode)
 			{
 				InputType = InputType.KeyboardOnlyMode;
@@ -414,7 +420,7 @@ public class NControllerManager : Node
 				ActiveScreenContext.Instance.FocusOnDefaultControl();
 				EmitSignal(SignalName.ControllerDetected);
 				ControlModeChanged();
-				viewport?.SetInputAsHandled();
+				GetViewport()?.SetInputAsHandled();
 			}
 			else if (InputType == InputType.Controller)
 			{
@@ -530,7 +536,7 @@ public class NControllerManager : Node
 		{
 			new PropertyInfo(Variant.Type.Object, "inputEvent", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("InputEvent"), exported: false)
 		}, null));
-		list.Add(new MethodInfo(MethodName.CheckForArrowKeyInput, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		list.Add(new MethodInfo(MethodName.CheckForDirectionalKeyInput, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "inputEvent", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("InputEvent"), exported: false)
 		}, null));
@@ -588,9 +594,9 @@ public class NControllerManager : Node
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.CheckForArrowKeyInput && args.Count == 1)
+		if (method == MethodName.CheckForDirectionalKeyInput && args.Count == 1)
 		{
-			CheckForArrowKeyInput(VariantUtils.ConvertTo<InputEvent>(in args[0]));
+			CheckForDirectionalKeyInput(VariantUtils.ConvertTo<InputEvent>(in args[0]));
 			ret = default;
 			return true;
 		}
@@ -671,7 +677,7 @@ public class NControllerManager : Node
 		{
 			return true;
 		}
-		if (method == MethodName.CheckForArrowKeyInput)
+		if (method == MethodName.CheckForDirectionalKeyInput)
 		{
 			return true;
 		}

@@ -21,7 +21,7 @@ public sealed class SandCastle : RelicModel
 
 	public override Task AfterObtained()
 	{
-		IEnumerable<CardModel> enumerable = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => c?.IsUpgradable ?? false).ToList().StableShuffle(Owner.RunState.Rng.Niche)
+		IEnumerable<CardModel> enumerable = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => c?.IsUpgradable ?? false).ToList().StableShuffle(Owner.PlayerRng.NonCombatGeneration)
 			.Take(DynamicVars.Cards.IntValue);
 		NRun.Instance?.GlobalUi.GridCardPreviewContainer.ForceMaxColumnsUntilEmpty(3);
 		foreach (CardModel item in enumerable)

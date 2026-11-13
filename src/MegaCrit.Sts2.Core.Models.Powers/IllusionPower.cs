@@ -74,7 +74,7 @@ public sealed class IllusionPower : PowerModel
 		return PowerCmd.Apply<MinionPower>(new ThrowingPlayerChoiceContext(), Owner, 1m, null, null);
 	}
 
-	public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (!wasRemovalPrevented && creature == Owner)
 		{

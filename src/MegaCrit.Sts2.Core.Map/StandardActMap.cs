@@ -24,10 +24,14 @@ public sealed class StandardActMap : ActMap
 
 	private readonly Rng _rng;
 
-	private static readonly HashSet<MapPointType> _lowerMapPointRestrictions = new HashSet<MapPointType>
+	/// <summary>
+	/// The lowest row each restricted type may appear on. Rest sites start one row lower than elites so that a short
+	/// act, such as Act 3 in multiplayer, still has room for its full rest site count.
+	/// </summary>
+	private static readonly Dictionary<MapPointType, int> _lowestRowByPointType = new Dictionary<MapPointType, int>
 	{
-		MapPointType.RestSite,
-		MapPointType.Elite
+		[MapPointType.RestSite] = 5,
+		[MapPointType.Elite] = 6
 	};
 
 	private static readonly HashSet<MapPointType> _upperMapPointRestrictions = new HashSet<MapPointType> { MapPointType.RestSite };
@@ -164,10 +168,10 @@ public sealed class StandardActMap : ActMap
 			int row = current.coord.row + 1;
 			int num5 = item switch
 			{
-				-1 => num, 
-				0 => col, 
-				1 => num2, 
-				_ => throw new InvalidOperationException("This isn't possible"), 
+				-1 => num,
+				0 => col,
+				1 => num2,
+				_ => throw new InvalidOperationException("This isn't possible"),
 			};
 			if (!HasInvalidCrossover(current, num5))
 			{
@@ -384,20 +388,31 @@ public sealed class StandardActMap : ActMap
 		}
 	}
 
+	/// <summary>
+	/// Takes the first type in the queue that the rules allow at this point and leaves the rest of the queue in order.
+	/// The queue is ordered by priority (rest sites first), so a type that is invalid here keeps its place for the next
+	/// point instead of moving behind every other type. Rest sites have the narrowest window of valid rows, and on a
+	/// short map they were losing every contested row to shops, elites and unknowns.
+	/// </summary>
 	private MapPointType GetNextValidPointType(Queue<MapPointType> pointTypesQueue, MapPoint mapPoint)
 	{
-		for (int i = 0; i < pointTypesQueue.Count; i++)
+		MapPointType[] array = pointTypesQueue.ToArray();
+		for (int i = 0; i < array.Length; i++)
 		{
-			MapPointType mapPointType = pointTypesQueue.Dequeue();
-			if (_pointTypeCounts.ShouldIgnoreMapPointRulesForMapPointType(mapPointType))
+			MapPointType mapPointType = array[i];
+			if (!_pointTypeCounts.ShouldIgnoreMapPointRulesForMapPointType(mapPointType) && !IsValidPointType(mapPointType, mapPoint))
 			{
-				return mapPointType;
+				continue;
 			}
-			if (IsValidPointType(mapPointType, mapPoint))
+			pointTypesQueue.Clear();
+			for (int j = 0; j < array.Length; j++)
 			{
-				return mapPointType;
+				if (j != i)
+				{
+					pointTypesQueue.Enqueue(array[j]);
+				}
 			}
-			pointTypesQueue.Enqueue(mapPointType);
+			return mapPointType;
 		}
 		return MapPointType.Unassigned;
 	}
@@ -430,9 +445,9 @@ public sealed class StandardActMap : ActMap
 	/// These point types cannot be in the lower part of the map
 	private static bool IsValidForLower(MapPointType pointType, MapPoint mapPoint)
 	{
-		if (mapPoint.coord.row < 6)
+		if (_lowestRowByPointType.TryGetValue(pointType, out var value))
 		{
-			return !_lowerMapPointRestrictions.Contains(pointType);
+			return mapPoint.coord.row >= value;
 		}
 		return true;
 	}

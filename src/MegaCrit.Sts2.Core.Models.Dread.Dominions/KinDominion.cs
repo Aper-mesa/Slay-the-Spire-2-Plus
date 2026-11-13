@@ -1,0 +1,36 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
+using MegaCrit.Sts2.Core.Models.Powers;
+using MegaCrit.Sts2.Core.Rooms;
+
+namespace MegaCrit.Sts2.Core.Models.Dread.Dominions;
+
+public class KinDominion : DominionModel
+{
+	private const int _debuffAmounts = 2;
+
+	public override IEnumerable<IHoverTip> ExtraHoverTips
+	{
+		get
+		{
+			List<IHoverTip> list = new List<IHoverTip>();
+			list.AddRange(HoverTipFactory.FromPowerWithPowerHoverTips<WeakPower>(2));
+			list.AddRange(HoverTipFactory.FromPowerWithPowerHoverTips<FrailPower>(2));
+			return new _003C_003Ez__ReadOnlyList<IHoverTip>(list);
+		}
+	}
+
+	public override async Task AfterRoomEntered(AbstractRoom room)
+	{
+		if (room is CombatRoom combatRoom)
+		{
+			await PowerCmd.Apply<WeakPower>(new ThrowingPlayerChoiceContext(), combatRoom.CombatState.Players.Select((Player p) => p.Creature), 2m, null, null);
+			await PowerCmd.Apply<FrailPower>(new ThrowingPlayerChoiceContext(), combatRoom.CombatState.Players.Select((Player p) => p.Creature), 2m, null, null);
+		}
+	}
+}

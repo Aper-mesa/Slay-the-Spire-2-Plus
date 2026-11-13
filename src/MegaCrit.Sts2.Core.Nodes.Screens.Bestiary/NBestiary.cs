@@ -29,353 +29,145 @@ using MegaCrit.Sts2.addons.mega_text;
 
 namespace MegaCrit.Sts2.Core.Nodes.Screens.Bestiary;
 
-/// <summary>
-/// Screen that has a list of monsters that you can click on to view their name, description, hp, some stats, and
-/// a list of their moves which you can click on to play the associated animation and sfx.
-/// </summary>
 [ScriptPath("res://src/Core/Nodes/Screens/Bestiary/NBestiary.cs")]
 public class NBestiary : NSubmenu
 {
-	/// <summary>
-	/// Cached StringNames for the methods contained in this class, for fast lookup.
-	/// </summary>
 	public new class MethodName : NSubmenu.MethodName
 	{
-		/// <summary>
-		/// Cached name for the 'Create' method.
-		/// </summary>
 		public static readonly StringName Create = "Create";
 
-		/// <summary>
-		/// Cached name for the '_Ready' method.
-		/// </summary>
 		public new static readonly StringName _Ready = "_Ready";
 
-		/// <summary>
-		/// Cached name for the 'ToggleMode' method.
-		/// </summary>
 		public static readonly StringName ToggleMode = "ToggleMode";
 
-		/// <summary>
-		/// Cached name for the 'EnableMoveButtonHotkeys' method.
-		/// </summary>
 		public static readonly StringName EnableMoveButtonHotkeys = "EnableMoveButtonHotkeys";
 
-		/// <summary>
-		/// Cached name for the 'DisableMoveButtonHotkeys' method.
-		/// </summary>
 		public static readonly StringName DisableMoveButtonHotkeys = "DisableMoveButtonHotkeys";
 
-		/// <summary>
-		/// Cached name for the 'ShowMovesPanel' method.
-		/// </summary>
 		public static readonly StringName ShowMovesPanel = "ShowMovesPanel";
 
-		/// <summary>
-		/// Cached name for the 'ShowStatsPanel' method.
-		/// </summary>
 		public static readonly StringName ShowStatsPanel = "ShowStatsPanel";
 
-		/// <summary>
-		/// Cached name for the 'RefreshStatisticsText' method.
-		/// </summary>
 		public static readonly StringName RefreshStatisticsText = "RefreshStatisticsText";
 
-		/// <summary>
-		/// Cached name for the 'DisplayCharacterData' method.
-		/// </summary>
 		public static readonly StringName DisplayCharacterData = "DisplayCharacterData";
 
-		/// <summary>
-		/// Cached name for the 'UpdateDialogueBubbleStyle' method.
-		/// </summary>
 		public static readonly StringName UpdateDialogueBubbleStyle = "UpdateDialogueBubbleStyle";
 
-		/// <summary>
-		/// Cached name for the 'ShowDialogue' method.
-		/// </summary>
 		public static readonly StringName ShowDialogue = "ShowDialogue";
 
-		/// <summary>
-		/// Cached name for the 'HideDialogue' method.
-		/// </summary>
 		public static readonly StringName HideDialogue = "HideDialogue";
 
-		/// <summary>
-		/// Cached name for the 'OnSubmenuOpened' method.
-		/// </summary>
 		public new static readonly StringName OnSubmenuOpened = "OnSubmenuOpened";
 
-		/// <summary>
-		/// Cached name for the 'OnSubmenuClosed' method.
-		/// </summary>
 		public new static readonly StringName OnSubmenuClosed = "OnSubmenuClosed";
 
-		/// <summary>
-		/// Cached name for the 'CreateEntries' method.
-		/// </summary>
 		public static readonly StringName CreateEntries = "CreateEntries";
 
-		/// <summary>
-		/// Cached name for the 'CreateFilters' method.
-		/// </summary>
 		public static readonly StringName CreateFilters = "CreateFilters";
 
-		/// <summary>
-		/// Cached name for the 'OnCharacterFilterSelected' method.
-		/// </summary>
 		public static readonly StringName OnCharacterFilterSelected = "OnCharacterFilterSelected";
 
-		/// <summary>
-		/// Cached name for the 'AddEvents' method.
-		/// </summary>
 		public static readonly StringName AddEvents = "AddEvents";
 
-		/// <summary>
-		/// Cached name for the 'OnMonsterClicked' method.
-		/// </summary>
 		public static readonly StringName OnMonsterClicked = "OnMonsterClicked";
 
-		/// <summary>
-		/// Cached name for the 'SelectMonster' method.
-		/// </summary>
 		public static readonly StringName SelectMonster = "SelectMonster";
 
-		/// <summary>
-		/// Cached name for the 'OnMoveButtonClicked' method.
-		/// </summary>
 		public static readonly StringName OnMoveButtonClicked = "OnMoveButtonClicked";
 
-		/// <summary>
-		/// Cached name for the 'GetSideCenter' method.
-		/// </summary>
 		public static readonly StringName GetSideCenter = "GetSideCenter";
 
-		/// <summary>
-		/// Cached name for the 'GetSideFloor' method.
-		/// </summary>
 		public static readonly StringName GetSideFloor = "GetSideFloor";
 
-		/// <summary>
-		/// Cached name for the 'EnableStatsModeHotkeys' method.
-		/// </summary>
 		public static readonly StringName EnableStatsModeHotkeys = "EnableStatsModeHotkeys";
 
-		/// <summary>
-		/// Cached name for the 'DisableStatsModeHotkeys' method.
-		/// </summary>
 		public static readonly StringName DisableStatsModeHotkeys = "DisableStatsModeHotkeys";
 
-		/// <summary>
-		/// Cached name for the 'FilterLeft' method.
-		/// </summary>
 		public static readonly StringName FilterLeft = "FilterLeft";
 
-		/// <summary>
-		/// Cached name for the 'FilterRight' method.
-		/// </summary>
 		public static readonly StringName FilterRight = "FilterRight";
 
-		/// <summary>
-		/// Cached name for the 'SelectFilter' method.
-		/// </summary>
 		public static readonly StringName SelectFilter = "SelectFilter";
 
-		/// <summary>
-		/// Cached name for the 'UpdatePageIcons' method.
-		/// </summary>
 		public static readonly StringName UpdatePageIcons = "UpdatePageIcons";
 
-		/// <summary>
-		/// Cached name for the 'CanBeShown' method.
-		/// </summary>
 		public static readonly StringName CanBeShown = "CanBeShown";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the properties and fields contained in this class, for fast lookup.
-	/// </summary>
 	public new class PropertyName : NSubmenu.PropertyName
 	{
-		/// <summary>
-		/// Cached name for the 'InitialFocusedControl' property.
-		/// </summary>
 		public new static readonly StringName InitialFocusedControl = "InitialFocusedControl";
 
-		/// <summary>
-		/// Cached name for the 'BackVfxContainer' property.
-		/// </summary>
 		public static readonly StringName BackVfxContainer = "BackVfxContainer";
 
-		/// <summary>
-		/// Cached name for the 'VfxContainer' property.
-		/// </summary>
 		public static readonly StringName VfxContainer = "VfxContainer";
 
-		/// <summary>
-		/// Cached name for the 'Layout' property.
-		/// </summary>
 		public static readonly StringName Layout = "Layout";
 
-		/// <summary>
-		/// Cached name for the '_monsterNameLabel' field.
-		/// </summary>
 		public static readonly StringName _monsterNameLabel = "_monsterNameLabel";
 
-		/// <summary>
-		/// Cached name for the '_epithet' field.
-		/// </summary>
 		public static readonly StringName _epithet = "_epithet";
 
-		/// <summary>
-		/// Cached name for the '_sidebar' field.
-		/// </summary>
 		public static readonly StringName _sidebar = "_sidebar";
 
-		/// <summary>
-		/// Cached name for the '_bestiaryList' field.
-		/// </summary>
 		public static readonly StringName _bestiaryList = "_bestiaryList";
 
-		/// <summary>
-		/// Cached name for the '_selectionArrow' field.
-		/// </summary>
 		public static readonly StringName _selectionArrow = "_selectionArrow";
 
-		/// <summary>
-		/// Cached name for the '_arrowTween' field.
-		/// </summary>
 		public static readonly StringName _arrowTween = "_arrowTween";
 
-		/// <summary>
-		/// Cached name for the '_initSelectionArrow' field.
-		/// </summary>
 		public static readonly StringName _initSelectionArrow = "_initSelectionArrow";
 
-		/// <summary>
-		/// Cached name for the '_layoutContainer' field.
-		/// </summary>
 		public static readonly StringName _layoutContainer = "_layoutContainer";
 
-		/// <summary>
-		/// Cached name for the '_currentLayout' field.
-		/// </summary>
 		public static readonly StringName _currentLayout = "_currentLayout";
 
-		/// <summary>
-		/// Cached name for the '_characterIcon' field.
-		/// </summary>
 		public static readonly StringName _characterIcon = "_characterIcon";
 
-		/// <summary>
-		/// Cached name for the '_iconTexture' field.
-		/// </summary>
 		public static readonly StringName _iconTexture = "_iconTexture";
 
-		/// <summary>
-		/// Cached name for the '_iconOutlineTexture' field.
-		/// </summary>
 		public static readonly StringName _iconOutlineTexture = "_iconOutlineTexture";
 
-		/// <summary>
-		/// Cached name for the '_dialogueLine' field.
-		/// </summary>
 		public static readonly StringName _dialogueLine = "_dialogueLine";
 
-		/// <summary>
-		/// Cached name for the '_dialogueLabel' field.
-		/// </summary>
 		public static readonly StringName _dialogueLabel = "_dialogueLabel";
 
-		/// <summary>
-		/// Cached name for the '_dialogueBubble' field.
-		/// </summary>
 		public static readonly StringName _dialogueBubble = "_dialogueBubble";
 
-		/// <summary>
-		/// Cached name for the '_dialogueTail' field.
-		/// </summary>
 		public static readonly StringName _dialogueTail = "_dialogueTail";
 
-		/// <summary>
-		/// Cached name for the '_dialogueTailShadow' field.
-		/// </summary>
 		public static readonly StringName _dialogueTailShadow = "_dialogueTailShadow";
 
-		/// <summary>
-		/// Cached name for the '_modeButton' field.
-		/// </summary>
 		public static readonly StringName _modeButton = "_modeButton";
 
-		/// <summary>
-		/// Cached name for the '_isStatsMode' field.
-		/// </summary>
 		public static readonly StringName _isStatsMode = "_isStatsMode";
 
-		/// <summary>
-		/// Cached name for the '_pageLeftIcon' field.
-		/// </summary>
 		public static readonly StringName _pageLeftIcon = "_pageLeftIcon";
 
-		/// <summary>
-		/// Cached name for the '_pageRightIcon' field.
-		/// </summary>
 		public static readonly StringName _pageRightIcon = "_pageRightIcon";
 
-		/// <summary>
-		/// Cached name for the '_moveList' field.
-		/// </summary>
 		public static readonly StringName _moveList = "_moveList";
 
-		/// <summary>
-		/// Cached name for the '_moveContainer' field.
-		/// </summary>
 		public static readonly StringName _moveContainer = "_moveContainer";
 
-		/// <summary>
-		/// Cached name for the '_statsContainer' field.
-		/// </summary>
 		public static readonly StringName _statsContainer = "_statsContainer";
 
-		/// <summary>
-		/// Cached name for the '_filterContainer' field.
-		/// </summary>
 		public static readonly StringName _filterContainer = "_filterContainer";
 
-		/// <summary>
-		/// Cached name for the '_statsLabel' field.
-		/// </summary>
 		public static readonly StringName _statsLabel = "_statsLabel";
 
-		/// <summary>
-		/// Cached name for the '_currentFilter' field.
-		/// </summary>
 		public static readonly StringName _currentFilter = "_currentFilter";
 
-		/// <summary>
-		/// Cached name for the '_selectedEntry' field.
-		/// </summary>
 		public static readonly StringName _selectedEntry = "_selectedEntry";
 
-		/// <summary>
-		/// Cached name for the '_previousScreenshakeTarget' field.
-		/// </summary>
 		public static readonly StringName _previousScreenshakeTarget = "_previousScreenshakeTarget";
 
-		/// <summary>
-		/// Cached name for the '_tween' field.
-		/// </summary>
 		public static readonly StringName _tween = "_tween";
 
-		/// <summary>
-		/// Cached name for the '_dialogueTween' field.
-		/// </summary>
 		public static readonly StringName _dialogueTween = "_dialogueTween";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the signals contained in this class, for fast lookup.
-	/// </summary>
 	public new class SignalName : NSubmenu.SignalName
 	{
 	}
@@ -496,7 +288,9 @@ public class NBestiary : NSubmenu
 	{
 		ConnectSignals();
 		GetNode<MegaLabel>("%MoveHeader").SetTextAutoSize(new LocString("bestiary", "ACTIONS.header").GetFormattedText());
-		GetNode<MegaRichTextLabel>("%ConstructionLabel").SetTextAutoSize(new LocString("bestiary", "UNDER_CONSTRUCTION").GetRawText());
+		Control node = GetNode<Control>("%UnderConstruction");
+		node.OffsetLeft = 24f;
+		node.OffsetTop = 82f;
 		_sidebar = GetNode<NScrollableContainer>("%Sidebar");
 		_bestiaryList = GetNode<VBoxContainer>("%BestiaryList");
 		_monsterNameLabel = GetNode<MegaRichTextLabel>("%MonsterName");
@@ -557,10 +351,6 @@ public class NBestiary : NSubmenu
 		}
 	}
 
-	/// <summary>
-	/// We need to disable these hotkeys when we go to Stats mode because otherwise
-	/// paginating through the characters will make the monster perform actions.
-	/// </summary>
 	private void DisableMoveButtonHotkeys()
 	{
 		foreach (Node child in _moveList.GetChildren())
@@ -741,9 +531,6 @@ public class NBestiary : NSubmenu
 		_dialogueTween.TweenProperty(_dialogueLine, "modulate", StsColors.transparentWhite, 0.1);
 	}
 
-	/// <summary>
-	/// On screen open. When the player opens the Bestiary.
-	/// </summary>
 	public override void OnSubmenuOpened()
 	{
 		Instance = this;
@@ -769,9 +556,6 @@ public class NBestiary : NSubmenu
 		UpdatePageIcons();
 	}
 
-	/// <summary>
-	/// Called when the Bestiary is closed (Back button)
-	/// </summary>
 	public override void OnSubmenuClosed()
 	{
 		DisableStatsModeHotkeys();
@@ -802,9 +586,6 @@ public class NBestiary : NSubmenu
 		_lastFocusedControl = null;
 	}
 
-	/// <summary>
-	/// Initializes the list of monsters based on your save file.
-	/// </summary>
 	private void CreateEntries()
 	{
 		_discoveredMonsterIds = (from e in SaveManager.Instance.Progress.EnemyStats.Values
@@ -943,17 +724,11 @@ public class NBestiary : NSubmenu
 		}
 	}
 
-	/// <summary>
-	/// A player clicked on a monster in the list on the right.
-	/// </summary>
 	private void OnMonsterClicked(NBestiaryEntry entry)
 	{
 		SelectMonster(entry);
 	}
 
-	/// <summary>
-	/// Loads a specific monster's bestiary entry.
-	/// </summary>
 	private void SelectMonster(NBestiaryEntry entry)
 	{
 		if (entry == _selectedEntry)
@@ -1055,16 +830,16 @@ public class NBestiary : NSubmenu
 		{
 			return moveIndex switch
 			{
-				1 => NBestiaryMoveButton.Create(move, MegaInput.viewDeckAndTabLeft), 
-				2 => NBestiaryMoveButton.Create(move, MegaInput.viewExhaustPileAndTabRight), 
-				3 => NBestiaryMoveButton.Create(move, MegaInput.viewDiscardPile), 
-				4 => NBestiaryMoveButton.Create(move, MegaInput.viewDrawPile), 
-				5 => NBestiaryMoveButton.Create(move, MegaInput.topPanel), 
-				6 => NBestiaryMoveButton.Create(move, MegaInput.altUp), 
-				7 => NBestiaryMoveButton.Create(move, MegaInput.altDown), 
-				8 => NBestiaryMoveButton.Create(move, MegaInput.altLeft), 
-				9 => NBestiaryMoveButton.Create(move, MegaInput.altRight), 
-				_ => NBestiaryMoveButton.Create(move, $"{moveIndex}"), 
+				1 => NBestiaryMoveButton.Create(move, MegaInput.viewDeckAndTabLeft),
+				2 => NBestiaryMoveButton.Create(move, MegaInput.viewExhaustPileAndTabRight),
+				3 => NBestiaryMoveButton.Create(move, MegaInput.viewDiscardPile),
+				4 => NBestiaryMoveButton.Create(move, MegaInput.viewDrawPile),
+				5 => NBestiaryMoveButton.Create(move, MegaInput.topPanel),
+				6 => NBestiaryMoveButton.Create(move, MegaInput.altUp),
+				7 => NBestiaryMoveButton.Create(move, MegaInput.altDown),
+				8 => NBestiaryMoveButton.Create(move, MegaInput.altLeft),
+				9 => NBestiaryMoveButton.Create(move, MegaInput.altRight),
+				_ => NBestiaryMoveButton.Create(move, $"{moveIndex}"),
 			};
 		}
 		return NBestiaryMoveButton.Create(move, $"mega_select_card_{moveIndex}");
@@ -1174,8 +949,8 @@ public class NBestiary : NSubmenu
 
 	private void EnableStatsModeHotkeys()
 	{
-		NHotkeyManager.Instance.PushHotkeyPressedBinding(_filterLeftHotkey, FilterLeft);
-		NHotkeyManager.Instance.PushHotkeyPressedBinding(_filterRightHotkey, FilterRight);
+		NHotkeyManager.Instance.PushHotkeyPressedBinding(_filterLeftHotkey, FilterLeft, 0L);
+		NHotkeyManager.Instance.PushHotkeyPressedBinding(_filterRightHotkey, FilterRight, 0L);
 	}
 
 	private void DisableStatsModeHotkeys()
@@ -1241,11 +1016,6 @@ public class NBestiary : NSubmenu
 		return SaveManager.Instance.Progress.EnemyStats.Values.Any((EnemyStats e) => e.TotalWins > 0);
 	}
 
-	/// <summary>
-	/// Get the method information for all the methods declared in this class.
-	/// This method is used by Godot to register the available methods in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
@@ -1301,7 +1071,6 @@ public class NBestiary : NSubmenu
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool InvokeGodotClassMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
 	{
@@ -1501,7 +1270,6 @@ public class NBestiary : NSubmenu
 		return false;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
@@ -1628,7 +1396,6 @@ public class NBestiary : NSubmenu
 		return base.HasGodotClassMethod(in method);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool SetGodotClassPropertyValue(in godot_string_name name, in godot_variant value)
 	{
@@ -1800,7 +1567,6 @@ public class NBestiary : NSubmenu
 		return base.SetGodotClassPropertyValue(in name, in value);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
@@ -1987,11 +1753,6 @@ public class NBestiary : NSubmenu
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
-	/// <summary>
-	/// Get the property information for all the properties declared in this class.
-	/// This method is used by Godot to register the available properties in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<PropertyInfo> GetGodotPropertyList()
 	{
@@ -2034,7 +1795,6 @@ public class NBestiary : NSubmenu
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void SaveGodotObjectData(GodotSerializationInfo info)
 	{
@@ -2074,7 +1834,6 @@ public class NBestiary : NSubmenu
 		info.AddProperty(PropertyName._dialogueTween, Variant.From(in _dialogueTween));
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void RestoreGodotObjectData(GodotSerializationInfo info)
 	{

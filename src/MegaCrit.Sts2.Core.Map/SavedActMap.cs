@@ -29,69 +29,26 @@ public sealed class SavedActMap : ActMap
 		Dictionary<MapCoord, MapPoint> dictionary = new Dictionary<MapCoord, MapPoint>();
 		foreach (SerializableMapPoint point in saved.Points)
 		{
-			MapPoint mapPoint = CreatePoint(point);
+			MapPoint mapPoint = MapPoint.FromSerializable(point);
 			Grid[point.Coord.col, point.Coord.row] = mapPoint;
 			dictionary[point.Coord] = mapPoint;
 		}
-		BossMapPoint = CreatePoint(saved.BossPoint);
+		BossMapPoint = MapPoint.FromSerializable(saved.BossPoint);
 		dictionary[saved.BossPoint.Coord] = BossMapPoint;
-		StartingMapPoint = CreatePoint(saved.StartingPoint);
+		StartingMapPoint = MapPoint.FromSerializable(saved.StartingPoint);
 		dictionary[saved.StartingPoint.Coord] = StartingMapPoint;
 		if (saved.SecondBossPoint != null)
 		{
-			SecondBossMapPoint = CreatePoint(saved.SecondBossPoint);
+			SecondBossMapPoint = MapPoint.FromSerializable(saved.SecondBossPoint);
 			dictionary[saved.SecondBossPoint.Coord] = SecondBossMapPoint;
 		}
-		WireChildren(saved.Points, dictionary);
-		WireChildren(saved.BossPoint, dictionary);
-		WireChildren(saved.StartingPoint, dictionary);
+		ActMap.ConnectChildren(saved.Points, dictionary);
+		ActMap.ConnectChildren(saved.BossPoint, dictionary);
+		ActMap.ConnectChildren(saved.StartingPoint, dictionary);
 		if (saved.SecondBossPoint != null)
 		{
-			WireChildren(saved.SecondBossPoint, dictionary);
+			ActMap.ConnectChildren(saved.SecondBossPoint, dictionary);
 		}
-		if (saved.StartMapPointCoords == null)
-		{
-			return;
-		}
-		foreach (MapCoord startMapPointCoord in saved.StartMapPointCoords)
-		{
-			if (dictionary.TryGetValue(startMapPointCoord, out var value))
-			{
-				startMapPoints.Add(value);
-			}
-		}
-	}
-
-	private static MapPoint CreatePoint(SerializableMapPoint saved)
-	{
-		return new MapPoint(saved.Coord.col, saved.Coord.row)
-		{
-			PointType = saved.PointType,
-			CanBeModified = saved.CanBeModified
-		};
-	}
-
-	private static void WireChildren(IEnumerable<SerializableMapPoint> points, Dictionary<MapCoord, MapPoint> lookup)
-	{
-		foreach (SerializableMapPoint point in points)
-		{
-			WireChildren(point, lookup);
-		}
-	}
-
-	private static void WireChildren(SerializableMapPoint savedPoint, Dictionary<MapCoord, MapPoint> lookup)
-	{
-		if (savedPoint.ChildCoords == null)
-		{
-			return;
-		}
-		MapPoint mapPoint = lookup[savedPoint.Coord];
-		foreach (MapCoord childCoord in savedPoint.ChildCoords)
-		{
-			if (lookup.TryGetValue(childCoord, out MapPoint value))
-			{
-				mapPoint.AddChildPoint(value);
-			}
-		}
+		RestoreStartMapPoints(saved, dictionary);
 	}
 }

@@ -36,7 +36,7 @@ public class MapScreenHandler : IScreenHandler, IHandler
 		{
 			await WaitHelper.Until(() => (nextRoom = SelectNextRoom(mapScreen))?.IsEnabled ?? false, ct, AutoSlayConfig.mapPointEnabledTimeout, "Map point not enabled");
 		}
-		catch (AutoSlayTimeoutException)
+		catch (DriverTimeoutException)
 		{
 			AutoSlayLog.Info("[AutoSlay] Map point never became travelable: node=" + ((nextRoom == null) ? "none" : nextRoom.Point.coord.ToString()) + ", state=" + ((nextRoom == null) ? "n/a" : nextRoom.State.ToString()) + ", " + $"screenTravelEnabled={mapScreen.IsTravelEnabled}");
 			throw;
@@ -47,7 +47,7 @@ public class MapScreenHandler : IScreenHandler, IHandler
 		try
 		{
 			await UiHelper.Click(nextRoom);
-			await WaitHelper.ForTask(_roomEnteredTcs.Task, ct, AutoSlayConfig.mapScreenTimeout, "Room not entered after map click");
+			await WaitHelper.ForTask(_roomEnteredTcs.Task, ct, AutoSlayConfig.roomEnterTimeout, "Room not entered after map click");
 		}
 		finally
 		{

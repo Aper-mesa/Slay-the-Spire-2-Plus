@@ -33,7 +33,7 @@ public sealed class WingCharm : RelicModel
 		{
 			return false;
 		}
-		CardCreationResult cardCreationResult = Owner.RunState.Rng.Niche.NextItem(list);
+		CardCreationResult cardCreationResult = Owner.PlayerRng.Rewards.NextItem(list);
 		if (cardCreationResult == null)
 		{
 			return false;

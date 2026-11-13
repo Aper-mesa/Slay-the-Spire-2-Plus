@@ -23,7 +23,7 @@ public sealed class EntropicBrew : PotionModel
 		Player targetPlayer = target.Player;
 		while (targetPlayer.HasOpenPotionSlots)
 		{
-			PotionModel potion = PotionFactory.CreateRandomPotionOutOfCombat(targetPlayer, targetPlayer.RunState.Rng.CombatPotionGeneration).ToMutable();
+			PotionModel potion = PotionFactory.CreateRandomPotionOutOfCombat(targetPlayer, targetPlayer.PlayerRng.NonCombatGeneration).ToMutable();
 			if (!(await PotionCmd.TryToProcure(potion, targetPlayer)).success)
 			{
 				break;

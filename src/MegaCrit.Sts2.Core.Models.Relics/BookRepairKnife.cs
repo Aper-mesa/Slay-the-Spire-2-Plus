@@ -21,7 +21,7 @@ public sealed class BookRepairKnife : RelicModel
 
 	public override Task AfterDiedToDoom(PlayerChoiceContext choiceContext, IReadOnlyList<Creature> creatures)
 	{
-		int num = creatures.Count((Creature c) => c != Owner.Creature && c.Powers.All((PowerModel p) => p.ShouldOwnerDeathTriggerFatal()));
+		int num = creatures.Count((Creature c) => c.IsEnemy && c.Powers.All((PowerModel p) => p.ShouldOwnerDeathTriggerFatal()));
 		if (num == 0)
 		{
 			return Task.CompletedTask;

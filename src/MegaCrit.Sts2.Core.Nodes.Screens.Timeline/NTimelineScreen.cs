@@ -620,7 +620,7 @@ public class NTimelineScreen : NSubmenu
 			_lineGrowTween = CreateTween().SetParallel();
 			_lineGrowTween.TweenProperty(_lineContainer, "modulate:a", 1f, 0.5);
 			_lineGrowTween.TweenProperty(_line, "custom_minimum_size:x", (float)_uniqueEpochEras.Count * 226f, 2.0).SetEase(Tween.EaseType.InOut).SetTrans(Tween.TransitionType.Cubic);
-			if (!(await _lineGrowTween.AwaitFinished(this)))
+			if (await _lineGrowTween.AwaitFinished(this) != TweenOutcome.Finished)
 			{
 				return;
 			}
@@ -808,7 +808,7 @@ public class NTimelineScreen : NSubmenu
 		{
 			RefreshBackButton();
 		}
-		if (await _backstopTween.AwaitFinished(this))
+		if (await _backstopTween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			_backstop.Visible = false;
 		}

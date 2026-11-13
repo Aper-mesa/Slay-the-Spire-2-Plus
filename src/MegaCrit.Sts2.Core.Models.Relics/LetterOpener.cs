@@ -130,8 +130,8 @@ public sealed class LetterOpener : RelicModel
 
 	public override Task AfterCombatEnd(CombatRoom _)
 	{
-		Status = RelicStatus.Normal;
 		IsActivating = false;
+		Status = RelicStatus.Normal;
 		return Task.CompletedTask;
 	}
 

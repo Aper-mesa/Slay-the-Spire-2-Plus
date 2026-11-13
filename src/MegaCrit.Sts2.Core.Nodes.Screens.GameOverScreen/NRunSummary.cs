@@ -153,6 +153,7 @@ public class NRunSummary : Control
 
 	public async Task AnimateInDiscoveries(RunState runState, CancellationToken ct)
 	{
+		ct.ThrowIfCancellationRequested();
 		Player player = LocalContext.GetMe(runState);
 		if (player.DiscoveredCards.Count + player.DiscoveredRelics.Count + player.DiscoveredPotions.Count + player.DiscoveredEnemies.Count + player.DiscoveredEpochs.Count == 0)
 		{
@@ -162,6 +163,7 @@ public class NRunSummary : Control
 		Tween tween = CreateTween();
 		tween.TweenProperty(_discoveryHeader, "modulate:a", 1f, 0.25);
 		await Task.Delay(100, ct);
+		ct.ThrowIfCancellationRequested();
 		if (!this.IsValid())
 		{
 			return;
@@ -229,6 +231,7 @@ public class NRunSummary : Control
 			_discoveredEpochs.SetText($"{player.DiscoveredEpochs.Count}");
 			await TaskHelper.RunSafely(DiscoveryAnimHelper(_discoveredEpochs));
 		}
+		ct.ThrowIfCancellationRequested();
 	}
 
 	private async Task DiscoveryAnimHelper(Control node)

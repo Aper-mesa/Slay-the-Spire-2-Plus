@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Ancients;
+using MegaCrit.Sts2.Core.Entities.Characters;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.Extensions;
@@ -47,11 +48,9 @@ public class Darv : AncientEventModel
 
 	private static List<ValidRelicSet>? _validRelicSets;
 
-	/// <summary>
-	/// [apermesa] Lazily build the relic sets. Building them in a static constructor made Darv depend on
-	/// Astrolabe being registered in ModelDb first, which is not guaranteed when mods inject model types.
-	/// </summary>
 	private static List<ValidRelicSet> ValidRelicSets => _validRelicSets ?? (_validRelicSets = CreateValidRelicSets());
+
+	public override FoolPronounGuess FoolPronounGuess => FoolPronounGuess.Feminine;
 
 	public override Color ButtonColor => new Color(0.06f, 0f, 0.08f, 0.5f);
 
@@ -153,9 +152,9 @@ public class Darv : AncientEventModel
 
 	protected override IReadOnlyList<EventOption> GenerateInitialOptions()
 	{
-		List<EventOption> source = (from rs in ValidRelicSets
+		List<EventOption> source = AllowedOptions(from rs in ValidRelicSets
 			where rs.filter(Owner)
-			select RelicOption(Rng.NextItem(rs.relics).ToMutable())).ToList().UnstableShuffle(Rng);
+			select RelicOption(Rng.NextItem(rs.relics).ToMutable())).UnstableShuffle(Rng);
 		List<EventOption> list;
 		if (Rng.NextBool())
 		{
@@ -165,7 +164,7 @@ public class Darv : AncientEventModel
 			{
 				dustyTome.SetupForPlayer(Owner);
 			}
-			list.Add(RelicOption(dustyTome));
+			list.AddRange(AllowedOptions(new _003C_003Ez__ReadOnlySingleElementList<EventOption>(RelicOption(dustyTome))));
 		}
 		else
 		{

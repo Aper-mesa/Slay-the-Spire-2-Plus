@@ -57,7 +57,11 @@ public abstract class MonsterModel : AbstractModel
 
 	public abstract int MaxInitialHp { get; }
 
-	public virtual bool IsHealthBarVisible => true;
+	/// <summary>
+	/// If this is set to false, the creature is untargetable and its health bar will not be shown.
+	/// DO NOT return a dynamic value - it will not be respected. Only return static values. Call <see cref="M:MegaCrit.Sts2.Core.Nodes.Combat.NCreature.SetIsInteractable(System.Boolean,System.Boolean)" /> to change interactability dynamically.
+	/// </summary>
+	public virtual bool IsInteractable => true;
 
 	/// <summary>
 	/// At time of death, a SubViewport is created with the bounds of the creature's spine body in its current pose.

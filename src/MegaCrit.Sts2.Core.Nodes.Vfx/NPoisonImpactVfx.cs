@@ -95,7 +95,7 @@ public class NPoisonImpactVfx : Node2D
 		}
 		NPoisonImpactVfx nPoisonImpactVfx = PreloadManager.Cache.GetScene(scenePath).Instantiate<NPoisonImpactVfx>(PackedScene.GenEditState.Disabled);
 		nPoisonImpactVfx.GlobalPosition = targetCenter;
-		nPoisonImpactVfx._horizontalSmokeContainer.Scale = new Vector2(((double)GD.Randf() > 0.5) ? 1f : (-1f), 1f);
+		nPoisonImpactVfx._horizontalSmokeContainer.Scale = new Vector2((GD.Randf() > 0.5f) ? 1f : (-1f), 1f);
 		return nPoisonImpactVfx;
 	}
 

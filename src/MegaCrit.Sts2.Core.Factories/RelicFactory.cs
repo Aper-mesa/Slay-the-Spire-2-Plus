@@ -15,19 +15,27 @@ public static class RelicFactory
 	/// <summary>
 	/// Roll rarity and pull the next matching relic from the front of the list.
 	/// The pulled relic will never be seen again on this run.
-	/// Used by most relic reward sources (elite combat rewards etc).
 	/// </summary>
-	/// <returns>RelicModel</returns>
 	public static RelicModel PullNextRelicFromFront(Player player, Rng rng)
 	{
 		return PullNextRelicFromFront(player, RollRarity(rng), (RelicModel _) => true);
 	}
 
-	public static RelicModel PullNextRelicFromFront(Player player)
+	/// <summary>
+	/// Roll rarity and pull the next matching relic from the front of the list.
+	/// The pulled relic will never be seen again on this run.
+	/// This implicitly uses player.PlayerRng.Rewards, so it should not be used in shops or events.
+	/// </summary>
+	public static RelicModel PullNextRelicForRewardFromFront(Player player)
 	{
-		return PullNextRelicFromFront(player, RollRarity(player), (RelicModel _) => true);
+		return PullNextRelicFromFront(player, RollRarityForReward(player), (RelicModel _) => true);
 	}
 
+	/// <summary>
+	/// Roll rarity and pull the next matching relic from the front of the list.
+	/// The pulled relic will never be seen again on this run.
+	/// Since the rarity is passed in, this doesn't do any RNG rolling, and is safe to use anywhere.
+	/// </summary>
 	public static RelicModel PullNextRelicFromFront(Player player, RelicRarity rarity)
 	{
 		return PullNextRelicFromFront(player, rarity, (RelicModel _) => true);
@@ -50,18 +58,6 @@ public static class RelicFactory
 	}
 
 	/// <summary>
-	/// Roll rarity and pull the next matching relic from the back of the list.
-	/// The pulled relic will never be seen again on this run.
-	/// Used in shops.
-	/// </summary>
-	/// <param name="player">The player for which we're obtaining a relic.</param>
-	/// <returns>RelicModel</returns>
-	public static RelicModel PullNextRelicFromBack(Player player)
-	{
-		return PullNextRelicFromBack(player, RollRarity(player), (RelicModel _) => true);
-	}
-
-	/// <summary>
 	/// Pull the next matching relic from the back of the list.
 	/// The pulled relic will never be seen again on this run.
 	/// Used in shops.
@@ -77,7 +73,7 @@ public static class RelicFactory
 		return relicModel;
 	}
 
-	public static RelicRarity RollRarity(Player player)
+	public static RelicRarity RollRarityForReward(Player player)
 	{
 		return RollRarity(player.PlayerRng.Rewards);
 	}

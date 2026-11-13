@@ -17,12 +17,12 @@ namespace MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 /// for various devices/apis (ie Steam Deck)
 /// </summary>
 [ScriptPath("res://src/Core/Nodes/GodotExtensions/NMegaTextEdit.cs")]
-public class NMegaTextEdit : TextEdit
+public class NMegaTextEdit : Control
 {
 	/// <summary>
 	/// Cached StringNames for the methods contained in this class, for fast lookup.
 	/// </summary>
-	public new class MethodName : TextEdit.MethodName
+	public new class MethodName : Control.MethodName
 	{
 		/// <summary>
 		/// Cached name for the 'IsEditing' method.
@@ -55,6 +55,11 @@ public class NMegaTextEdit : TextEdit
 		public new static readonly StringName _GuiInput = "_GuiInput";
 
 		/// <summary>
+		/// Cached name for the '_Input' method.
+		/// </summary>
+		public new static readonly StringName _Input = "_Input";
+
+		/// <summary>
 		/// Cached name for the 'OpenKeyboard' method.
 		/// </summary>
 		public static readonly StringName OpenKeyboard = "OpenKeyboard";
@@ -68,8 +73,13 @@ public class NMegaTextEdit : TextEdit
 	/// <summary>
 	/// Cached StringNames for the properties and fields contained in this class, for fast lookup.
 	/// </summary>
-	public new class PropertyName : TextEdit.PropertyName
+	public new class PropertyName : Control.PropertyName
 	{
+		/// <summary>
+		/// Cached name for the 'TextEdit' property.
+		/// </summary>
+		public static readonly StringName TextEdit = "TextEdit";
+
 		/// <summary>
 		/// Cached name for the '_selectionReticle' field.
 		/// </summary>
@@ -84,13 +94,15 @@ public class NMegaTextEdit : TextEdit
 	/// <summary>
 	/// Cached StringNames for the signals contained in this class, for fast lookup.
 	/// </summary>
-	public new class SignalName : TextEdit.SignalName
+	public new class SignalName : Control.SignalName
 	{
 	}
 
 	private NSelectionReticle? _selectionReticle;
 
 	private bool _isEditing;
+
+	public TextEdit TextEdit { get; set; }
 
 	/// <summary>
 	/// This mirrors LineEdit.IsEditing()
@@ -102,21 +114,22 @@ public class NMegaTextEdit : TextEdit
 
 	public override void _Ready()
 	{
-		RefreshFont();
-		Connect(Control.SignalName.FocusExited, Callable.From(StopEditing));
+		TextEdit = GetNode<TextEdit>("TextEdit");
 		if (HasNode("SelectionReticle"))
 		{
 			_selectionReticle = GetNode<NSelectionReticle>("SelectionReticle");
 		}
+		RefreshFont();
 		Connect(Control.SignalName.FocusEntered, Callable.From(OnFocus));
 		Connect(Control.SignalName.FocusExited, Callable.From(OnUnfocus));
 		Connect(Control.SignalName.MouseEntered, Callable.From(OnFocus));
 		Connect(Control.SignalName.MouseExited, Callable.From(OnUnfocus));
+		TextEdit.Connect(Control.SignalName.FocusExited, Callable.From(StopEditing));
 	}
 
 	public void RefreshFont()
 	{
-		this.ApplyLocaleFontSubstitution(FontType.Regular, ThemeConstants.TextEdit.Font);
+		TextEdit.ApplyLocaleFontSubstitution(FontType.Regular, ThemeConstants.TextEdit.Font);
 	}
 
 	private void OnFocus()
@@ -143,7 +156,11 @@ public class NMegaTextEdit : TextEdit
 		{
 			OpenKeyboard();
 		}
-		if (inputEvent.IsActionPressed(MegaInput.cancel) && IsEditing())
+	}
+
+	public override void _Input(InputEvent inputEvent)
+	{
+		if (inputEvent.IsActionReleased(MegaInput.cancel) && IsEditing())
 		{
 			StopEditing();
 			GetViewport()?.SetInputAsHandled();
@@ -152,15 +169,29 @@ public class NMegaTextEdit : TextEdit
 
 	private void OpenKeyboard()
 	{
-		this.TryGrabFocus();
-		_isEditing = true;
-		PlatformUtil.OpenVirtualKeyboard();
+		if (!_isEditing)
+		{
+			_isEditing = true;
+			TextEdit.TryGrabFocus();
+			PlatformUtil.OpenVirtualKeyboard();
+			NHotkeyManager.Instance?.AddBlockingScreen(this);
+			if (NControllerManager.Instance.IsUsingDirectionalNavigation)
+			{
+				_selectionReticle?.OnSelect();
+			}
+		}
 	}
 
 	private void StopEditing()
 	{
-		_isEditing = false;
-		PlatformUtil.CloseVirtualKeyboard();
+		if (_isEditing)
+		{
+			_isEditing = false;
+			_selectionReticle?.OnDeselect();
+			PlatformUtil.CloseVirtualKeyboard();
+			NHotkeyManager.Instance?.RemoveBlockingScreen(this);
+			this.TryGrabFocus();
+		}
 	}
 
 	/// <summary>
@@ -171,13 +202,17 @@ public class NMegaTextEdit : TextEdit
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(8);
+		List<MethodInfo> list = new List<MethodInfo>(9);
 		list.Add(new MethodInfo(MethodName.IsEditing, new PropertyInfo(Variant.Type.Bool, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.RefreshFont, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnFocus, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnUnfocus, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._GuiInput, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Object, "inputEvent", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("InputEvent"), exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName._Input, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "inputEvent", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("InputEvent"), exported: false)
 		}, null));
@@ -225,6 +260,12 @@ public class NMegaTextEdit : TextEdit
 			ret = default;
 			return true;
 		}
+		if (method == MethodName._Input && args.Count == 1)
+		{
+			_Input(VariantUtils.ConvertTo<InputEvent>(in args[0]));
+			ret = default;
+			return true;
+		}
 		if (method == MethodName.OpenKeyboard && args.Count == 0)
 		{
 			OpenKeyboard();
@@ -268,6 +309,10 @@ public class NMegaTextEdit : TextEdit
 		{
 			return true;
 		}
+		if (method == MethodName._Input)
+		{
+			return true;
+		}
 		if (method == MethodName.OpenKeyboard)
 		{
 			return true;
@@ -283,6 +328,11 @@ public class NMegaTextEdit : TextEdit
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool SetGodotClassPropertyValue(in godot_string_name name, in godot_variant value)
 	{
+		if (name == PropertyName.TextEdit)
+		{
+			TextEdit = VariantUtils.ConvertTo<TextEdit>(in value);
+			return true;
+		}
 		if (name == PropertyName._selectionReticle)
 		{
 			_selectionReticle = VariantUtils.ConvertTo<NSelectionReticle>(in value);
@@ -300,6 +350,11 @@ public class NMegaTextEdit : TextEdit
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
+		if (name == PropertyName.TextEdit)
+		{
+			value = VariantUtils.CreateFrom<TextEdit>(TextEdit);
+			return true;
+		}
 		if (name == PropertyName._selectionReticle)
 		{
 			value = VariantUtils.CreateFrom(in _selectionReticle);
@@ -323,6 +378,7 @@ public class NMegaTextEdit : TextEdit
 	{
 		List<PropertyInfo> list = new List<PropertyInfo>();
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._selectionReticle, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName.TextEdit, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isEditing, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
@@ -332,6 +388,7 @@ public class NMegaTextEdit : TextEdit
 	protected override void SaveGodotObjectData(GodotSerializationInfo info)
 	{
 		base.SaveGodotObjectData(info);
+		info.AddProperty(PropertyName.TextEdit, Variant.From<TextEdit>(TextEdit));
 		info.AddProperty(PropertyName._selectionReticle, Variant.From(in _selectionReticle));
 		info.AddProperty(PropertyName._isEditing, Variant.From(in _isEditing));
 	}
@@ -341,13 +398,17 @@ public class NMegaTextEdit : TextEdit
 	protected override void RestoreGodotObjectData(GodotSerializationInfo info)
 	{
 		base.RestoreGodotObjectData(info);
-		if (info.TryGetProperty(PropertyName._selectionReticle, out var value))
+		if (info.TryGetProperty(PropertyName.TextEdit, out var value))
 		{
-			_selectionReticle = value.As<NSelectionReticle>();
+			TextEdit = value.As<TextEdit>();
 		}
-		if (info.TryGetProperty(PropertyName._isEditing, out var value2))
+		if (info.TryGetProperty(PropertyName._selectionReticle, out var value2))
 		{
-			_isEditing = value2.As<bool>();
+			_selectionReticle = value2.As<NSelectionReticle>();
+		}
+		if (info.TryGetProperty(PropertyName._isEditing, out var value3))
+		{
+			_isEditing = value3.As<bool>();
 		}
 	}
 }

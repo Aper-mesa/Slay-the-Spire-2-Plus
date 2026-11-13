@@ -51,7 +51,7 @@ public sealed class Tunneler : MonsterModel
 
 	private int BlockGain => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 37, 32);
 
-	private int BelowDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 26, 23);
+	private int FromBelowDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 28, 24);
 
 	public bool IsStunned
 	{
@@ -71,7 +71,7 @@ public sealed class Tunneler : MonsterModel
 		List<MonsterState> list = new List<MonsterState>();
 		MoveState moveState = new MoveState("BITE_MOVE", BiteMove, new SingleAttackIntent(BiteDamage));
 		MoveState moveState2 = new MoveState("BURROW_MOVE", BurrowMove, new BuffIntent(), new DefendIntent());
-		MoveState moveState3 = new MoveState("BELOW_MOVE", BelowMove, new SingleAttackIntent(BelowDamage));
+		MoveState moveState3 = new MoveState("FROM_BELOW_MOVE", FromBelowMove, new SingleAttackIntent(FromBelowDamage));
 		MoveState moveState4 = new MoveState("DIZZY_MOVE", StillDizzyMove, new StunIntent());
 		moveState.FollowUpState = moveState2;
 		moveState2.FollowUpState = moveState3;
@@ -102,7 +102,7 @@ public sealed class Tunneler : MonsterModel
 		await CreatureCmd.GainBlock(Creature, BlockGain, ValueProp.Move, null);
 	}
 
-	private async Task BelowMove(IReadOnlyList<Creature> targets)
+	private async Task FromBelowMove(IReadOnlyList<Creature> targets)
 	{
 		IsStunned = false;
 		if (TestMode.IsOff)
@@ -129,7 +129,7 @@ public sealed class Tunneler : MonsterModel
 			await CreatureCmd.TriggerAnim(Creature, "BurrowAttack", 0.25f);
 			await Cmd.Wait(1f);
 		}
-		await DamageCmd.Attack(BelowDamage).FromMonster(this).WithNoAttackerAnim()
+		await DamageCmd.Attack(FromBelowDamage).FromMonster(this).WithNoAttackerAnim()
 			.WithHitFx("vfx/vfx_attack_slash")
 			.Execute(null);
 	}

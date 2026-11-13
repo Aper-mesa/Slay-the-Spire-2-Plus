@@ -129,6 +129,11 @@ public class NRunHistory : NSubmenu
 		public static readonly StringName _hpLabel = "_hpLabel";
 
 		/// <summary>
+		/// Cached name for the '_goldContainer' field.
+		/// </summary>
+		public static readonly StringName _goldContainer = "_goldContainer";
+
+		/// <summary>
 		/// Cached name for the '_goldLabel' field.
 		/// </summary>
 		public static readonly StringName _goldLabel = "_goldLabel";
@@ -258,6 +263,8 @@ public class NRunHistory : NSubmenu
 
 	private MegaLabel _hpLabel;
 
+	private Control _goldContainer;
+
 	private MegaLabel _goldLabel;
 
 	private Control _potionHolder;
@@ -319,6 +326,7 @@ public class NRunHistory : NSubmenu
 		_screenContents = GetNode<NScrollableContainer>("ScreenContents");
 		_playerIconContainer = GetNode<Control>("%PlayerIconContainer");
 		_hpLabel = GetNode<MegaLabel>("%HpLabel");
+		_goldContainer = GetNode<Control>("%Gold");
 		_goldLabel = GetNode<MegaLabel>("%GoldLabel");
 		_potionHolder = GetNode<Control>("%PotionHolders");
 		_floorLabel = GetNode<MegaLabel>("%FloorNumLabel");
@@ -544,6 +552,7 @@ public class NRunHistory : NSubmenu
 
 	private void LoadGoldHpAndPotionInfo(NRunHistoryPlayerIcon icon)
 	{
+		_goldContainer.Visible = _history.GameMode != GameMode.Blitz;
 		if (!_history.MapPointHistory.Any())
 		{
 			CharacterModel characterModel = SaveUtil.CharacterOrDeprecated(icon.Player.Character);
@@ -592,7 +601,6 @@ public class NRunHistory : NSubmenu
 	/// Sets the text in the top right that is like Singleplayer: Standard or Multiplayer: Custom, etc.
 	/// </summary>
 	/// <param name="history"></param>
-	/// <exception cref="T:System.ArgumentOutOfRangeException"></exception>
 	private void LoadGameModeDetails(RunHistory history)
 	{
 		LocString locString = new LocString("run_history", "GAME_MODE.title");
@@ -606,14 +614,17 @@ public class NRunHistory : NSubmenu
 		}
 		switch (history.GameMode)
 		{
-		case GameMode.Custom:
-			locString.Add("GameMode", new LocString("run_history", "GAME_MODE.custom"));
-			break;
 		case GameMode.Daily:
 			locString.Add("GameMode", new LocString("run_history", "GAME_MODE.daily"));
 			break;
 		case GameMode.Standard:
 			locString.Add("GameMode", new LocString("run_history", "GAME_MODE.standard"));
+			break;
+		case GameMode.Blitz:
+			locString.Add("GameMode", new LocString("run_history", "GAME_MODE.blitz"));
+			break;
+		case GameMode.Dread:
+			locString.Add("GameMode", new LocString("run_history", "GAME_MODE.dread"));
 			break;
 		default:
 			locString.Add("GameMode", new LocString("run_history", "GAME_MODE.unknown"));
@@ -1013,6 +1024,11 @@ public class NRunHistory : NSubmenu
 			_hpLabel = VariantUtils.ConvertTo<MegaLabel>(in value);
 			return true;
 		}
+		if (name == PropertyName._goldContainer)
+		{
+			_goldContainer = VariantUtils.ConvertTo<Control>(in value);
+			return true;
+		}
 		if (name == PropertyName._goldLabel)
 		{
 			_goldLabel = VariantUtils.ConvertTo<MegaLabel>(in value);
@@ -1135,6 +1151,11 @@ public class NRunHistory : NSubmenu
 			value = VariantUtils.CreateFrom(in _hpLabel);
 			return true;
 		}
+		if (name == PropertyName._goldContainer)
+		{
+			value = VariantUtils.CreateFrom(in _goldContainer);
+			return true;
+		}
 		if (name == PropertyName._goldLabel)
 		{
 			value = VariantUtils.CreateFrom(in _goldLabel);
@@ -1246,6 +1267,7 @@ public class NRunHistory : NSubmenu
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._screenContents, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._playerIconContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._hpLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._goldContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._goldLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._potionHolder, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._floorLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -1276,6 +1298,7 @@ public class NRunHistory : NSubmenu
 		info.AddProperty(PropertyName._screenContents, Variant.From(in _screenContents));
 		info.AddProperty(PropertyName._playerIconContainer, Variant.From(in _playerIconContainer));
 		info.AddProperty(PropertyName._hpLabel, Variant.From(in _hpLabel));
+		info.AddProperty(PropertyName._goldContainer, Variant.From(in _goldContainer));
 		info.AddProperty(PropertyName._goldLabel, Variant.From(in _goldLabel));
 		info.AddProperty(PropertyName._potionHolder, Variant.From(in _potionHolder));
 		info.AddProperty(PropertyName._floorLabel, Variant.From(in _floorLabel));
@@ -1314,81 +1337,85 @@ public class NRunHistory : NSubmenu
 		{
 			_hpLabel = value3.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._goldLabel, out var value4))
+		if (info.TryGetProperty(PropertyName._goldContainer, out var value4))
 		{
-			_goldLabel = value4.As<MegaLabel>();
+			_goldContainer = value4.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._potionHolder, out var value5))
+		if (info.TryGetProperty(PropertyName._goldLabel, out var value5))
 		{
-			_potionHolder = value5.As<Control>();
+			_goldLabel = value5.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._floorLabel, out var value6))
+		if (info.TryGetProperty(PropertyName._potionHolder, out var value6))
 		{
-			_floorLabel = value6.As<MegaLabel>();
+			_potionHolder = value6.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._timeLabel, out var value7))
+		if (info.TryGetProperty(PropertyName._floorLabel, out var value7))
 		{
-			_timeLabel = value7.As<MegaLabel>();
+			_floorLabel = value7.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._dateLabel, out var value8))
+		if (info.TryGetProperty(PropertyName._timeLabel, out var value8))
 		{
-			_dateLabel = value8.As<MegaRichTextLabel>();
+			_timeLabel = value8.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._seedLabel, out var value9))
+		if (info.TryGetProperty(PropertyName._dateLabel, out var value9))
 		{
-			_seedLabel = value9.As<MegaRichTextLabel>();
+			_dateLabel = value9.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._gameModeLabel, out var value10))
+		if (info.TryGetProperty(PropertyName._seedLabel, out var value10))
 		{
-			_gameModeLabel = value10.As<MegaRichTextLabel>();
+			_seedLabel = value10.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._buildLabel, out var value11))
+		if (info.TryGetProperty(PropertyName._gameModeLabel, out var value11))
 		{
-			_buildLabel = value11.As<MegaRichTextLabel>();
+			_gameModeLabel = value11.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._badgeContainer, out var value12))
+		if (info.TryGetProperty(PropertyName._buildLabel, out var value12))
 		{
-			_badgeContainer = value12.As<Control>();
+			_buildLabel = value12.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._deathQuoteLabel, out var value13))
+		if (info.TryGetProperty(PropertyName._badgeContainer, out var value13))
 		{
-			_deathQuoteLabel = value13.As<MegaRichTextLabel>();
+			_badgeContainer = value13.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._mapPointHistory, out var value14))
+		if (info.TryGetProperty(PropertyName._deathQuoteLabel, out var value14))
 		{
-			_mapPointHistory = value14.As<NMapPointHistory>();
+			_deathQuoteLabel = value14.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._relicHistory, out var value15))
+		if (info.TryGetProperty(PropertyName._mapPointHistory, out var value15))
 		{
-			_relicHistory = value15.As<NRelicHistory>();
+			_mapPointHistory = value15.As<NMapPointHistory>();
 		}
-		if (info.TryGetProperty(PropertyName._deckHistory, out var value16))
+		if (info.TryGetProperty(PropertyName._relicHistory, out var value16))
 		{
-			_deckHistory = value16.As<NDeckHistory>();
+			_relicHistory = value16.As<NRelicHistory>();
 		}
-		if (info.TryGetProperty(PropertyName._outOfDateVisual, out var value17))
+		if (info.TryGetProperty(PropertyName._deckHistory, out var value17))
 		{
-			_outOfDateVisual = value17.As<Control>();
+			_deckHistory = value17.As<NDeckHistory>();
 		}
-		if (info.TryGetProperty(PropertyName._index, out var value18))
+		if (info.TryGetProperty(PropertyName._outOfDateVisual, out var value18))
 		{
-			_index = value18.As<int>();
+			_outOfDateVisual = value18.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._prevButton, out var value19))
+		if (info.TryGetProperty(PropertyName._index, out var value19))
 		{
-			_prevButton = value19.As<NRunHistoryArrowButton>();
+			_index = value19.As<int>();
 		}
-		if (info.TryGetProperty(PropertyName._nextButton, out var value20))
+		if (info.TryGetProperty(PropertyName._prevButton, out var value20))
 		{
-			_nextButton = value20.As<NRunHistoryArrowButton>();
+			_prevButton = value20.As<NRunHistoryArrowButton>();
 		}
-		if (info.TryGetProperty(PropertyName._selectedPlayerIcon, out var value21))
+		if (info.TryGetProperty(PropertyName._nextButton, out var value21))
 		{
-			_selectedPlayerIcon = value21.As<NRunHistoryPlayerIcon>();
+			_nextButton = value21.As<NRunHistoryArrowButton>();
 		}
-		if (info.TryGetProperty(PropertyName._screenTween, out var value22))
+		if (info.TryGetProperty(PropertyName._selectedPlayerIcon, out var value22))
 		{
-			_screenTween = value22.As<Tween>();
+			_selectedPlayerIcon = value22.As<NRunHistoryPlayerIcon>();
+		}
+		if (info.TryGetProperty(PropertyName._screenTween, out var value23))
+		{
+			_screenTween = value23.As<Tween>();
 		}
 	}
 }

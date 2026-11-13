@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Ascension;
-using MegaCrit.Sts2.Core.Entities.Gold;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Events.Custom.CrystalSphereEvent;
 using MegaCrit.Sts2.Core.Helpers;
@@ -44,61 +42,14 @@ public class OneOffSynchronizer : IDisposable
 		_localPlayerId = localPlayerId;
 		_gameService = gameService;
 		_messageBuffer = messageBuffer;
-		messageBuffer.RegisterMessageHandler<MerchantCardRemovalMessage>(HandleMerchantCardRemoval);
 		messageBuffer.RegisterMessageHandler<TreasureChestOpenedMessage>(HandleTreasureChestOpenedMessage);
 		messageBuffer.RegisterMessageHandler<CrystalSphereRewardsMessage>(HandleCrystalSphereRewardsMessage);
 	}
 
 	public void Dispose()
 	{
-		_messageBuffer.UnregisterMessageHandler<MerchantCardRemovalMessage>(HandleMerchantCardRemoval);
 		_messageBuffer.UnregisterMessageHandler<TreasureChestOpenedMessage>(HandleTreasureChestOpenedMessage);
 		_messageBuffer.UnregisterMessageHandler<CrystalSphereRewardsMessage>(HandleCrystalSphereRewardsMessage);
-	}
-
-	/// <summary>
-	/// Does merchant card removal for the local player.
-	/// </summary>
-	/// <param name="goldCost">The cost, in gold, that we should deduct from the player's gold count.</param>
-	/// <param name="cancelable">If false, you are required to remove a card</param>
-	/// <returns>A task that completes when the player finishes the removal flow. Result is true if the player removed
-	/// a card, false otherwise.</returns>
-	public Task<bool> DoLocalMerchantCardRemoval(int goldCost, bool cancelable = true)
-	{
-		MerchantCardRemovalMessage message = new MerchantCardRemovalMessage
-		{
-			goldCost = goldCost,
-			Location = _messageBuffer.CurrentLocation
-		};
-		_gameService.SendMessage(message);
-		return DoMerchantCardRemoval(LocalPlayer, goldCost, cancelable);
-	}
-
-	private void HandleMerchantCardRemoval(MerchantCardRemovalMessage message, ulong senderId)
-	{
-		Player player = _playerCollection.GetPlayer(senderId);
-		if (player == LocalPlayer)
-		{
-			throw new InvalidOperationException("MerchantCardRemovalMessage should not be sent to the player removing the card!");
-		}
-		TaskHelper.RunSafely(DoMerchantCardRemoval(player, message.goldCost));
-	}
-
-	private async Task<bool> DoMerchantCardRemoval(Player player, int goldCost, bool cancelable = true)
-	{
-		CardSelectorPrefs prefs = new CardSelectorPrefs(CardSelectorPrefs.RemoveSelectionPrompt, 1)
-		{
-			Cancelable = cancelable,
-			RequireManualConfirmation = true
-		};
-		CardModel card = (await CardSelectCmd.FromDeckForRemoval(player, prefs)).FirstOrDefault();
-		if (card != null)
-		{
-			await PlayerCmd.LoseGold(goldCost, player, GoldLossType.Spent);
-			await CardPileCmd.RemoveFromDeck(card);
-			player.ExtraFields.CardShopRemovalsUsed++;
-		}
-		return card != null;
 	}
 
 	/// <summary>
@@ -131,14 +82,18 @@ public class OneOffSynchronizer : IDisposable
 		{
 			return 0;
 		}
-		double gold = player.PlayerRng.Rewards.NextInt(42, 53);
-		if (AscensionHelper.HasAscension(AscensionLevel.Poverty))
+		decimal gold = 0m;
+		if (player.RunState.GameMode != GameMode.Blitz)
 		{
-			gold *= AscensionHelper.PovertyAscensionGoldMultiplier;
+			gold = player.PlayerRng.Rewards.NextInt(42, 53);
+			if (AscensionHelper.HasAscension(AscensionLevel.Poverty))
+			{
+				gold *= 0.75m;
+			}
+			await PlayerCmd.GainGold((int)gold, player);
+			decimal num = gold;
+			gold = num + (decimal)(await TryHandleSpoilsMap(player));
 		}
-		await PlayerCmd.GainGold((int)gold, player);
-		double num = gold;
-		gold = num + (double)(await TryHandleSpoilsMap(player));
 		return (int)gold;
 	}
 

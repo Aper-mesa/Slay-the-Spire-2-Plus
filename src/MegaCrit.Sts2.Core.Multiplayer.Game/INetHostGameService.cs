@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Multiplayer.Transport;
 
@@ -10,6 +11,11 @@ namespace MegaCrit.Sts2.Core.Multiplayer.Game;
 public interface INetHostGameService : INetGameService
 {
 	NetHost? NetHost { get; }
+
+	/// <summary>
+	/// Clients that have completed the handshake, in the order they completed it.
+	/// </summary>
+	IReadOnlyList<NetClientData> ConnectedPeers { get; }
 
 	/// <summary>
 	/// Event called when a new client connects to the host.
@@ -33,7 +39,10 @@ public interface INetHostGameService : INetGameService
 	/// <param name="peerId">The client to disconnect.</param>
 	/// <param name="reason">Why the client is being disconnected.</param>
 	/// <param name="now">If true, the client will be forcibly disconnected. The reason may not make it to the client.</param>
-	void DisconnectClient(ulong peerId, NetError reason, bool now = false);
+	/// <param name="debugReason">Text sent to the client alongside the reason. The client displays it, so it is
+	/// readable even when the client is on a version whose error codes we do not share. Steam truncates it past 127
+	/// bytes and ENet drops it entirely.</param>
+	void DisconnectClient(ulong peerId, NetError reason, bool now = false, string? debugReason = null);
 
 	/// <summary>
 	/// Marks a client as ready to receive broadcasted messages.

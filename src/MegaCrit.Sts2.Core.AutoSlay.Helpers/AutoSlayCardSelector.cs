@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Entities.CardRewardAlternatives;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Extensions;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.TestSupport;
@@ -38,7 +39,7 @@ public class AutoSlayCardSelector : ICardSelector
 		{
 			num = Math.Min(minSelect, list.Count);
 		}
-		_random.Shuffle(list);
+		list.UnstableShuffle(_random);
 		IEnumerable<CardModel> result = list.Take(num);
 		AutoSlayLog.Info($"Auto-selected {num} card(s) for selection prompt");
 		return Task.FromResult(result);

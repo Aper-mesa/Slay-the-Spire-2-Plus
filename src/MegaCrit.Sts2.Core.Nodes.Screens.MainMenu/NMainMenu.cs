@@ -613,6 +613,7 @@ public class NMainMenu : Control, IScreenContext
 		}
 		else
 		{
+			SaveManager.Instance.ObtainFoolEpochIfDefectRunCompleted();
 			_readRunSaveResult = null;
 			_singleplayerButton.Visible = true;
 			_abandonRunButton.Visible = false;
@@ -705,7 +706,7 @@ public class NMainMenu : Control, IScreenContext
 			SerializableRun serializableRun = _readRunSaveResult.SaveData;
 			RunState runState = RunState.FromSerializable(serializableRun);
 			await RunManager.Instance.SetUpSavedSingleplayer(runState, serializableRun);
-			Log.Info($"Continuing run with character: {serializableRun.Players[0].CharacterId}");
+			Log.Info($"Continuing {runState.GameMode} run with character: {serializableRun.Players[0].CharacterId}");
 			SfxCmd.Play(runState.Players[0].Character.CharacterTransitionSfx);
 			await NGame.Instance.Transition.FadeOut(0.8f, runState.Players[0].Character.CharacterSelectTransitionPath);
 			NGame.Instance.ReactionContainer.InitializeNetworking(new NetSingleplayerGameService());
@@ -722,7 +723,7 @@ public class NMainMenu : Control, IScreenContext
 
 	private void DisplayLoadSaveError()
 	{
-		NErrorPopup modalToCreate = NErrorPopup.Create(new LocString("main_menu_ui", "INVALID_SAVE_POPUP.title"), new LocString("main_menu_ui", "INVALID_SAVE_POPUP.description_run"), new LocString("main_menu_ui", "INVALID_SAVE_POPUP.dismiss"), showReportBugButton: true);
+		NErrorPopup modalToCreate = NErrorPopup.CreateForRunSave(_readRunSaveResult?.Status ?? ReadSaveStatus.FileNotFound);
 		NModalContainer.Instance.Add(modalToCreate);
 		NModalContainer.Instance.ShowBackstop();
 		_continueButton.Disable();
@@ -902,20 +903,25 @@ public class NMainMenu : Control, IScreenContext
 		switch (value)
 		{
 		case "host":
-		case "host_standard":
 		case "host_daily":
+		case "host_blitz":
+		case "host_dread":
+		case "host_standard":
 		case "host_custom":
 		{
+			bool isCustom = value == "host_custom";
 			GameMode gameMode = value switch
 			{
-				"host_standard" => GameMode.Standard, 
-				"host_daily" => GameMode.Daily, 
-				"host_custom" => GameMode.Custom, 
-				_ => GameMode.None, 
+				"host_standard" => GameMode.Standard,
+				"host_daily" => GameMode.Daily,
+				"host_blitz" => GameMode.Blitz,
+				"host_custom" => GameMode.Standard,
+				"host_dread" => GameMode.Dread,
+				_ => GameMode.None,
 			};
 			if (gameMode != GameMode.None)
 			{
-				nMultiplayerSubmenu.FastHost(gameMode);
+				nMultiplayerSubmenu.FastHost(gameMode, isCustom);
 			}
 			break;
 		}

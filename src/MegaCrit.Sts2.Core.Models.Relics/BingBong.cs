@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -8,32 +7,16 @@ namespace MegaCrit.Sts2.Core.Models.Relics;
 
 public sealed class BingBong : RelicModel
 {
-	private HashSet<CardModel>? _cardsToSkip;
-
 	public override RelicRarity Rarity => RelicRarity.Event;
-
-	private HashSet<CardModel> CardsToSkip
-	{
-		get
-		{
-			AssertMutable();
-			if (_cardsToSkip == null)
-			{
-				_cardsToSkip = new HashSet<CardModel>();
-			}
-			return _cardsToSkip;
-		}
-	}
 
 	public override async Task AfterCardChangedPiles(CardModel card, PileType oldPileType, AbstractModel? clonedBy)
 	{
 		CardPile? pile = card.Pile;
-		if (pile != null && pile.Type == PileType.Deck && card.Owner == Owner && clonedBy == null && !CardsToSkip.Remove(card))
+		if (pile != null && pile.Type == PileType.Deck && card.Owner == Owner && clonedBy == null)
 		{
 			Flash();
-			CardModel cardModel = Owner.RunState.CloneCard(card);
-			CardsToSkip.Add(cardModel);
-			CardCmd.PreviewCardPileAdd(await CardPileCmd.Add(cardModel, PileType.Deck, CardPilePosition.Bottom, this));
+			CardModel card2 = Owner.RunState.CloneCard(card);
+			CardCmd.PreviewCardPileAdd(await CardPileCmd.Add(card2, PileType.Deck, CardPilePosition.Bottom, this));
 		}
 	}
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Commands;
@@ -14,9 +15,10 @@ public class CursedRun : ModifierModel
 	{
 		foreach (Player player in RunState.Players)
 		{
-			CardModel canonicalCard = RunState.Rng.Niche.NextItem(from c in ModelDb.CardPool<CurseCardPool>().GetUnlockedCards(player.UnlockState, player.RunState.CardMultiplayerConstraint)
+			IEnumerable<CardModel> items = from c in ModelDb.CardPool<CurseCardPool>().GetUnlockedCards(player.UnlockState, player.RunState.CardMultiplayerConstraint)
 				where c.CanBeGeneratedByModifiers
-				select c);
+				select c;
+			CardModel canonicalCard = player.PlayerRng.NonCombatGeneration.NextItem(items);
 			CardModel card = player.RunState.CreateCard(canonicalCard, player);
 			CardPileAddResult result = await CardPileCmd.Add(card, PileType.Deck);
 			if (LocalContext.IsMe(player))

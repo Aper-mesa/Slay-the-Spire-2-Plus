@@ -31,7 +31,7 @@ public sealed class BeautifulBracelet : RelicModel
 	public override Task AfterObtained()
 	{
 		EnchantmentModel swift = ModelDb.Enchantment<Swift>();
-		List<CardModel> list = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => swift.CanEnchant(c)).TakeRandom(DynamicVars.Cards.IntValue, Owner.RunState.Rng.Niche).ToList();
+		List<CardModel> list = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => swift.CanEnchant(c)).TakeRandom(DynamicVars.Cards.IntValue, Owner.PlayerRng.NonCombatGeneration).ToList();
 		foreach (CardModel item in list)
 		{
 			CardCmd.Enchant<Swift>(item, DynamicVars["Swift"].IntValue);

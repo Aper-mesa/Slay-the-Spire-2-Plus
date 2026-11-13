@@ -12,28 +12,18 @@ public sealed class Glam : EnchantmentModel
 {
 	private const string _timesKey = "Times";
 
-	private bool _usedThisCombat;
-
 	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new DynamicVar("Times", 1m));
 
 	protected override IEnumerable<IHoverTip> ExtraHoverTips => new _003C_003Ez__ReadOnlySingleElementList<IHoverTip>(HoverTipFactory.Static(StaticHoverTip.ReplayDynamic, DynamicVars["Times"]));
 
-	private bool UsedThisCombat
-	{
-		get
-		{
-			return _usedThisCombat;
-		}
-		set
-		{
-			AssertMutable();
-			_usedThisCombat = value;
-		}
-	}
-
+	/// <summary>
+	/// Glam adds its extra plays only to the first play of the card in a combat, not to every play. An effect that
+	/// returns the card to hand and lets the player play it again does not get the bonus a second time. Closed as
+	/// designed in PRG-6937.
+	/// </summary>
 	public override int EnchantPlayCount(int originalPlayCount)
 	{
-		if (UsedThisCombat)
+		if (Status == EnchantmentStatus.Disabled)
 		{
 			return originalPlayCount;
 		}
@@ -42,15 +32,10 @@ public sealed class Glam : EnchantmentModel
 
 	public override Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
-		if (UsedThisCombat)
-		{
-			return Task.CompletedTask;
-		}
 		if (cardPlay.Card != Card)
 		{
 			return Task.CompletedTask;
 		}
-		UsedThisCombat = true;
 		Status = EnchantmentStatus.Disabled;
 		return Task.CompletedTask;
 	}

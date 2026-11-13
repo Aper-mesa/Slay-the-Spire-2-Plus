@@ -23,9 +23,6 @@ public sealed class Ironclad : CharacterModel
 
 	public override CharacterGender Gender => CharacterGender.Masculine;
 
-	/// <remarks>
-	/// Ironclad starts out unlocked.
-	/// </remarks>
 	protected override CharacterModel? UnlocksAfterRunAs => null;
 
 	public override Color NameColor => StsColors.red;
@@ -71,6 +68,12 @@ public sealed class Ironclad : CharacterModel
 	public override Color RemoteTargetingLineColor => new Color("E15847FF");
 
 	public override Color RemoteTargetingLineOutline => new Color("801212FF");
+
+	public override float DreadBgBrightness => 0.9f;
+
+	public override float DreadBgContrast => 1.1f;
+
+	public override Color DreadNameColor => new Color("FF211AC0");
 
 	protected override List<(AnimState, string)> AnimationStates => base.AnimationStates.Concat(new _003C_003Ez__ReadOnlySingleElementList<(AnimState, string)>((new AnimState("attack_heavy"), "heavyAttack"))).ToList();
 

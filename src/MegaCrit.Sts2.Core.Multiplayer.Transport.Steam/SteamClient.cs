@@ -102,7 +102,6 @@ public class SteamClient : NetClient
 					else if (_conn.Value.m_HSteamNetConnection != connectionResult.connection.Value.m_HSteamNetConnection)
 					{
 						_logger.Error("Got different connection back from OnNetStatusChanged than we expected!");
-						SteamNetworkingSockets.CloseConnection(connectionResult.connection.Value, 0, null, bEnableLinger: false);
 						CleanupConnection(1202, "Invalid OnNetStatusChanged hConn");
 						result = new NetErrorInfo(NetError.InternalError, selfInitiated: false);
 					}
@@ -121,9 +120,27 @@ public class SteamClient : NetClient
 		return result;
 	}
 
-	private void OnNetStatusChanged(SteamNetConnectionStatusChangedCallback_t data)
+	/// <summary>
+	/// Steam keeps one callback list per callback type, so every SteamClient in the process is told about every
+	/// connection, not just its own.
+	/// </summary>
+	internal static bool IsOwnConnection(uint? ourConnection, uint incoming)
 	{
-		_logger.Debug($"Connection status changed: {data.m_eOldState} -> {data.m_info.m_eState}");
+		if (ourConnection.HasValue)
+		{
+			return ourConnection.Value == incoming;
+		}
+		return false;
+	}
+
+	internal void OnNetStatusChanged(SteamNetConnectionStatusChangedCallback_t data)
+	{
+		if (!IsOwnConnection(_conn?.m_HSteamNetConnection, data.m_hConn.m_HSteamNetConnection))
+		{
+			_logger.Debug($"Ignoring status change for connection {data.m_hConn.m_HSteamNetConnection}, which is not ours ({_conn?.m_HSteamNetConnection})");
+			return;
+		}
+		_logger.Debug($"Connection status changed [{data.m_hConn.m_HSteamNetConnection}]: {data.m_eOldState} -> {data.m_info.m_eState}");
 		if (data.m_info.m_eState == ESteamNetworkingConnectionState.k_ESteamNetworkingConnectionState_Connected)
 		{
 			_logger.Debug("Steam connection accepted.");

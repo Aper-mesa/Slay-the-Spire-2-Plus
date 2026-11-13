@@ -16,7 +16,7 @@ public class Regent3Epoch : EpochModel
 
 	public override EpochEra Era => EpochEra.Invitation2;
 
-	public override int EraPosition => 0;
+	public override int EraPosition => 1;
 
 	public override string StoryId => "Regent";
 

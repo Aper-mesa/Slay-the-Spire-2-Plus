@@ -18,6 +18,7 @@ public static class FontManager
 	/// </summary>
 	private static readonly IReadOnlyDictionary<string, FontPathSet> _languageFontPathSets = new Dictionary<string, FontPathSet>
 	{
+		["ara"] = new AraFontPathSet(),
 		["jpn"] = new JpnFontPathSet(),
 		["kor"] = new KorFontPathSet(),
 		["pol"] = _russian,

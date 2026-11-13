@@ -113,7 +113,7 @@ internal static class PlusSaveLoadHost
 		{
 			RunManager runManager = RunManager.Instance;
 			INetGameService netService = runManager.NetService;
-			if (netService.Type != NetGameType.Host || !runManager.IsInProgress || runManager.IsCleaningUp)
+			if (netService.Type != NetGameType.Host || !runManager.IsInProgress || runManager.IsCleaningUp || runManager.IsChangingRooms)
 			{
 				Reply(runManager, senderId, message.ClientRequestId, approved: false, PlusSaveLoadCancelReason.InvalidState);
 				return;
@@ -124,7 +124,9 @@ internal static class PlusSaveLoadHost
 				return;
 			}
 			bool approved = await AskHostAsync();
-			Reply(runManager, senderId, message.ClientRequestId, approved, PlusSaveLoadCancelReason.Rejected);
+			bool invalidState = !runManager.IsInProgress || runManager.IsCleaningUp || runManager.IsChangingRooms;
+			approved = approved && !invalidState;
+			Reply(runManager, senderId, message.ClientRequestId, approved, invalidState ? PlusSaveLoadCancelReason.InvalidState : PlusSaveLoadCancelReason.Rejected);
 			if (!approved)
 			{
 				return;
@@ -183,7 +185,7 @@ internal static class PlusSaveLoadHost
 		INetGameService netService = runManager.NetService;
 		try
 		{
-			if (netService.Type != NetGameType.Host || !runManager.IsInProgress || runManager.IsCleaningUp)
+			if (netService.Type != NetGameType.Host || !runManager.IsInProgress || runManager.IsCleaningUp || runManager.IsChangingRooms)
 			{
 				return;
 			}
@@ -205,6 +207,11 @@ internal static class PlusSaveLoadHost
 			if (currentSaveTask != null)
 			{
 				await currentSaveTask;
+			}
+			if (!runManager.IsInProgress || runManager.IsCleaningUp || runManager.IsChangingRooms)
+			{
+				SendCancel(netService, connectedIds, requestId, PlusSaveLoadCancelReason.InvalidState);
+				return;
 			}
 			ReadSaveResult<SerializableRun> readResult = saveManager.LoadAndCanonicalizeMultiplayerRunSave(netService.NetId);
 			if (!readResult.Success || readResult.SaveData == null)

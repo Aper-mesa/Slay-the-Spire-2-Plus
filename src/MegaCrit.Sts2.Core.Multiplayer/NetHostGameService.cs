@@ -37,7 +37,7 @@ public class NetHostGameService : INetHostHandler, INetHandler, INetHostGameServ
 
 	public bool IsGameLoading => _qualityTracker.IsGameLoading;
 
-	public List<NetClientData> ConnectedPeers => _connectedPeers;
+	public IReadOnlyList<NetClientData> ConnectedPeers => _connectedPeers;
 
 	public PlatformType Platform { get; private set; }
 
@@ -178,7 +178,25 @@ public class NetHostGameService : INetHostHandler, INetHandler, INetHostGameServ
 	public void HandshakeFailed(ulong senderId, NetErrorInfo info)
 	{
 		ClientConnectionFailed?.Invoke(senderId, info);
-		DisconnectClient(senderId, info.GetReason());
+		DisconnectClient(senderId, info.GetReason(), now: false, DebugReasonForPeer(info));
+	}
+
+	/// <summary>
+	/// Text sent alongside a disconnection, which the peer renders in a BBCode popup. Plain ASCII, under 100
+	/// characters, no square brackets.
+	/// </summary>
+	private string? DebugReasonForPeer(NetErrorInfo info)
+	{
+		if (info.GetReason() != NetError.VersionMismatch)
+		{
+			return null;
+		}
+		ConnectionFailureExtraInfo connectionExtraInfo = info.ConnectionExtraInfo;
+		if (connectionExtraInfo != null && connectionExtraInfo.remoteInfo.version == connectionExtraInfo.localInfo.version)
+		{
+			return null;
+		}
+		return "Different game versions. They are on " + LocalVersion.version + ". Update the game to play together.";
 	}
 
 	private void BroadcastMessage<T>(T message, ulong excludePeerId, int channel, ulong overrideSenderId) where T : INetMessage
@@ -221,9 +239,9 @@ public class NetHostGameService : INetHostHandler, INetHandler, INetHostGameServ
 		return _connectedPeers[num].versionInfo;
 	}
 
-	public void DisconnectClient(ulong peerId, NetError reason, bool now = false)
+	public void DisconnectClient(ulong peerId, NetError reason, bool now = false, string? debugReason = null)
 	{
-		_netHost.DisconnectClient(peerId, reason, now);
+		_netHost.DisconnectClient(peerId, reason, now, debugReason);
 	}
 
 	public void Disconnect(NetError reason, bool now = false)

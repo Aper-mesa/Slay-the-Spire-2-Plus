@@ -36,6 +36,12 @@ public abstract class PlayerChoiceContext
 	public abstract ulong? OwnerId { get; }
 
 	/// <summary>
+	/// If this choice context were to spawn a game action, what type should it spawn?
+	/// Null for contexts that can never spin off game actions.
+	/// </summary>
+	public abstract GameActionType? GameActionType { get; }
+
+	/// <summary>
 	/// Add a new model to the top of the context stack.
 	/// For example, while <see cref="T:MegaCrit.Sts2.Core.Models.Cards.Prepared" /> is executing, it will be at the top of the context stack.
 	/// If it discards a card with <see cref="F:MegaCrit.Sts2.Core.Entities.Cards.CardKeyword.Sly" />, then the Sly'd card should be pushed to the top of

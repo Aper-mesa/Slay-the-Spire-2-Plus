@@ -48,6 +48,12 @@ public abstract class ModifierModel : AbstractModel
 	/// </summary>
 	protected LocString? AdditionalRestSiteHealText => LocString.GetIfExists("modifiers", Id.Entry + ".additionalRestSiteHealText");
 
+	/// <summary>
+	/// Get the additional text that this modifier should add to the "mend" option at the rest site.
+	/// Returns null for modifiers that add no additional text.
+	/// </summary>
+	protected LocString? AdditionalRestSiteMendText => LocString.GetIfExists("modifiers", Id.Entry + ".additionalRestSiteMendText");
+
 	public Texture2D Icon
 	{
 		get

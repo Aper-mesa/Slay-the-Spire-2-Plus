@@ -10,8 +10,8 @@ public static class NodeUtil
 {
 	/// <summary>
 	/// Awaits the next process frame and returns the delta time.
-	/// Throws <see cref="T:System.OperationCanceledException" /> if the token is cancelled or the node has exited the tree,
-	/// which <see cref="M:MegaCrit.Sts2.Core.Helpers.TaskHelper.RunSafely(System.Threading.Tasks.Task)" /> silently swallows.
+	/// Throws <see cref="T:System.OperationCanceledException" /> if the token is cancelled or the node has exited the tree
+	/// or been freed, which <see cref="M:MegaCrit.Sts2.Core.Helpers.TaskHelper.RunSafely(System.Threading.Tasks.Task)" /> silently swallows.
 	/// </summary>
 	public static async Task<float> AwaitProcessFrame(this Node node, CancellationToken ct = default(CancellationToken))
 	{
@@ -57,13 +57,13 @@ public static class NodeUtil
 	}
 
 	/// <summary>
-	/// Returns the node's <see cref="T:Godot.SceneTree" />, or <c>null</c> if the node is not inside a tree.
+	/// Returns the node's <see cref="T:Godot.SceneTree" />, or <c>null</c> if the node is not inside a tree or has been freed.
 	/// Unlike <see cref="M:Godot.Node.GetTree" />, this does not trigger a native error print when the tree is null.
 	/// Always prefer this over <see cref="M:Godot.Node.GetTree" /> when the node may not be in the tree.
 	/// </summary>
 	public static SceneTree? GetTreeOrNull(this Node node)
 	{
-		if (!node.IsInsideTree())
+		if (!GodotObject.IsInstanceValid(node) || !node.IsInsideTree())
 		{
 			return null;
 		}

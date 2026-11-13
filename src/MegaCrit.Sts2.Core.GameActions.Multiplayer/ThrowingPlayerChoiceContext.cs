@@ -17,6 +17,8 @@ public class ThrowingPlayerChoiceContext : PlayerChoiceContext
 {
 	public override ulong? OwnerId => null;
 
+	public override GameActionType? GameActionType => null;
+
 	public override Task SignalPlayerChoiceBegun(Player chooser, PlayerChoiceOptions options)
 	{
 		throw new NotImplementedException();

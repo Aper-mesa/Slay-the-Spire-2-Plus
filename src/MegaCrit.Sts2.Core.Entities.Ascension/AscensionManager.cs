@@ -1,5 +1,9 @@
+using System;
+using System.Collections.Generic;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models.Cards;
+using MegaCrit.Sts2.Core.Runs;
 
 namespace MegaCrit.Sts2.Core.Entities.Ascension;
 
@@ -10,31 +14,53 @@ namespace MegaCrit.Sts2.Core.Entities.Ascension;
 public class AscensionManager
 {
 	/// <summary>
-	/// The maximum ascension level allowed in the game.
+	/// The maximum ascension level allowed in standard mode.
 	/// </summary>
 	public const int maxAscensionAllowed = 10;
 
 	/// <summary>
-	/// The current ascension level for the run.
+	/// The maximum ascension level allowed in blitz mode.
 	/// </summary>
-	private readonly int _level;
+	public const int maxAscensionAllowedBlitz = 5;
 
 	/// <summary>
-	/// Create a new AscensionManager with the specified ascension level.
+	/// The current ascensions active for the run.
 	/// </summary>
-	/// <param name="level">The ascension level for this run.</param>
-	public AscensionManager(int level)
+	private readonly List<AscensionLevel> _ascensions;
+
+	/// <summary>
+	/// The maximum ascension level allowed in the given game mode.
+	/// </summary>
+	public static int GetMaxAllowed(GameMode gameMode)
 	{
-		_level = level;
+		if (gameMode != GameMode.Blitz)
+		{
+			return 10;
+		}
+		return 5;
 	}
 
 	/// <summary>
-	/// Create a new AscensionManager with the specified ascension level.
+	/// Clamps an ascension level read from a save or a history entry to the range the game mode supports.
+	/// Blitz allowed 10 levels before it was cut to 5, so older data can carry a higher value.
 	/// </summary>
-	/// <param name="level">The ascension level enum value for this run.</param>
-	public AscensionManager(AscensionLevel level)
+	public static int ClampToMode(GameMode gameMode, int level)
 	{
-		_level = (int)level;
+		return Math.Clamp(level, 0, GetMaxAllowed(gameMode));
+	}
+
+	/// <summary>
+	/// Create a new AscensionManager with the specified ascension level for the given game mode.
+	/// </summary>
+	/// <param name="gameMode">The game mode of this run.</param>
+	/// <param name="level">The ascension level for this run.</param>
+	public AscensionManager(GameMode gameMode, int level)
+	{
+		_ascensions = new List<AscensionLevel>();
+		for (int i = 1; i <= level; i++)
+		{
+			_ascensions.Add((gameMode == GameMode.Blitz) ? AscensionHelper.GetLevelForBlitz(i) : ((AscensionLevel)i));
+		}
 	}
 
 	/// <summary>
@@ -44,7 +70,7 @@ public class AscensionManager
 	/// <returns>True if the specified level is active.</returns>
 	public bool HasLevel(AscensionLevel level)
 	{
-		return _level >= (int)level;
+		return _ascensions.Contains(level);
 	}
 
 	/// <summary>

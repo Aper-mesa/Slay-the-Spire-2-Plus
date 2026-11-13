@@ -30,6 +30,8 @@ public static class StsColors
 
 	public static readonly Color purple = new Color("EE82EE");
 
+	public static readonly Color yellow = new Color("FFFA72");
+
 	public static readonly Color blueGlow = new Color("78FFFEC0");
 
 	public static readonly Color redGlow = new Color("FF0000");
@@ -111,4 +113,6 @@ public static class StsColors
 	public static readonly Color hpBarBackground = new Color("00113480");
 
 	public static readonly Color merchantBlue = new Color("516ACF");
+
+	public static readonly Color topBarMapIconBgColor = halfTransparentBlack;
 }

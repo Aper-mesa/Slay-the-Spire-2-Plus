@@ -12,6 +12,8 @@ public class RelicPickingResult
 
 	public required RelicModel relic;
 
+	public required int relicIndex;
+
 	/// <summary>
 	/// This is only null if type is Skipped.
 	/// </summary>
@@ -30,9 +32,10 @@ public class RelicPickingResult
 	/// </summary>
 	/// <param name="players">The players involved in the fight.</param>
 	/// <param name="relic">The relic that will be awarded to the winning player.</param>
+	/// <param name="relicIndex">The relic index of the relic in the treasure room synchronizer.</param>
 	/// <param name="generateMove">Method that is called once per player every round to generate moves for each player.</param>
 	/// <returns>The result of the fight. The `fight` member is guaranteed to be non-null and contain at least one round.</returns>
-	public static RelicPickingResult GenerateRelicFight(List<Player> players, RelicModel relic, Func<RelicPickingFightMove> generateMove)
+	public static RelicPickingResult GenerateRelicFight(List<Player> players, RelicModel relic, int relicIndex, Func<RelicPickingFightMove> generateMove)
 	{
 		RelicPickingFight relicPickingFight = new RelicPickingFight();
 		relicPickingFight.playersInvolved.AddRange(players);
@@ -77,6 +80,7 @@ public class RelicPickingResult
 			type = RelicPickingResultType.FoughtOver,
 			player = hashSet2.First(),
 			relic = relic,
+			relicIndex = relicIndex,
 			fight = relicPickingFight
 		};
 	}

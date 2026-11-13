@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -7,8 +6,6 @@ namespace MegaCrit.Sts2.Core.Models.Cards;
 
 public sealed class Enlightenment : CardModel
 {
-	public override IEnumerable<CardKeyword> CanonicalKeywords => new _003C_003Ez__ReadOnlySingleElementList<CardKeyword>(CardKeyword.Exhaust);
-
 	public Enlightenment()
 		: base(0, CardType.Skill, CardRarity.Event, TargetType.Self)
 	{

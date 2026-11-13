@@ -14,7 +14,7 @@ public sealed class DelicateFrond : RelicModel
 		Flash();
 		while (Owner.HasOpenPotionSlots)
 		{
-			PotionModel potion = PotionFactory.CreateRandomPotionOutOfCombat(Owner, Owner.RunState.Rng.CombatPotionGeneration).ToMutable();
+			PotionModel potion = PotionFactory.CreateRandomPotionOutOfCombat(Owner, Owner.PlayerRng.NonCombatGeneration).ToMutable();
 			if (!(await PotionCmd.TryToProcure(potion, Owner)).success)
 			{
 				break;

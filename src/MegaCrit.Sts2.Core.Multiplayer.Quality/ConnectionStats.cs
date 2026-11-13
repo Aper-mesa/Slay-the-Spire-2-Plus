@@ -19,7 +19,7 @@ public class ConnectionStats
 	/// Heartbeats use a monotonically increasing counter for identification. We use that index to overwrite old
 	/// heartbeat statuses in this buffer for tracking.
 	/// </summary>
-	private HeartbeatStatus?[] _statuses = new HeartbeatStatus?[20];
+	private readonly HeartbeatStatus?[] _statuses = new HeartbeatStatus?[20];
 
 	private int _nextIndex;
 

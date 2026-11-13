@@ -257,54 +257,52 @@ public class NNormalMapPoint : NMapPoint
 
 	public static IEnumerable<string> AssetPaths => new _003C_003Ez__ReadOnlySingleElementList<string>(ScenePath);
 
-	private static string IconName(MapPointType pointType)
+	public static string IconName(MapPointType pointType)
 	{
 		return pointType switch
 		{
-			MapPointType.Unassigned => "map_unknown", 
-			MapPointType.Monster => "map_monster", 
-			MapPointType.Elite => "map_elite", 
-			MapPointType.Boss => string.Empty, 
-			MapPointType.Ancient => "map_unknown", 
-			MapPointType.Treasure => "map_chest", 
-			MapPointType.Shop => "map_shop", 
-			MapPointType.RestSite => "map_rest", 
-			MapPointType.Unknown => "map_unknown", 
-			_ => throw new ArgumentOutOfRangeException(pointType.ToString()), 
+			MapPointType.Unassigned => "map_unknown",
+			MapPointType.Monster => "map_monster",
+			MapPointType.Elite => "map_elite",
+			MapPointType.Treasure => "map_chest",
+			MapPointType.Shop => "map_shop",
+			MapPointType.RestSite => "map_rest",
+			MapPointType.Unknown => "map_unknown",
+			_ => throw new ArgumentOutOfRangeException(pointType.ToString()),
 		};
 	}
 
-	private static string IconPath(string filename)
+	public static string IconPath(string filename)
 	{
 		return ImageHelper.GetImagePath("atlases/ui_atlas.sprites/map/icons/" + filename + ".tres");
 	}
 
-	private static string OutlinePath(string filename)
+	public static string OutlinePath(string filename)
 	{
-		return ImageHelper.GetImagePath("atlases/compressed.sprites/map/" + filename + "_outline.tres");
+		return ImageHelper.GetImagePath("atlases/compressed_atlas.sprites/" + filename + "_outline.tres");
 	}
 
-	private static string UnknownIconPath(RoomType pointType)
+	public static string UnknownIconPath(RoomType pointType)
 	{
 		return ImageHelper.GetImagePath("atlases/ui_atlas.sprites/map/icons/map_" + pointType switch
 		{
-			RoomType.Treasure => "unknown_chest", 
-			RoomType.Monster => "unknown_monster", 
-			RoomType.Shop => "unknown_shop", 
-			RoomType.Elite => "unknown_elite", 
-			_ => "unknown", 
+			RoomType.Treasure => "unknown_chest",
+			RoomType.Monster => "unknown_monster",
+			RoomType.Shop => "unknown_shop",
+			RoomType.Elite => "unknown_elite",
+			_ => "unknown",
 		} + ".tres");
 	}
 
-	private static string UnknownOutlinePath(RoomType pointType)
+	public static string UnknownOutlinePath(RoomType pointType)
 	{
 		return OutlinePath(pointType switch
 		{
-			RoomType.Treasure => "map_chest", 
-			RoomType.Monster => "map_monster", 
-			RoomType.Shop => "map_shop", 
-			RoomType.Elite => "map_elite", 
-			_ => "map_unknown", 
+			RoomType.Treasure => "map_chest",
+			RoomType.Monster => "map_monster",
+			RoomType.Shop => "map_shop",
+			RoomType.Elite => "map_elite",
+			_ => "map_unknown",
 		});
 	}
 
@@ -325,10 +323,6 @@ public class NNormalMapPoint : NMapPoint
 		_outline = GetNode<TextureRect>("%Outline");
 		_questIcon = GetNode<TextureRect>("%QuestIcon");
 		UpdateIcon();
-		Color mapBgColor = _runState.Act.MapBgColor;
-		_outline.Modulate = mapBgColor;
-		ShaderMaterial shaderMaterial = (ShaderMaterial)_icon.Material;
-		shaderMaterial.SetShaderParameter(_mapColor, mapBgColor.Lerp(Colors.Gray, 0.5f));
 		RefreshMarkedIconVisibility();
 		RefreshColorInstantly();
 		Disable();
@@ -417,6 +411,10 @@ public class NNormalMapPoint : NMapPoint
 	protected override void RefreshColorInstantly()
 	{
 		_icon.SelfModulate = TargetColor;
+		Color mapBgColor = _runState.Act.MapBgColor;
+		_outline.Modulate = mapBgColor;
+		ShaderMaterial shaderMaterial = (ShaderMaterial)_icon.Material;
+		shaderMaterial.SetShaderParameter(_mapColor, mapBgColor.Lerp(Colors.Gray, 0.5f));
 	}
 
 	protected override void RefreshState()

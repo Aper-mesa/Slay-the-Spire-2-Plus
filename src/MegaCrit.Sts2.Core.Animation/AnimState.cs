@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace MegaCrit.Sts2.Core.Animation;
 
@@ -119,13 +118,9 @@ public class AnimState
 
 	public void RemoveBranch(string trigger, string stateId)
 	{
-		if (_triggerBranchedStates.TryGetValue(trigger, out List<Branch> branches))
+		if (_triggerBranchedStates.TryGetValue(trigger, out List<Branch> value))
 		{
-			List<Branch> list = branches.Where((Branch b) => b.state.Id == stateId).ToList();
-			list.ForEach((Branch b) =>
-			{
-				branches.Remove(b);
-			});
+			value.RemoveAll((Branch b) => b.state.Id == stateId);
 		}
 	}
 

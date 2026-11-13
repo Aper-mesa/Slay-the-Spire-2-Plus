@@ -278,9 +278,10 @@ public abstract class NMapPoint : NButton
 	/// </summary>
 	private bool ShouldDisplayPlayerVote(Player player)
 	{
-		if (_screen.PlayerVoteDictionary.TryGetValue(player, out var value) && value.HasValue)
+		MapCoord? mapCoord = RunManager.Instance.MapSelectionSynchronizer.GetVote(player)?.coord;
+		if (mapCoord.HasValue)
 		{
-			return value == Point.coord;
+			return mapCoord == Point.coord;
 		}
 		return _runState.MapLocation.coord == Point.coord;
 	}
@@ -350,7 +351,7 @@ public abstract class NMapPoint : NButton
 			{
 				num += _runState.MapPointHistory[i].Count;
 			}
-			NHoverTipSet tip = NHoverTipSet.CreateAndShowMapPointHistory(this, NMapPointHistoryHoverTip.Create(num, LocalContext.NetId.Value, historyEntryFor));
+			NHoverTipSet tip = NHoverTipSet.CreateAndShowMapPointHistory(this, NMapPointHistoryHoverTip.Create(num, LocalContext.NetId.Value, historyEntryFor, _runState.GameMode));
 			Callable.From(() =>
 			{
 				tip.SetAlignment(this, HoverTip.GetHoverTipAlignment(this));

@@ -19,9 +19,7 @@ public interface IStartRunLobbyListener
 	/// Called when a lobby player's state has changed (e.g. their chosen character has changed).
 	/// </summary>
 	/// <param name="player">The player whose state has changed.</param>
-	/// <param name="isRandomCharacterResolution">This is only set to true when the player has changed due to the lobby
-	/// resolving the random character to the real one when the run is beginning.</param>
-	void PlayerChanged(StartRunLobbyPlayer player, bool isRandomCharacterResolution);
+	void PlayerChanged(StartRunLobbyPlayer player);
 
 	/// <summary>
 	/// Called when the host has changed the ascension level, on both host and client.
@@ -37,6 +35,11 @@ public interface IStartRunLobbyListener
 	/// Called when the host has changed the modifiers, on both host and client.
 	/// </summary>
 	void ModifiersChanged();
+
+	/// <summary>
+	/// Called when the host has changed the game mode, on both host and client.
+	/// </summary>
+	void GameModeChanged();
 
 	/// <summary>
 	/// Called when a client joins with a lower max ascension level than the previous one, on both host and client.

@@ -88,7 +88,7 @@ public static class PlayerCmd
 	/// <param name="player">Player to give the stars to.</param>
 	public static async Task GainStars(decimal amount, Player player)
 	{
-		if (!CombatManager.Instance.IsEnding && Hook.ShouldGainStars(player.Creature.CombatState, amount, player))
+		if (!CombatManager.Instance.ShouldSkipCombatEffect && Hook.ShouldGainStars(player.Creature.CombatState, amount, player))
 		{
 			player.PlayerCombatState.GainStars(amount);
 			await Hook.AfterStarsGained(player.Creature.CombatState, (int)amount, player);
@@ -102,7 +102,7 @@ public static class PlayerCmd
 	/// <param name="player">Player to remove the stars from.</param>
 	public static Task LoseStars(decimal amount, Player player)
 	{
-		if (CombatManager.Instance.IsEnding)
+		if (CombatManager.Instance.ShouldSkipCombatEffect)
 		{
 			return Task.CompletedTask;
 		}

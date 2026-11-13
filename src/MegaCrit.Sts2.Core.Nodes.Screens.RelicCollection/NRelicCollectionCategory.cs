@@ -140,6 +140,7 @@ public class NRelicCollectionCategory : VBoxContainer
 		_relicsContainer = GetNode<GridContainer>("%RelicsContainer");
 		_spacer = GetNode<Control>("Spacer");
 		_icon.Visible = false;
+		_headerLabel.GetParent<Control>().ApplyRtlLayout();
 	}
 
 	/// <summary>

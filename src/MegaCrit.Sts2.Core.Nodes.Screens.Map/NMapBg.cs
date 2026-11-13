@@ -32,9 +32,9 @@ public class NMapBg : VBoxContainer
 		public static readonly StringName OnVisibilityChanged = "OnVisibilityChanged";
 
 		/// <summary>
-		/// Cached name for the 'OnWindowChange' method.
+		/// Cached name for the 'OnViewportChange' method.
 		/// </summary>
-		public static readonly StringName OnWindowChange = "OnWindowChange";
+		public static readonly StringName OnViewportChange = "OnViewportChange";
 	}
 
 	/// <summary>
@@ -63,11 +63,6 @@ public class NMapBg : VBoxContainer
 		public static readonly StringName _drawings = "_drawings";
 
 		/// <summary>
-		/// Cached name for the '_window' field.
-		/// </summary>
-		public static readonly StringName _window = "_window";
-
-		/// <summary>
 		/// Cached name for the '_offsetX' field.
 		/// </summary>
 		public static readonly StringName _offsetX = "_offsetX";
@@ -90,8 +85,6 @@ public class NMapBg : VBoxContainer
 
 	private NMapDrawings _drawings;
 
-	private Window _window;
-
 	private const float _sixteenByNine = 1.7777778f;
 
 	private const float _fourByThree = 1.3333334f;
@@ -108,9 +101,8 @@ public class NMapBg : VBoxContainer
 		_mapMid = GetNode<TextureRect>("MapMid");
 		_mapBot = GetNode<TextureRect>("MapBot");
 		_drawings = GetNode<NMapDrawings>("%Drawings");
-		_window = GetTree().Root;
-		_window.Connect(Viewport.SignalName.SizeChanged, Callable.From(OnWindowChange));
-		OnWindowChange();
+		GetViewport().Connect(Viewport.SignalName.SizeChanged, Callable.From(OnViewportChange));
+		OnViewportChange();
 		_offsetX = Position.X;
 		Connect(CanvasItem.SignalName.VisibilityChanged, Callable.From(OnVisibilityChanged));
 	}
@@ -128,9 +120,10 @@ public class NMapBg : VBoxContainer
 		_mapBot.Texture = act.MapBotBg;
 	}
 
-	private void OnWindowChange()
+	private void OnViewportChange()
 	{
-		float num = Math.Max(1.3333334f, (float)_window.Size.X / (float)_window.Size.Y);
+		Rect2 viewportRect = GetViewportRect();
+		float num = Math.Max(1.3333334f, viewportRect.Size.X / viewportRect.Size.Y);
 		if (num < 1.7777778f)
 		{
 			float p = (num - 1.3333334f) / 0.44444442f;
@@ -154,7 +147,7 @@ public class NMapBg : VBoxContainer
 		List<MethodInfo> list = new List<MethodInfo>(3);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnVisibilityChanged, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName.OnWindowChange, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.OnViewportChange, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		return list;
 	}
 
@@ -174,9 +167,9 @@ public class NMapBg : VBoxContainer
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.OnWindowChange && args.Count == 0)
+		if (method == MethodName.OnViewportChange && args.Count == 0)
 		{
-			OnWindowChange();
+			OnViewportChange();
 			ret = default;
 			return true;
 		}
@@ -195,7 +188,7 @@ public class NMapBg : VBoxContainer
 		{
 			return true;
 		}
-		if (method == MethodName.OnWindowChange)
+		if (method == MethodName.OnViewportChange)
 		{
 			return true;
 		}
@@ -224,11 +217,6 @@ public class NMapBg : VBoxContainer
 		if (name == PropertyName._drawings)
 		{
 			_drawings = VariantUtils.ConvertTo<NMapDrawings>(in value);
-			return true;
-		}
-		if (name == PropertyName._window)
-		{
-			_window = VariantUtils.ConvertTo<Window>(in value);
 			return true;
 		}
 		if (name == PropertyName._offsetX)
@@ -263,11 +251,6 @@ public class NMapBg : VBoxContainer
 			value = VariantUtils.CreateFrom(in _drawings);
 			return true;
 		}
-		if (name == PropertyName._window)
-		{
-			value = VariantUtils.CreateFrom(in _window);
-			return true;
-		}
 		if (name == PropertyName._offsetX)
 		{
 			value = VariantUtils.CreateFrom(in _offsetX);
@@ -289,7 +272,6 @@ public class NMapBg : VBoxContainer
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._mapMid, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._mapBot, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._drawings, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._window, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Float, PropertyName._offsetX, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
@@ -303,7 +285,6 @@ public class NMapBg : VBoxContainer
 		info.AddProperty(PropertyName._mapMid, Variant.From(in _mapMid));
 		info.AddProperty(PropertyName._mapBot, Variant.From(in _mapBot));
 		info.AddProperty(PropertyName._drawings, Variant.From(in _drawings));
-		info.AddProperty(PropertyName._window, Variant.From(in _window));
 		info.AddProperty(PropertyName._offsetX, Variant.From(in _offsetX));
 	}
 
@@ -328,13 +309,9 @@ public class NMapBg : VBoxContainer
 		{
 			_drawings = value4.As<NMapDrawings>();
 		}
-		if (info.TryGetProperty(PropertyName._window, out var value5))
+		if (info.TryGetProperty(PropertyName._offsetX, out var value5))
 		{
-			_window = value5.As<Window>();
-		}
-		if (info.TryGetProperty(PropertyName._offsetX, out var value6))
-		{
-			_offsetX = value6.As<float>();
+			_offsetX = value5.As<float>();
 		}
 	}
 }

@@ -106,6 +106,11 @@ public class MockGodotFileIo : ISaveStore
 	public Action<string, string>? RenameFileAction { get; set; }
 
 	/// <summary>
+	/// Paths whose ReadFile throws, to simulate a file that exists but cannot be read.
+	/// </summary>
+	public HashSet<string> UnreadablePaths { get; } = new HashSet<string>();
+
+	/// <summary>
 	/// Creates a new instance of the mock save store with the specified base directory
 	/// </summary>
 	/// <param name="saveDir">The base directory for file operations</param>
@@ -197,6 +202,10 @@ public class MockGodotFileIo : ISaveStore
 	/// </summary>
 	public string? ReadFile(string path)
 	{
+		if (UnreadablePaths.Contains(path))
+		{
+			throw new IOException("Simulated read failure for " + path);
+		}
 		CanonicalizePath(ref path);
 		Calls.Add(("ReadFile", new object[1] { path }));
 		if (!_files.TryGetValue(path, out File value))
@@ -223,6 +232,7 @@ public class MockGodotFileIo : ISaveStore
 	/// </summary>
 	public void WriteFile(string path, string content)
 	{
+		bool flag = UnreadablePaths.Contains(path);
 		CanonicalizePath(ref path);
 		Calls.Add(("WriteFile", new object[2] { path, content }));
 		if (ShouldFailWrites)
@@ -230,7 +240,7 @@ public class MockGodotFileIo : ISaveStore
 			throw new InvalidOperationException("Simulated write failure");
 		}
 		string key = path + ".backup";
-		if (_files.TryGetValue(path, out File value))
+		if (_files.TryGetValue(path, out File value) && !flag && SaveContent.IsWhole(value.content))
 		{
 			_files[key] = value;
 		}
@@ -387,7 +397,7 @@ public class MockGodotFileIo : ISaveStore
 	protected void CanonicalizePath(ref string path, bool getFullPath = true)
 	{
 		path = path.Replace('\\', '/');
-		if (getFullPath)
+		if (getFullPath && _saveDir != "")
 		{
 			path = _saveDir + "/" + path;
 		}

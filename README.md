@@ -4,14 +4,14 @@
 
 **Slay the Spire 2 反编译源码 · 以及一套让联机与角色更好玩的 Plus 改动**
 
-![Game](https://img.shields.io/badge/game-v0.111.0-8B5CF6?style=flat-square)
+![Game](https://img.shields.io/badge/game-v0.113.0%20beta-8B5CF6?style=flat-square)
 ![Engine](https://img.shields.io/badge/Godot-4.5.1-478CBF?style=flat-square&logo=godotengine&logoColor=white)
 ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=flat-square&logo=dotnet&logoColor=white)
 ![Language](https://img.shields.io/badge/C%23-14-239120?style=flat-square&logo=csharp&logoColor=white)
 ![Decompiler](https://img.shields.io/badge/ILSpy-11.1.0-6B7280?style=flat-square)
 ![Build](https://img.shields.io/badge/build-0%20errors-22C55E?style=flat-square)
 
-<sub>**3,537** 个源文件 · **6,641** 个类 · **223** 个命名空间 · **约 491,700** 行</sub>
+<sub>官方基线：**3,887** 个 C# 源文件 · **7,241** 条 class 记录 · **56** 个 GDScript</sub>
 
 **中文** · [English](README.en.md)
 
@@ -35,6 +35,7 @@
 - [目标版本](#目标版本)
 - [仓库地图](#仓库地图)
 - [构建](#构建)
+- [官方 0.113.0 更新](#官方-01130-更新)
 - [Plus 改动](#plus-改动)
   - [共享存档](#共享存档)
   - [多人构建指纹](#多人构建指纹)
@@ -56,29 +57,29 @@
 - 从 **GDSC v101** 字节码还原的 56 个 GDScript（`gdscript_tree/`），保留原始项目路径；
 - 在此基础上实施的一组 **Plus 改动**：共享存档、联机构建指纹、传牌 / 传遗物，以及将 1 代故障机器人、静默猎手、铁甲战士和观者作为独立角色搬进 2 代。
 
-原始反编译基线经过 **15 处小修复**即可编译，类型数量与原程序集一致；Plus 改动会增加新的类型。
+已将官方 **0.113.0** 的完整 C# 与 GDScript 差异合入，并保留原有 Plus 改动。Release 构建通过；游戏内和多人行为仍需实测。
 
 ## 目标版本
 
 | 项目 | 值 |
 | --- | --- |
-| 游戏版本 | `v0.111.0`（`release_info.json`，commit `41cef1ea`） |
+| 游戏版本 | `v0.113.0`，`public-beta`（`release_info.json`，commit `16ac0fe3`） |
 | 引擎 | **Godot 4.5.1 + .NET 9** |
 | 原程序集 | `data_sts2_windows_x86_64/sts2.dll` |
-| 大小 | 9,757,184 字节 |
-| SHA-256 | `0861bfa1df347538d932f22d580e75420f08082792eb914e53b4882764acdbe9` |
+| 大小 | 10,646,528 字节 |
+| SHA-256 | `a6cc282c52b96ad2e01d5692b1144b33aa8e3ba4e969582f648ecb13b2f751d7` |
 | 格式 | PE32+ / x86_64 / IL-only / 非 ReadyToRun / 无强名称 |
 
 ## 仓库地图
 
 | 路径 | 内容 |
 | --- | --- |
-| `src/` | ILSpy 反编译的 C# 工程：223 个命名空间，3,537 个文件，约 491,700 行 |
+| `src/` | ILSpy 反编译的 C# 工程：官方基线 3,887 个 C# 文件，另含 Plus 源码 |
 | `src/ClassicDefectArt/` | 23 张 1 代卡图 PNG，作为嵌入资源编入 DLL（经典 Defect 用） |
 | `src/ClassicPowerIcons/` | 6 个 1 代能力图标（48 / 128 两套），作为嵌入资源编入 DLL |
 | `gdscript_tree/` | 从 GDSC v101 字节码还原的 56 个 GDScript，保留原始项目路径 |
-| `types.txt` | 类清单（6,641 个类） |
-| `original_source_paths.txt` | PCK 中记录的原始 C# 源文件路径（3,441 条，仅路径） |
+| `types.txt` | 官方类清单（7,241 条 class 记录，含编译器生成项） |
+| `original_source_paths.txt` | PCK 中记录的原始 C# 源文件路径（3,782 条，仅路径） |
 
 **不包含**：PCK、原版游戏 DLL、工具二进制、本地存档；游戏资产仅包含上述经典角色图片。
 
@@ -98,9 +99,11 @@ dotnet build src/sts2.csproj -c Release
 
 > 🔖 **替换前请备份原 DLL。**
 
+**本版 DLL 需要官方 `public-beta` v0.113.0 的 PCK 和依赖库。** 本次正式分支仍为 v0.111.0，请先在 Steam「属性 → 游戏版本与测试版」选择 `public-beta` 并完成更新。
+
 ### 反编译修复
 
-反编译代码需要 15 处小修复才能编译：
+最初 v0.111.0 反编译基线的修复记录如下；升级时保留仍适用的修正：
 
 | 数量 | 问题 | 处理 |
 | :---: | --- | --- |
@@ -108,7 +111,17 @@ dotnet build src/sts2.csproj -c Release
 | 5 | `Container` 歧义（`System.ComponentModel.Container` vs `Godot.Container`） | `using Container = Godot.Container;` |
 | 2 | `base._002Ector();` 残留 | 删除 |
 
-原始反编译基线：**0 error**，6,641 个类型（不含后续 Plus 新增类型）。
+v0.113.0 还补充了 `NTopBar`、`NBlitzTopBarMap` 的 `Container` 别名。使用普通 `Microsoft.NET.Sdk` 构建，不重新运行 Godot 源生成器。6 个 JSON resolver 的 `global::` 显式接口方法名已与新版官方 DLL 核对。
+
+## 官方 0.113.0 更新
+
+下载：[v0.113.0 Plus](https://github.com/Aper-mesa/Slay-the-Spire-2-Plus/releases/tag/v0.113.0-plus.20261113)（仅 `sts2.dll`，GitHub Latest）。
+
+- 新增第六个官方角色 **The Fool**，以及 **Blitz**、**Dread** 两种模式；五个新事件、Byrdpip 进化、卡牌/遗物平衡和官方修复一并合入。[官方公告](https://steamcommunity.com/games/2868840/announcements/detail/1849192144184507)
+- 从 v0.111.0 干净官方 DLL 做三方合并：新增 360、修改 731、删除 10 个 C# 文件；56 个 GDScript 中更新 3 个。官方类清单与 PCK 原始源码路径同步更新。
+- 共享存档、构建指纹、传牌/传遗物、Save & Load 和四个经典角色保留；接入新增模式的角色短名、观者背景/头像、官方死亡来源和额外回合接口。官方角色解锁门槛按六个官方角色计算。
+- 联机消息表保留新版官方顺序后追加 Plus 消息；重载存档时清理旧的事件/商店消息处理器，并在切房期间拒绝重载。满手传牌按实际落点显示卡牌。
+- Release 构建通过，已做源码覆盖和静态元数据兼容核对；未运行游戏或自动冒烟测试。请实测 The Fool、Blitz/Dread、旧档迁移、PlusSL 和多人传递。
 
 ## Plus 改动
 

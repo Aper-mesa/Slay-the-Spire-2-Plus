@@ -162,6 +162,14 @@ public class RunRngSet
 		{
 			runRngSet._rngs[key] = new Rng(serializable);
 		}
+		RunRngType[] values = Enum.GetValues<RunRngType>();
+		foreach (RunRngType runRngType2 in values)
+		{
+			if (!runRngSet._rngs.ContainsKey(runRngType2))
+			{
+				runRngSet._rngs[runRngType2] = runRngSet.CreateRng(runRngType2);
+			}
+		}
 		return runRngSet;
 	}
 

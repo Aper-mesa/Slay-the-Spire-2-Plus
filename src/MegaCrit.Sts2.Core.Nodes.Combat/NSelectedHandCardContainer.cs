@@ -92,7 +92,7 @@ public class NSelectedHandCardContainer : Control
 		if (count != 0)
 		{
 			float x = Holders.First().Size.X;
-			float num = (0f - x) * (float)(count - 1) / 2f;
+			float num = (0f - x) * (float)(count - 1) * 0.5f;
 			for (int i = 0; i < count; i++)
 			{
 				Holders[i].Position = new Vector2(num, 0f);

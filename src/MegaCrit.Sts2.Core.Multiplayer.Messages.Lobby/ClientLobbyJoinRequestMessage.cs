@@ -10,9 +10,11 @@ namespace MegaCrit.Sts2.Core.Multiplayer.Messages.Lobby;
 /// </summary>
 public struct ClientLobbyJoinRequestMessage : INetMessage, IPacketSerializable
 {
-	public int maxAscensionUnlocked;
-
 	public SerializableUnlockState unlockState;
+
+	public int maxStandardAscension;
+
+	public int maxBlitzAscension;
 
 	public bool ShouldBroadcast => false;
 
@@ -24,13 +26,15 @@ public struct ClientLobbyJoinRequestMessage : INetMessage, IPacketSerializable
 
 	public void Serialize(PacketWriter writer)
 	{
-		writer.WriteInt(maxAscensionUnlocked);
 		writer.Write(unlockState);
+		writer.WriteInt(maxStandardAscension, 8);
+		writer.WriteInt(maxBlitzAscension, 8);
 	}
 
 	public void Deserialize(PacketReader reader)
 	{
-		maxAscensionUnlocked = reader.ReadInt();
 		unlockState = reader.Read<SerializableUnlockState>();
+		maxStandardAscension = reader.ReadInt(8);
+		maxBlitzAscension = reader.ReadInt(8);
 	}
 }

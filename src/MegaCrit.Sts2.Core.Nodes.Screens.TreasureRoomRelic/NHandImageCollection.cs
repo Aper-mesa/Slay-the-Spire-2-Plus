@@ -324,7 +324,8 @@ public class NHandImageCollection : Control
 	public async Task DoFight(RelicPickingResult result, NTreasureRoomRelicHolder holder)
 	{
 		RelicPickingFight fight = result.fight;
-		List<Tween> tweens = new List<Tween>();
+		CancellationToken ct = _cts.Token;
+		List<(NHandImage hand, Tween tween)> tweens = new List<(NHandImage, Tween)>();
 		List<Task> tasks = new List<Task>();
 		for (int i = 0; i < fight.rounds.Count; i++)
 		{
@@ -338,10 +339,17 @@ public class NHandImageCollection : Control
 				{
 					Player player = fight.playersInvolved[j];
 					NHandImage hand = GetHand(player.NetId);
-					tweens.Add(hand.DoFightMove(relicPickingFightMove.Value, 1.5f * durationMultiplier));
+					if (hand != null)
+					{
+						tweens.Add((hand, hand.DoFightMove(relicPickingFightMove.Value, 1.5f * durationMultiplier)));
+					}
 				}
 			}
-			await Task.WhenAll(tweens.Select((Tween t) => t.AwaitFinished(_cts.Token)));
+			await Task.WhenAll(tweens.Select(((NHandImage hand, Tween tween) t) => t.tween.AwaitFinished(t.hand, ct)));
+			if (ct.IsCancellationRequested)
+			{
+				return;
+			}
 			List<Player> list = new List<Player>();
 			for (int num = 0; num < fight.playersInvolved.Count; num++)
 			{
@@ -365,31 +373,38 @@ public class NHandImageCollection : Control
 			}
 			if (i == fight.rounds.Count - 1)
 			{
-				await Cmd.Wait(0.5f, _cts.Token);
+				await Cmd.Wait(0.5f, ct);
 				NHandImage hand2 = GetHand(result.player.NetId);
-				tasks.Add(hand2.GrabRelic(holder));
+				if (hand2 != null)
+				{
+					tasks.Add(hand2.GrabRelic(holder));
+				}
 			}
 			if (tasks.Count == 0)
 			{
-				await Cmd.Wait(1f * durationMultiplier, _cts.Token);
+				await Cmd.Wait(1f * durationMultiplier, ct);
+				continue;
 			}
-			else
+			await Task.WhenAll(tasks);
+			if (ct.IsCancellationRequested)
 			{
-				await Task.WhenAll(tasks);
+				return;
 			}
 		}
 		foreach (Player item2 in fight.playersInvolved)
 		{
-			NHandImage hand3 = GetHand(item2.NetId);
-			hand3.SetIsInFight(inFight: false);
+			GetHand(item2.NetId)?.SetIsInFight(inFight: false);
 		}
 	}
 
 	private async Task DoLoseShake(Player player, float duration)
 	{
 		NHandImage hand = GetHand(player.NetId);
-		await hand.DoLoseShake(duration);
-		hand.SetIsInFight(inFight: false);
+		if (hand != null)
+		{
+			await hand.DoLoseShake(duration);
+			hand.SetIsInFight(inFight: false);
+		}
 	}
 
 	/// <summary>

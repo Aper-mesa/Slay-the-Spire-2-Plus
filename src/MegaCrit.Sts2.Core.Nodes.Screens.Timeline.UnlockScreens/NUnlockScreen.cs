@@ -105,7 +105,6 @@ public abstract class NUnlockScreen : Control, IScreenContext
 
 	/// <summary>
 	/// Useful for UI stuff because this Node is in the Scene so the positions are accurate.
-	/// See: NUnlockEpochScreen where we animate the Epochs on screen open!
 	/// </summary>
 	public virtual void Open()
 	{
@@ -132,7 +131,7 @@ public abstract class NUnlockScreen : Control, IScreenContext
 		OnScreenPreClose();
 		_tween = CreateTween().SetParallel();
 		_tween.TweenProperty(this, "modulate", StsColors.transparentBlack, 1.0);
-		if (await _tween.AwaitFinished(this))
+		if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			OnScreenClose();
 			if (!NTimelineScreen.Instance.IsScreenQueued())

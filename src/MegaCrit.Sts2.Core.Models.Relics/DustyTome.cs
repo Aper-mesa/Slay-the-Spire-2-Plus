@@ -8,6 +8,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Relics;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
 
@@ -52,13 +53,20 @@ public sealed class DustyTome : RelicModel
 		IEnumerable<CardModel> items = from c in player.Character.CardPool.GetUnlockedCards(player.UnlockState, player.RunState.CardMultiplayerConstraint)
 			where c.Rarity == CardRarity.Ancient && !ArchaicTooth.TranscendenceCards.Contains(c)
 			select c;
-		AncientCard = player.PlayerRng.Rewards.NextItem(items).Id;
+		AncientCard = player.PlayerRng.Rewards.NextItem(items)?.Id;
 	}
 
 	public override async Task AfterObtained()
 	{
-		CardModel card = Owner.RunState.CreateCard(ModelDb.GetById<CardModel>(AncientCard), Owner);
-		CardCmd.Upgrade(card);
-		CardCmd.PreviewCardPileAdd(await CardPileCmd.Add(card, PileType.Deck), 2f);
+		if (AncientCard == null)
+		{
+			Log.Error($"Ancient card was null for player {Owner}! Dusty Tome will do nothing. This is probably okay if you are running in a test.");
+		}
+		else
+		{
+			CardModel card = Owner.RunState.CreateCard(ModelDb.GetById<CardModel>(AncientCard), Owner);
+			CardCmd.Upgrade(card);
+			CardCmd.PreviewCardPileAdd(await CardPileCmd.Add(card, PileType.Deck), 2f);
+		}
 	}
 }

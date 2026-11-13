@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
@@ -102,6 +103,11 @@ public class NRelicInventory : FlowContainer
 		/// Cached name for the 'DebugHideTopBar' method.
 		/// </summary>
 		public static readonly StringName DebugHideTopBar = "DebugHideTopBar";
+
+		/// <summary>
+		/// Cached name for the 'UpdateNavigationAfterOneFrame' method.
+		/// </summary>
+		public static readonly StringName UpdateNavigationAfterOneFrame = "UpdateNavigationAfterOneFrame";
 
 		/// <summary>
 		/// Cached name for the 'UpdateNavigation' method.
@@ -205,7 +211,7 @@ public class NRelicInventory : FlowContainer
 		{
 			Add(relic, startsShown: true);
 		}
-		UpdateNavigation();
+		UpdateNavigationAfterOneFrame();
 	}
 
 	private void ConnectPlayerEvents()
@@ -258,7 +264,7 @@ public class NRelicInventory : FlowContainer
 			Color modulate = nRelicInventoryHolder.Relic.Icon.Modulate;
 			modulate.A = 0f;
 			icon.Modulate = modulate;
-			UpdateNavigation();
+			UpdateNavigationAfterOneFrame();
 		}
 		nRelicInventoryHolder.Connect(NClickableControl.SignalName.Released, Callable.From((NButton _) =>
 		{
@@ -283,7 +289,7 @@ public class NRelicInventory : FlowContainer
 			_relicNodes.Remove(nRelicInventoryHolder);
 			this.RemoveChildSafely(nRelicInventoryHolder);
 			EmitSignalRelicsChanged();
-			UpdateNavigation();
+			UpdateNavigationAfterOneFrame();
 		}
 	}
 
@@ -331,7 +337,7 @@ public class NRelicInventory : FlowContainer
 
 	public void AnimShow()
 	{
-		FocusBehaviorRecursive = FocusBehaviorRecursiveEnum.Enabled;
+		FocusBehaviorRecursive = FocusBehaviorRecursiveEnum.Inherited;
 		_curTween?.Kill();
 		_curTween = CreateTween();
 		_curTween.TweenProperty(this, "global_position:y", _originalPos.Y, 0.25).SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.Out);
@@ -399,8 +405,20 @@ public class NRelicInventory : FlowContainer
 		_isDebugHidden = !_isDebugHidden;
 	}
 
-	private void UpdateNavigation()
+	private void UpdateNavigationAfterOneFrame()
 	{
+		TaskHelper.RunSafely(UpdateNavigationAfterOneFrameAsync());
+	}
+
+	private async Task UpdateNavigationAfterOneFrameAsync()
+	{
+		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		UpdateNavigation();
+	}
+
+	public void UpdateNavigation()
+	{
+		List<Control> list = NRun.Instance?.GlobalUi.TopBar.GetAllNavigableElements() ?? new List<Control>();
 		for (int i = 0; i < RelicNodes.Count; i++)
 		{
 			NRelicInventoryHolder nRelicInventoryHolder = RelicNodes[i];
@@ -416,17 +434,29 @@ public class NRelicInventory : FlowContainer
 			}
 			nRelicInventoryHolder.FocusNeighborLeft = path;
 			nRelicInventoryHolder.FocusNeighborRight = ((i < RelicNodes.Count - 1) ? RelicNodes[i + 1].GetPath() : RelicNodes[0].GetPath());
-			Control firstPotionControl = NRun.Instance.GlobalUi.TopBar.PotionContainer.FirstPotionControl;
-			nRelicInventoryHolder.FocusNeighborTop = ((firstPotionControl != null && GodotObject.IsInstanceValid(firstPotionControl)) ? firstPotionControl.GetPath() : nRelicInventoryHolder.GetPath());
-			NMultiplayerPlayerStateContainer multiplayerPlayerContainer = NRun.Instance.GlobalUi.MultiplayerPlayerContainer;
-			if (multiplayerPlayerContainer.GetChildCount() > 0)
+			Control control = null;
+			float num = 0f;
+			Vector2 vector = nRelicInventoryHolder.GlobalPosition + nRelicInventoryHolder.Size * 0.5f;
+			foreach (Control item in list)
 			{
-				Control control = multiplayerPlayerContainer.FirstPlayerState?.Hitbox;
-				nRelicInventoryHolder.FocusNeighborBottom = ((control != null && GodotObject.IsInstanceValid(control)) ? control.GetPath() : nRelicInventoryHolder.GetPath());
+				Vector2 to = item.GlobalPosition + item.Size * 0.5f;
+				float num2 = vector.DistanceSquaredTo(to);
+				if (control == null || num2 < num)
+				{
+					control = item;
+					num = num2;
+				}
+			}
+			nRelicInventoryHolder.FocusNeighborTop = control?.GetPath() ?? nRelicInventoryHolder.GetPath();
+			NMultiplayerPlayerStateContainer nMultiplayerPlayerStateContainer = NRun.Instance?.GlobalUi.MultiplayerPlayerContainer;
+			if (nMultiplayerPlayerStateContainer != null && nMultiplayerPlayerStateContainer.GetChildCount() > 0)
+			{
+				Control control2 = nMultiplayerPlayerStateContainer.FirstPlayerState?.Hitbox;
+				nRelicInventoryHolder.FocusNeighborBottom = ((control2 != null && GodotObject.IsInstanceValid(control2)) ? control2.GetPath() : nRelicInventoryHolder.GetPath());
 			}
 			else
 			{
-				nRelicInventoryHolder.FocusNeighborBottom = NRun.Instance.GlobalUi.TopBar.ActiveScreenProxy.GetPath();
+				nRelicInventoryHolder.FocusNeighborBottom = NRun.Instance?.GlobalUi.TopBar.ActiveScreenProxy.GetPath() ?? nRelicInventoryHolder.GetPath();
 			}
 		}
 	}
@@ -439,7 +469,7 @@ public class NRelicInventory : FlowContainer
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(15);
+		List<MethodInfo> list = new List<MethodInfo>(16);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._EnterTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -457,6 +487,7 @@ public class NRelicInventory : FlowContainer
 			new PropertyInfo(Variant.Type.Object, "inputEvent", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("InputEvent"), exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.DebugHideTopBar, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.UpdateNavigationAfterOneFrame, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.UpdateNavigation, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		return list;
 	}
@@ -547,6 +578,12 @@ public class NRelicInventory : FlowContainer
 			ret = default;
 			return true;
 		}
+		if (method == MethodName.UpdateNavigationAfterOneFrame && args.Count == 0)
+		{
+			UpdateNavigationAfterOneFrame();
+			ret = default;
+			return true;
+		}
 		if (method == MethodName.UpdateNavigation && args.Count == 0)
 		{
 			UpdateNavigation();
@@ -626,6 +663,10 @@ public class NRelicInventory : FlowContainer
 			return true;
 		}
 		if (method == MethodName.DebugHideTopBar)
+		{
+			return true;
+		}
+		if (method == MethodName.UpdateNavigationAfterOneFrame)
 		{
 			return true;
 		}

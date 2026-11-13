@@ -239,7 +239,7 @@ public class ENetHost : NetHost
 		}
 	}
 
-	public override void DisconnectClient(ulong peerId, NetError reason, bool now = false)
+	public override void DisconnectClient(ulong peerId, NetError reason, bool now = false, string? debugReason = null)
 	{
 		DisconnectClientInternal(peerId, reason, now);
 	}

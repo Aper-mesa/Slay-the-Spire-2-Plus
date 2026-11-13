@@ -8,9 +8,11 @@ namespace MegaCrit.Sts2.Core.Models.Enchantments;
 
 public sealed class TezcatarasEmber : EnchantmentModel
 {
+	private const string _damageKey = "Damage";
+
 	protected override IEnumerable<IHoverTip> ExtraHoverTips => new _003C_003Ez__ReadOnlySingleElementList<IHoverTip>(HoverTipFactory.FromKeyword(CardKeyword.Eternal));
 
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new DamageVar(3m, ValueProp.Move));
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new DynamicVar("Damage", 3m));
 
 	protected override void OnEnchant()
 	{
@@ -24,6 +26,6 @@ public sealed class TezcatarasEmber : EnchantmentModel
 		{
 			return 0m;
 		}
-		return DynamicVars.Damage.BaseValue;
+		return DynamicVars["Damage"].BaseValue;
 	}
 }

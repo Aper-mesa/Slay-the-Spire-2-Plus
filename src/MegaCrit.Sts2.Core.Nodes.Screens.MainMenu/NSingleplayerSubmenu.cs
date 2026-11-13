@@ -6,10 +6,13 @@ using Godot.Bridge;
 using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.Screens.Blitz;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Nodes.Screens.CustomRun;
 using MegaCrit.Sts2.Core.Nodes.Screens.DailyRun;
+using MegaCrit.Sts2.Core.Nodes.Screens.Dread;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.TestSupport;
 using MegaCrit.Sts2.Core.Timeline.Epochs;
@@ -55,6 +58,16 @@ public class NSingleplayerSubmenu : NSubmenu
 		public static readonly StringName OpenDailyScreen = "OpenDailyScreen";
 
 		/// <summary>
+		/// Cached name for the 'OpenBlitzScreen' method.
+		/// </summary>
+		public static readonly StringName OpenBlitzScreen = "OpenBlitzScreen";
+
+		/// <summary>
+		/// Cached name for the 'OpenDreadScreen' method.
+		/// </summary>
+		public static readonly StringName OpenDreadScreen = "OpenDreadScreen";
+
+		/// <summary>
 		/// Cached name for the 'OpenCustomScreen' method.
 		/// </summary>
 		public static readonly StringName OpenCustomScreen = "OpenCustomScreen";
@@ -81,6 +94,16 @@ public class NSingleplayerSubmenu : NSubmenu
 		public static readonly StringName _dailyButton = "_dailyButton";
 
 		/// <summary>
+		/// Cached name for the '_dreadButton' field.
+		/// </summary>
+		public static readonly StringName _dreadButton = "_dreadButton";
+
+		/// <summary>
+		/// Cached name for the '_blitzButton' field.
+		/// </summary>
+		public static readonly StringName _blitzButton = "_blitzButton";
+
+		/// <summary>
 		/// Cached name for the '_customButton' field.
 		/// </summary>
 		public static readonly StringName _customButton = "_customButton";
@@ -99,13 +122,41 @@ public class NSingleplayerSubmenu : NSubmenu
 
 	private NSubmenuButton _dailyButton;
 
+	private NSubmenuButton _dreadButton;
+
+	private NSubmenuButton _blitzButton;
+
 	private NSubmenuButton _customButton;
 
 	private const string _keyStandard = "STANDARD";
 
 	private const string _keyDaily = "DAILY";
 
+	private const string _keyDread = "DREAD";
+
+	private const string _keyBlitz = "BLITZ";
+
 	private const string _keyCustom = "CUSTOM";
+
+	private const string _iconStandard = "standard";
+
+	private const string _iconDaily = "daily";
+
+	private const string _iconBlitz = "blitz";
+
+	private const string _iconDread = "dread";
+
+	private const string _iconCustom = "custom";
+
+	public static string[] AssetPaths => new string[6]
+	{
+		_scenePath,
+		NSubmenuPortrait.GetIconPath("standard"),
+		NSubmenuPortrait.GetIconPath("daily"),
+		NSubmenuPortrait.GetIconPath("blitz"),
+		NSubmenuPortrait.GetIconPath("dread"),
+		NSubmenuPortrait.GetIconPath("custom")
+	};
 
 	protected override Control InitialFocusedControl => _standardButton;
 
@@ -121,27 +172,48 @@ public class NSingleplayerSubmenu : NSubmenu
 	public override void _Ready()
 	{
 		ConnectSignals();
-		_standardButton = GetNode<NSubmenuButton>("StandardButton");
+		_standardButton = GetNode<NSubmenuButton>("%StandardButton");
 		_standardButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OpenCharacterSelect));
-		_standardButton.SetIconAndLocalization("STANDARD");
-		_dailyButton = GetNode<NSubmenuButton>("DailyButton");
+		_standardButton.SetLocalization("STANDARD");
+		_standardButton.SetIcon("standard");
+		_dailyButton = GetNode<NSubmenuButton>("%DailyButton");
 		_dailyButton.Connect(NClickableControl.SignalName.Released, Callable.From((Action<NButton>)OpenDailyScreen));
-		_dailyButton.SetIconAndLocalization("DAILY");
-		_customButton = GetNode<NSubmenuButton>("CustomRunButton");
+		_dailyButton.SetLocalization("DAILY");
+		_dailyButton.SetIcon("daily");
+		_blitzButton = GetNode<NSubmenuButton>("%BlitzButton");
+		_blitzButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OpenBlitzScreen));
+		_blitzButton.SetLocalization("BLITZ");
+		_blitzButton.SetIcon("blitz");
+		_dreadButton = GetNode<NSubmenuButton>("%DreadButton");
+		_dreadButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OpenDreadScreen));
+		_dreadButton.SetLocalization("DREAD");
+		_dreadButton.SetIcon("dread");
+		_customButton = GetNode<NSubmenuButton>("%CustomRunButton");
 		_customButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OpenCustomScreen));
-		_customButton.SetIconAndLocalization("CUSTOM");
+		_customButton.SetLocalization("CUSTOM");
+		_customButton.SetIcon("custom");
 	}
 
 	/// <summary>
-	/// Checks the unlock state of Custom and Daily to determine whether they should be locked or not.
+	/// Checks the unlock state of Custom and Daily to determine whether they should be locked or not,
+	/// and the unlock state of Dread to determine whether it should be hidden and unnavigable or not.
 	/// Is not checked only at _Ready() because the MainMenu isn't recreated upon returning from the Timeline.
 	/// </summary>
 	private void RefreshButtons()
 	{
 		_dailyButton.SetEnabled(SaveManager.Instance.IsEpochRevealed<DailyRunEpoch>());
+		_blitzButton.SetEnabled(SaveManager.Instance.IsEpochRevealed<BlitzEpoch>());
 		_customButton.SetEnabled(SaveManager.Instance.IsEpochRevealed<CustomAndSeedsEpoch>());
 		_dailyButton.RefreshLabels();
+		_blitzButton.RefreshLabels();
 		_customButton.RefreshLabels();
+		bool flag = SaveManager.Instance.IsEpochRevealed<DreadEpoch>();
+		_dreadButton.SetEnabled(flag);
+		_dreadButton.Visible = flag;
+		if (_dreadButton.Visible)
+		{
+			GetNode<Control>("%ButtonContainer").Scale = Vector2.One * 0.85f;
+		}
 	}
 
 	public override void OnSubmenuOpened()
@@ -168,6 +240,20 @@ public class NSingleplayerSubmenu : NSubmenu
 		_stack.Push(submenuType);
 	}
 
+	private void OpenBlitzScreen(NButton _)
+	{
+		NBlitzScreen submenuType = _stack.GetSubmenuType<NBlitzScreen>();
+		submenuType.InitializeSingleplayer();
+		_stack.Push(submenuType);
+	}
+
+	private void OpenDreadScreen(NButton _)
+	{
+		NDreadScreen submenuType = _stack.GetSubmenuType<NDreadScreen>();
+		submenuType.InitializeSingleplayer();
+		_stack.Push(submenuType);
+	}
+
 	private void OpenCustomScreen(NButton _)
 	{
 		NCustomRunScreen submenuType = _stack.GetSubmenuType<NCustomRunScreen>();
@@ -183,7 +269,7 @@ public class NSingleplayerSubmenu : NSubmenu
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(8);
+		List<MethodInfo> list = new List<MethodInfo>(10);
 		list.Add(new MethodInfo(MethodName.Create, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false), MethodFlags.Normal | MethodFlags.Static, null, null));
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.RefreshButtons, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -197,6 +283,14 @@ public class NSingleplayerSubmenu : NSubmenu
 			new PropertyInfo(Variant.Type.Object, "_", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.OpenDailyScreen, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.OpenBlitzScreen, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Object, "_", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName.OpenDreadScreen, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Object, "_", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
+		}, null));
 		list.Add(new MethodInfo(MethodName.OpenCustomScreen, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "_", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
@@ -249,6 +343,18 @@ public class NSingleplayerSubmenu : NSubmenu
 			ret = default;
 			return true;
 		}
+		if (method == MethodName.OpenBlitzScreen && args.Count == 1)
+		{
+			OpenBlitzScreen(VariantUtils.ConvertTo<NButton>(in args[0]));
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.OpenDreadScreen && args.Count == 1)
+		{
+			OpenDreadScreen(VariantUtils.ConvertTo<NButton>(in args[0]));
+			ret = default;
+			return true;
+		}
 		if (method == MethodName.OpenCustomScreen && args.Count == 1)
 		{
 			OpenCustomScreen(VariantUtils.ConvertTo<NButton>(in args[0]));
@@ -298,6 +404,14 @@ public class NSingleplayerSubmenu : NSubmenu
 		{
 			return true;
 		}
+		if (method == MethodName.OpenBlitzScreen)
+		{
+			return true;
+		}
+		if (method == MethodName.OpenDreadScreen)
+		{
+			return true;
+		}
 		if (method == MethodName.OpenCustomScreen)
 		{
 			return true;
@@ -317,6 +431,16 @@ public class NSingleplayerSubmenu : NSubmenu
 		if (name == PropertyName._dailyButton)
 		{
 			_dailyButton = VariantUtils.ConvertTo<NSubmenuButton>(in value);
+			return true;
+		}
+		if (name == PropertyName._dreadButton)
+		{
+			_dreadButton = VariantUtils.ConvertTo<NSubmenuButton>(in value);
+			return true;
+		}
+		if (name == PropertyName._blitzButton)
+		{
+			_blitzButton = VariantUtils.ConvertTo<NSubmenuButton>(in value);
 			return true;
 		}
 		if (name == PropertyName._customButton)
@@ -346,6 +470,16 @@ public class NSingleplayerSubmenu : NSubmenu
 			value = VariantUtils.CreateFrom(in _dailyButton);
 			return true;
 		}
+		if (name == PropertyName._dreadButton)
+		{
+			value = VariantUtils.CreateFrom(in _dreadButton);
+			return true;
+		}
+		if (name == PropertyName._blitzButton)
+		{
+			value = VariantUtils.CreateFrom(in _blitzButton);
+			return true;
+		}
 		if (name == PropertyName._customButton)
 		{
 			value = VariantUtils.CreateFrom(in _customButton);
@@ -365,6 +499,8 @@ public class NSingleplayerSubmenu : NSubmenu
 		List<PropertyInfo> list = new List<PropertyInfo>();
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._standardButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._dailyButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._dreadButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._blitzButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._customButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName.InitialFocusedControl, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
@@ -377,6 +513,8 @@ public class NSingleplayerSubmenu : NSubmenu
 		base.SaveGodotObjectData(info);
 		info.AddProperty(PropertyName._standardButton, Variant.From(in _standardButton));
 		info.AddProperty(PropertyName._dailyButton, Variant.From(in _dailyButton));
+		info.AddProperty(PropertyName._dreadButton, Variant.From(in _dreadButton));
+		info.AddProperty(PropertyName._blitzButton, Variant.From(in _blitzButton));
 		info.AddProperty(PropertyName._customButton, Variant.From(in _customButton));
 	}
 
@@ -393,9 +531,17 @@ public class NSingleplayerSubmenu : NSubmenu
 		{
 			_dailyButton = value2.As<NSubmenuButton>();
 		}
-		if (info.TryGetProperty(PropertyName._customButton, out var value3))
+		if (info.TryGetProperty(PropertyName._dreadButton, out var value3))
 		{
-			_customButton = value3.As<NSubmenuButton>();
+			_dreadButton = value3.As<NSubmenuButton>();
+		}
+		if (info.TryGetProperty(PropertyName._blitzButton, out var value4))
+		{
+			_blitzButton = value4.As<NSubmenuButton>();
+		}
+		if (info.TryGetProperty(PropertyName._customButton, out var value5))
+		{
+			_customButton = value5.As<NSubmenuButton>();
 		}
 	}
 }

@@ -29,6 +29,11 @@ public sealed class HardenedShellPower : PowerModel
 		return new Data();
 	}
 
+	/// <summary>
+	/// Card damage previews never show this cap. DamageVar.UpdateCardPreview calls Hook.ModifyDamage, which reaches
+	/// ModifyDamageCap but not this hook, and <see cref="T:MegaCrit.Sts2.Core.Models.Powers.IntangiblePower" /> and <see cref="T:MegaCrit.Sts2.Core.Models.Powers.HardToKillPower" /> are the
+	/// only powers overriding ModifyDamageCap. Closed as designed in PRG-6920 and PRG-6970.
+	/// </summary>
 	public override decimal ModifyHpLostBeforeOstyLate(Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource)
 	{
 		if (target != Owner)
@@ -68,6 +73,11 @@ public sealed class HardenedShellPower : PowerModel
 		return Task.CompletedTask;
 	}
 
+	/// <summary>
+	/// The received-damage counter resets at the start of every side turn, not once per round, so the owner caps
+	/// damage at its full amount again on the enemy turn as well as on the player turn. There is no filter on
+	/// <paramref name="side" /> for that reason. Closed as designed in PRG-4482 and PRG-6913.
+	/// </summary>
 	public override Task BeforeSideTurnStart(PlayerChoiceContext choiceContext, CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState)
 	{
 		GetInternalData<Data>().damageReceivedThisTurn = 0m;

@@ -237,7 +237,7 @@ public class NInspectRelicScreen : Control, IScreenContext
 
 	private int _index;
 
-	private HashSet<RelicModel> _allUnlockedRelics = new HashSet<RelicModel>();
+	private readonly HashSet<RelicModel> _allUnlockedRelics = new HashSet<RelicModel>();
 
 	public static string[] AssetPaths => new string[1] { _scenePath };
 
@@ -294,8 +294,8 @@ public class NInspectRelicScreen : Control, IScreenContext
 			.From(_popupPosition + new Vector2(0f, 200f));
 		ActiveScreenContext.Instance.Update();
 		NHotkeyManager.Instance.AddBlockingScreen(this);
-		NHotkeyManager.Instance.PushHotkeyPressedBinding(MegaInput.cancel, Close);
-		NHotkeyManager.Instance.PushHotkeyPressedBinding(MegaInput.pauseAndBack, Close);
+		NHotkeyManager.Instance.PushHotkeyPressedBinding(MegaInput.cancel, Close, 0L);
+		NHotkeyManager.Instance.PushHotkeyPressedBinding(MegaInput.pauseAndBack, Close, 0L);
 	}
 
 	public override void _Ready()

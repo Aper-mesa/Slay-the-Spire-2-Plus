@@ -44,6 +44,9 @@ public class TemporaryCardCost
 	/// <summary>
 	/// A temporary cost that is cleared when the card is played OR at the end of the current
 	/// turn, whichever comes first.
+	/// "Costs 0 this turn" therefore covers one play only. If the card returns to hand in the same turn it is back at
+	/// its normal cost. Repeatedly closed as designed: PRG-7352, PRG-7060, PRG-5372, PRG-5254, PRG-4360, PRG-3978,
+	/// PRG-2651 and PRG-1747, which notes STS1 does the same.
 	/// </summary>
 	public static TemporaryCardCost ThisTurn(int cost)
 	{

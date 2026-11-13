@@ -115,6 +115,17 @@ public class SerializableProgress : ISaveSchema
 	[JsonPropertyName("max_multiplayer_ascension")]
 	public int MaxMultiplayerAscension { get; set; }
 
+	/// <summary> Which blitz ascension we had selected the last time we started a blitz run. </summary>
+	[JsonPropertyName("preferred_blitz_ascension")]
+	public int PreferredBlitzAscension { get; set; }
+
+	/// <summary>
+	/// The maximum unlocked ascension in blitz.
+	/// In standard singleplayer runs, we use character stats. In blitz runs, all characters share an ascension.
+	/// </summary>
+	[JsonPropertyName("max_blitz_ascension")]
+	public int MaxBlitzAscension { get; set; }
+
 	[JsonPropertyName("test_subject_kills")]
 	public int TestSubjectKills { get; set; }
 
@@ -125,6 +136,58 @@ public class SerializableProgress : ISaveSchema
 	/// </summary>
 	[JsonPropertyName("pending_character_unlock")]
 	public ModelId PendingCharacterUnlock { get; set; } = ModelId.none;
+
+	/// <summary> Which character we had selected the last time we started a singleplayer Standard run. </summary>
+	[JsonPropertyName("preferred_standard_character")]
+	public ModelId PreferredStandardCharacter { get; set; } = ModelId.none;
+
+	/// <summary> Which character we had selected the last time we started a multiplayer Standard run. </summary>
+	[JsonPropertyName("preferred_multiplayer_standard_character")]
+	public ModelId PreferredMultiplayerStandardCharacter { get; set; } = ModelId.none;
+
+	/// <summary> Which character we had selected the last time we started a singleplayer Blitz run. </summary>
+	[JsonPropertyName("preferred_blitz_character")]
+	public ModelId PreferredBlitzCharacter { get; set; } = ModelId.none;
+
+	/// <summary> Which character we had selected the last time we started a multiplayer Blitz run. </summary>
+	[JsonPropertyName("preferred_multiplayer_blitz_character")]
+	public ModelId PreferredMultiplayerBlitzCharacter { get; set; } = ModelId.none;
+
+	/// <summary> Which character we had selected the last time we started a singleplayer Dread run. </summary>
+	[JsonPropertyName("preferred_dread_character")]
+	public ModelId PreferredDreadCharacter { get; set; } = ModelId.none;
+
+	/// <summary> Which character we had selected the last time we played a multiplayer Dread run. </summary>
+	[JsonPropertyName("preferred_multiplayer_dread_character")]
+	public ModelId PreferredMultiplayerDreadCharacter { get; set; } = ModelId.none;
+
+	/// <summary> If true, the "begin rotating streak" tickbox should default to on in the Dread screen. </summary>
+	[JsonPropertyName("preferred_dread_rotating_tickbox_on_singleplayer")]
+	public bool PreferredDreadRotatingTickboxOnSingleplayer { get; set; }
+
+	/// <summary> If true, the "begin rotating streak" tickbox should default to on in the Dread screen. </summary>
+	[JsonPropertyName("preferred_dread_rotating_tickbox_on_multiplayer")]
+	public bool PreferredDreadRotatingTickboxOnMultiplayer { get; set; }
+
+	[JsonPropertyName("current_singleplayer_dread_starting_character_for_rotation")]
+	public ModelId CurrentSingleplayerDreadStartingCharacterForRotation { get; set; } = ModelId.none;
+
+	[JsonPropertyName("current_multiplayer_dread_starting_character_for_rotation")]
+	public ModelId CurrentMultiplayerDreadStartingCharacterForRotation { get; set; } = ModelId.none;
+
+	/// <summary>
+	/// The result (win streak increase or reset) of the last singleplayer Dread run, if it hasn't been shown
+	/// to the player yet. Used to show a one-time reminder animation on the Dread screen.
+	/// </summary>
+	[JsonPropertyName("pending_singleplayer_dread_win_streak_result")]
+	public PendingDreadWinStreakResult? PendingSingleplayerDreadWinStreakResult { get; set; }
+
+	/// <summary>
+	/// The result (win streak increase or reset) of the last multiplayer Dread run, if it hasn't been shown
+	/// to the player yet. Used to show a one-time reminder animation on the Dread screen.
+	/// </summary>
+	[JsonPropertyName("pending_multiplayer_dread_win_streak_result")]
+	public PendingDreadWinStreakResult? PendingMultiplayerDreadWinStreakResult { get; set; }
 
 	[JsonIgnore]
 	public int Wins => CharStats.Sum((CharacterStats character) => character.TotalWins);

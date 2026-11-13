@@ -9,7 +9,6 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Potions;
 using MegaCrit.Sts2.Core.Factories;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.TestSupport;
 
@@ -51,9 +50,9 @@ public sealed class MerchantPotionEntry : MerchantEntry
 	{
 		return rarity switch
 		{
-			PotionRarity.Rare => 100, 
-			PotionRarity.Uncommon => 75, 
-			_ => 50, 
+			PotionRarity.Rare => 100,
+			PotionRarity.Uncommon => 75,
+			_ => 50,
 		};
 	}
 
@@ -70,7 +69,7 @@ public sealed class MerchantPotionEntry : MerchantEntry
 		}
 	}
 
-	protected override async Task<(bool, int)> OnTryPurchase(MerchantInventory? inventory, bool ignoreCost)
+	protected override async Task<(bool, int)> OnTryPurchaseInternal(MerchantInventory? inventory, bool ignoreCost)
 	{
 		if (Model == null)
 		{
@@ -87,8 +86,6 @@ public sealed class MerchantPotionEntry : MerchantEntry
 			await PlayerCmd.LoseGold(Cost, _player, GoldLossType.Spent);
 		}
 		_player.RunState.CurrentMapPointHistoryEntry?.GetEntry(_player.NetId).BoughtPotions.Add(Model.Id);
-		RunManager.Instance.RewardSynchronizer.SyncLocalGoldLost(Cost);
-		RunManager.Instance.RewardSynchronizer.SyncLocalObtainedPotion(Model);
 		return (true, (!ignoreCost) ? Cost : 0);
 	}
 

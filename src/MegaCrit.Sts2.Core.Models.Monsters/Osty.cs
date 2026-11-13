@@ -32,8 +32,6 @@ public sealed class Osty : MonsterModel
 
 	public override bool HasDeathSfx => true;
 
-	public override bool IsHealthBarVisible => Creature.IsAlive;
-
 	protected override MonsterMoveStateMachine GenerateMoveStateMachine()
 	{
 		MoveState moveState = new MoveState("NOTHING_MOVE", (IReadOnlyList<Creature> _) => Task.CompletedTask);

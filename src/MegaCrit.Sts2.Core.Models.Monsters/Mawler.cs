@@ -16,6 +16,8 @@ namespace MegaCrit.Sts2.Core.Models.Monsters;
 
 public sealed class Mawler : MonsterModel
 {
+	private const string _roarSfx = "event:/sfx/enemy/enemy_attacks/mawler/mawler_roar";
+
 	private const int _clawRepeat = 2;
 
 	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 76, 72);
@@ -53,6 +55,7 @@ public sealed class Mawler : MonsterModel
 
 	private async Task RoarMove(IReadOnlyList<Creature> targets)
 	{
+		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/mawler/mawler_roar");
 		await CreatureCmd.TriggerAnim(Creature, "Cast", 0.5f);
 		await PowerCmd.Apply<VulnerablePower>(new ThrowingPlayerChoiceContext(), targets, 3m, Creature, null);
 	}

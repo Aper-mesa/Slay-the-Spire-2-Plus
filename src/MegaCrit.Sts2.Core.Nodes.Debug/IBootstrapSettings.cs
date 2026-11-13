@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.SourceGeneration;
 
 namespace MegaCrit.Sts2.Core.Nodes.Debug;
@@ -39,6 +40,10 @@ public interface IBootstrapSettings
 
 	int? ReplayPlayerIndex => null;
 
+	GameMode GameMode => GameMode.Standard;
+
+	EncounterModel? ForcedBoss => null;
+
 	MapPointType MapPointType
 	{
 		get
@@ -46,18 +51,18 @@ public interface IBootstrapSettings
 			RoomType roomType = RoomType;
 			return roomType switch
 			{
-				RoomType.Monster => MapPointType.Monster, 
-				RoomType.Elite => MapPointType.Elite, 
-				RoomType.Boss => MapPointType.Boss, 
-				RoomType.Treasure => MapPointType.Treasure, 
-				RoomType.Shop => MapPointType.Shop, 
-				RoomType.Event => MapPointType.Unknown, 
-				RoomType.RestSite => MapPointType.RestSite, 
-				RoomType.Map => MapPointType.Unknown, 
-				RoomType.Unassigned => throw new ArgumentOutOfRangeException(), 
+				RoomType.Monster => MapPointType.Monster,
+				RoomType.Elite => MapPointType.Elite,
+				RoomType.Boss => MapPointType.Boss,
+				RoomType.Treasure => MapPointType.Treasure,
+				RoomType.Shop => MapPointType.Shop,
+				RoomType.Event => MapPointType.Unknown,
+				RoomType.RestSite => MapPointType.RestSite,
+				RoomType.Map => MapPointType.Unknown,
+				RoomType.Unassigned => throw new ArgumentOutOfRangeException(),
 			};
 		}
 	}
 
-	Task Setup(Player localPlayer);
+	Task Setup(Player player);
 }

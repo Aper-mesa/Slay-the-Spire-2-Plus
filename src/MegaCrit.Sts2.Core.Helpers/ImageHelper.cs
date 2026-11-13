@@ -1,3 +1,4 @@
+using Godot;
 using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
@@ -6,6 +7,21 @@ namespace MegaCrit.Sts2.Core.Helpers;
 
 public static class ImageHelper
 {
+	/// <summary>
+	/// Returns the texture's region within its atlas in UV space (xy = min, zw = max), or the full 0-1 range if the
+	/// texture isn't an AtlasTexture. Used by the blur shaders to clamp taps so they don't bleed in neighbouring sprites.
+	/// </summary>
+	public static Vector4 GetAtlasUvRegion(Texture2D? texture)
+	{
+		if (texture is AtlasTexture { Atlas: { } atlas } atlasTexture)
+		{
+			Vector2 size = atlas.GetSize();
+			Rect2 region = atlasTexture.Region;
+			return new Vector4(region.Position.X / size.X, region.Position.Y / size.Y, region.End.X / size.X, region.End.Y / size.Y);
+		}
+		return new Vector4(0f, 0f, 1f, 1f);
+	}
+
 	/// <summary>
 	/// Get the path to the image with the specified "inner" path.
 	/// </summary>

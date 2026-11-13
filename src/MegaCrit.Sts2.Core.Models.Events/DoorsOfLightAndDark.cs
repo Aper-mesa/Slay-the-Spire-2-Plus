@@ -3,17 +3,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Events;
-using MegaCrit.Sts2.Core.Extensions;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace MegaCrit.Sts2.Core.Models.Events;
 
 public sealed class DoorsOfLightAndDark : EventModel
 {
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new CardsVar(2));
-
 	protected override IReadOnlyList<EventOption> GenerateInitialOptions()
 	{
 		return new _003C_003Ez__ReadOnlyArray<EventOption>(new EventOption[2]
@@ -23,16 +18,14 @@ public sealed class DoorsOfLightAndDark : EventModel
 		});
 	}
 
-	private Task Light()
+	private async Task Light()
 	{
-		IEnumerable<CardModel> enumerable = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => c?.IsUpgradable ?? false).ToList().StableShuffle(Rng)
-			.Take(DynamicVars.Cards.IntValue);
-		foreach (CardModel item in enumerable)
+		CardModel cardModel = (await CardSelectCmd.FromDeckForUpgrade(Owner, new CardSelectorPrefs(CardSelectorPrefs.UpgradeSelectionPrompt, 1))).FirstOrDefault();
+		if (cardModel != null)
 		{
-			CardCmd.Upgrade(item);
+			CardCmd.Upgrade(cardModel);
 		}
 		SetEventFinished(L10NLookup("DOORS_OF_LIGHT_AND_DARK.pages.LIGHT.description"));
-		return Task.CompletedTask;
 	}
 
 	private async Task Dark()

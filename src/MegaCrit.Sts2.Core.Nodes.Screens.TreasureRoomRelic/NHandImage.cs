@@ -230,11 +230,11 @@ public class NHandImage : Control
 		_originalPosition = _textureRect.Position;
 		Rotation = (Index % 4) switch
 		{
-			0 => 0f, 
-			1 => (float)Math.PI / 2f, 
-			2 => -(float)Math.PI / 2f, 
-			3 => (float)Math.PI, 
-			_ => throw new ArgumentOutOfRangeException(), 
+			0 => 0f,
+			1 => (float)Math.PI / 2f,
+			2 => -(float)Math.PI / 2f,
+			3 => (float)Math.PI,
+			_ => throw new ArgumentOutOfRangeException(),
 		};
 		if (!LocalContext.IsMe(Player))
 		{
@@ -300,7 +300,7 @@ public class NHandImage : Control
 	{
 		Rect2 viewportRect = GetViewportRect();
 		Vector2 vector = Vector2.Down.Rotated(Rotation);
-		return viewportRect.Size / 2f + viewportRect.Size * vector * 0.1667f;
+		return viewportRect.Size * 0.5f + viewportRect.Size * vector * 0.1667f;
 	}
 
 	/// <summary>
@@ -362,10 +362,10 @@ public class NHandImage : Control
 		TextureRect textureRect = _textureRect;
 		textureRect.Texture = move switch
 		{
-			RelicPickingFightMove.Rock => Player.Character.ArmRockTexture, 
-			RelicPickingFightMove.Paper => Player.Character.ArmPaperTexture, 
-			RelicPickingFightMove.Scissors => Player.Character.ArmScissorsTexture, 
-			_ => throw new ArgumentOutOfRangeException("move", move, null), 
+			RelicPickingFightMove.Rock => Player.Character.ArmRockTexture,
+			RelicPickingFightMove.Paper => Player.Character.ArmPaperTexture,
+			RelicPickingFightMove.Scissors => Player.Character.ArmScissorsTexture,
+			_ => throw new ArgumentOutOfRangeException("move", move, null),
 		};
 	}
 
@@ -389,7 +389,7 @@ public class NHandImage : Control
 	{
 		Rect2 viewportRect = GetViewportRect();
 		Vector2 vector = Vector2.Down.Rotated(Rotation);
-		_desiredPosition = viewportRect.Size / 2f + viewportRect.Size * vector * 0.8f;
+		_desiredPosition = viewportRect.Size * 0.5f + viewportRect.Size * vector * 0.8f;
 		IsShown = false;
 	}
 
@@ -440,11 +440,12 @@ public class NHandImage : Control
 	{
 		CreateTween().TweenProperty(this, "modulate", new Color(0.5f, 0.5f, 0.5f, 0.5f), duration * 0.333f).SetDelay(duration * 0.667f);
 		ScreenRumbleInstance rumble = new ScreenRumbleInstance(100f, duration, 5f, RumbleStyle.Rumble);
+		CancellationToken ct = _cts.Token;
 		while (!rumble.IsDone)
 		{
 			Vector2 vector = rumble.Update(GetProcessDeltaTime());
 			_textureRect.Position = _originalPosition + vector;
-			await this.AwaitProcessFrame(_cts.Token);
+			await this.AwaitProcessFrame(ct);
 		}
 		_textureRect.Position = _originalPosition;
 	}
@@ -456,20 +457,25 @@ public class NHandImage : Control
 	/// <param name="holder">The relic holder to grab.</param>
 	public async Task GrabRelic(NTreasureRoomRelicHolder holder)
 	{
+		CancellationToken ct = _cts.Token;
 		State oldState = _state;
 		_state = State.GrabbingRelic;
 		SetTextureToFightMove(RelicPickingFightMove.Paper);
 		Tween tween = CreateTween();
 		tween.TweenProperty(this, "global_position", holder.GlobalPosition - _grabMarker.Position.Rotated(Rotation) + holder.Size * 0.5f, 0.5).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
-		await tween.AwaitFinished(_cts.Token);
-		SetTextureToFightMove(RelicPickingFightMove.Rock);
-		holder.Reparent(this);
-		holder.Rotation = 0f - Rotation;
-		holder.Position = _grabMarker.Position - holder.Size * 0.5f;
-		tween = CreateTween();
-		tween.TweenProperty(this, "global_position", _desiredPosition, 0.5).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
-		await tween.AwaitFinished(_cts.Token);
-		_state = oldState;
+		if (await tween.AwaitFinished(this, ct) == TweenOutcome.Finished)
+		{
+			SetTextureToFightMove(RelicPickingFightMove.Rock);
+			holder.Reparent(this);
+			holder.Rotation = 0f - Rotation;
+			holder.Position = _grabMarker.Position - holder.Size * 0.5f;
+			tween = CreateTween();
+			tween.TweenProperty(this, "global_position", _desiredPosition, 0.5).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+			if (await tween.AwaitFinished(this, ct) == TweenOutcome.Finished)
+			{
+				_state = oldState;
+			}
+		}
 	}
 
 	/// <summary>
@@ -498,7 +504,7 @@ public class NHandImage : Control
 				vector = num3 * Vector2.Left;
 			}
 			Rect2 viewportRect = GetViewportRect();
-			Vector2 vector2 = viewportRect.Size / 2f + viewportRect.Size * vector;
+			Vector2 vector2 = viewportRect.Size * 0.5f + viewportRect.Size * vector;
 			float smoothTime;
 			if (_state == State.Frozen)
 			{
@@ -516,12 +522,12 @@ public class NHandImage : Control
 			if ((num == 0 || num == 3) ? true : false)
 			{
 				float num4 = ((num == 0) ? 1 : (-1));
-				_textureRect.Rotation = num4 * (GlobalPosition.X - size.X / 2f) / 2000f;
+				_textureRect.Rotation = num4 * (GlobalPosition.X - size.X * 0.5f) / 2000f;
 			}
 			else
 			{
 				float num5 = ((num == 1) ? 1 : (-1));
-				_textureRect.Rotation = num5 * (GlobalPosition.Y - size.Y / 2f) / 1000f;
+				_textureRect.Rotation = num5 * (GlobalPosition.Y - size.Y * 0.5f) / 1000f;
 			}
 		}
 		else

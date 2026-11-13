@@ -21,11 +21,6 @@ public class PrefsSaveManager
 	/// </summary>
 	public bool IsLoaded { get; private set; }
 
-	public PrefsSaveManager(int profileId, ISaveStore saveStore, MigrationManager migrationManager)
-		: this(saveStore, migrationManager, new StaticProfileIdProvider(profileId))
-	{
-	}
-
 	public PrefsSaveManager(ISaveStore saveStore, MigrationManager migrationManager, IProfileIdProvider profileIdProvider)
 	{
 		_saveStore = saveStore;

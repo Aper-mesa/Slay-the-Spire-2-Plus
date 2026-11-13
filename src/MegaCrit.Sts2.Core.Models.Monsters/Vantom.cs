@@ -33,8 +33,6 @@ public sealed class Vantom : MonsterModel
 
 	private const int _dismemberWounds = 3;
 
-	private const int _prepareStrength = 2;
-
 	private const string _chargeUpTrigger = "CHARGE_UP";
 
 	private const string _buffTrigger = "BUFF";
@@ -61,7 +59,7 @@ public sealed class Vantom : MonsterModel
 
 	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 183, 173);
 
-	public int SlipperyAmt => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 9, 8);
+	public int SlipperyAmt => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 9, 8) + (AscensionHelper.IsDread() ? 2 : 0);
 
 	public override int MaxInitialHp => MinInitialHp;
 
@@ -70,6 +68,18 @@ public sealed class Vantom : MonsterModel
 	private int InkyLanceDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 7, 6);
 
 	private int DismemberDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 30, 26);
+
+	private int PrepareStrength
+	{
+		get
+		{
+			if (!AscensionHelper.IsDread())
+			{
+				return 2;
+			}
+			return 3;
+		}
+	}
 
 	public override DamageSfxType TakeDamageSfxType => DamageSfxType.Magic;
 
@@ -94,7 +104,7 @@ public sealed class Vantom : MonsterModel
 		await PowerCmd.Apply<SlipperyPower>(new ThrowingPlayerChoiceContext(), Creature, SlipperyAmt, Creature, null);
 	}
 
-	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (creature != Creature)
 		{
@@ -192,7 +202,7 @@ public sealed class Vantom : MonsterModel
 	{
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/vantom/vantom_buff");
 		await CreatureCmd.TriggerAnim(Creature, "BUFF", 0.6f);
-		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, 2m, Creature, null);
+		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, PrepareStrength, Creature, null);
 		if (TestMode.IsOff && Creature.IsAlive)
 		{
 			await Cmd.CustomScaledWait(1f, 1f);

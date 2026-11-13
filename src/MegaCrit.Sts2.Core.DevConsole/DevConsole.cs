@@ -322,7 +322,14 @@ public class DevConsole
 		if (_commands.TryGetValue(cmdName.ToLowerInvariant(), out AbstractConsoleCmd value))
 		{
 			Log.Info("DevConsole: " + cmdName + " " + string.Join(" ", args));
-			return value.Process(player, args);
+			if (!value.DebugOnly)
+			{
+				return value.Process(player, args);
+			}
+			RunManager.Instance.DebugOnlyGetState()?.ExtraFields.MarkDebugToolUsed();
+			CmdResult result = value.Process(player, args);
+			RunManager.Instance.DebugOnlyGetState()?.ExtraFields.MarkDebugToolUsed();
+			return result;
 		}
 		return new CmdResult(success: false, "The command '" + cmdName + "' does not exist.\nYou can use the 'help' to get a list of all possible commands.\n");
 	}

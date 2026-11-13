@@ -20,5 +20,9 @@ public enum StaticHoverTip
 	SummonStatic = 13,
 	ReplayDynamic = 14,
 	ReplayStatic = 15,
-	Cook = 16
+	Cook = 16,
+	WahMelody = 17,
+	ChoMelody = 18,
+	KiMelody = 19,
+	Tarot = 20
 }

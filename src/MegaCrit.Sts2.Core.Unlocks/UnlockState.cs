@@ -75,6 +75,10 @@ public class UnlockState
 			{
 				list.Remove(ModelDb.Character<Defect>());
 			}
+			if (!IsEpochRevealed<Fool1Epoch>())
+			{
+				list.Remove(ModelDb.Character<Fool>());
+			}
 			return list;
 		}
 	}

@@ -78,8 +78,8 @@ public class EventOption
 	{
 		TextKey = textKey;
 		OnChosen = onChosen;
-		Title = eventModel.GetOptionTitle(textKey);
-		Description = eventModel.GetOptionDescription(textKey);
+		Title = eventModel.GetOptionTitle(textKey) ?? throw new InvalidOperationException("Title for " + textKey + " not found!");
+		Description = eventModel.GetOptionDescription(textKey) ?? throw new InvalidOperationException("Description for " + textKey + " not found!");
 		HoverTips = hoverTips;
 		IsLocked = OnChosen == null;
 		DisableOnChosen = true;
@@ -239,7 +239,7 @@ public class EventOption
 
 	private void AddLocVars(EventModel eventModel)
 	{
-		eventModel.Owner?.Character.AddDetailsTo(Description);
+		eventModel.Owner?.Character.AddDetailsTo(Description, eventModel.FoolPronounGuess);
 		LocString description = Description;
 		Player? owner = eventModel.Owner;
 		description.Add("IsMultiplayer", owner != null && owner.RunState.Players.Count > 1);

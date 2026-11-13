@@ -62,6 +62,11 @@ public class ActionQueueSet
 	/// </summary>
 	private bool _wasReset;
 
+	/// <summary>
+	/// True after <see cref="M:MegaCrit.Sts2.Core.GameActions.Multiplayer.ActionQueueSet.Reset" /> and until the next combat is set up. While true there are no queues to enqueue to.
+	/// </summary>
+	public bool WasReset => _wasReset;
+
 	public bool IsEmpty
 	{
 		get
@@ -248,6 +253,25 @@ public class ActionQueueSet
 			_logger.VeryDebug("No action is ready");
 		}
 		return gameAction;
+	}
+
+	/// <summary>
+	/// Returns true if there are any player-driven actions currently at the front of a player's queue.
+	/// This differs from GetReadyAction because it returns true even for actions that are paused and not yet ready to
+	/// execute, like those waiting for player choice.
+	/// </summary>
+	/// <param name="excludeEndOfTurn">This is a hack for the player hand, so that it knows whether it should disable
+	/// itself or not.</param>
+	public bool AreAnyPlayerDrivenActionsBeingExecuted(bool excludeEndOfTurn = false)
+	{
+		foreach (ActionQueue actionQueue in _actionQueues)
+		{
+			if (actionQueue.actions.Count > 0 && (!excludeEndOfTurn || !(actionQueue.actions[0] is EndPlayerTurnAction)) && IsGameActionPlayerDriven(actionQueue.actions[0]))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/// <summary>

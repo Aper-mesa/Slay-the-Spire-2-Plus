@@ -286,7 +286,7 @@ public class NSlotsContainer : Control
 		_tween?.Kill();
 		_tween = CreateTween();
 		_tween.TweenProperty(_whatsMoved, "global_position:x", num, 2.5).SetEase(Tween.EaseType.InOut).SetTrans(Tween.TransitionType.Cubic);
-		if (await _tween.AwaitFinished(this))
+		if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			_targetPosition = _whatsMoved.Position;
 		}
@@ -294,7 +294,7 @@ public class NSlotsContainer : Control
 
 	public void SetEnabled(bool enabled)
 	{
-		FocusBehaviorRecursive = (FocusBehaviorRecursiveEnum)(enabled ? 2 : 1);
+		FocusBehaviorRecursive = (FocusBehaviorRecursiveEnum)(enabled ? 0 : 1);
 		_isDragging = false;
 	}
 

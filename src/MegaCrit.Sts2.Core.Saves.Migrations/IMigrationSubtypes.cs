@@ -40,52 +40,58 @@ public static class IMigrationSubtypes
 	private static readonly Type _t8 = typeof(RunHistoryV9ToV10);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t9 = typeof(SerializableRunV12ToV13);
+	private static readonly Type _t9 = typeof(RunHistoryV10ToV11);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t10 = typeof(SerializableRunV13ToV14);
+	private static readonly Type _t10 = typeof(SerializableRunV12ToV13);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t11 = typeof(SerializableRunV14ToV15);
+	private static readonly Type _t11 = typeof(SerializableRunV13ToV14);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t12 = typeof(SerializableRunV15ToV16);
+	private static readonly Type _t12 = typeof(SerializableRunV14ToV15);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t13 = typeof(SerializableRunV16ToV17);
+	private static readonly Type _t13 = typeof(SerializableRunV15ToV16);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t14 = typeof(SerializableRunV17ToV18);
+	private static readonly Type _t14 = typeof(SerializableRunV16ToV17);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t15 = typeof(SerializableRunV18ToV19);
+	private static readonly Type _t15 = typeof(SerializableRunV17ToV18);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t16 = typeof(SerializableRunV19ToV20);
+	private static readonly Type _t16 = typeof(SerializableRunV18ToV19);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t17 = typeof(SettingsSaveV3ToV4);
+	private static readonly Type _t17 = typeof(SerializableRunV19ToV20);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t18 = typeof(SettingsSaveV4ToV5);
+	private static readonly Type _t18 = typeof(SerializableRunV20ToV21);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t19 = typeof(SettingsSaveV5ToV6);
+	private static readonly Type _t19 = typeof(SettingsSaveV3ToV4);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t20 = typeof(SettingsSaveV6ToV7);
+	private static readonly Type _t20 = typeof(SettingsSaveV4ToV5);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	private static readonly Type _t21 = typeof(SettingsSaveV7ToV8);
+	private static readonly Type _t21 = typeof(SettingsSaveV5ToV6);
 
-	private static readonly Type[] _subtypes = new Type[22]
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+	private static readonly Type _t22 = typeof(SettingsSaveV6ToV7);
+
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+	private static readonly Type _t23 = typeof(SettingsSaveV7ToV8);
+
+	private static readonly Type[] _subtypes = new Type[24]
 	{
 		_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9,
 		_t10, _t11, _t12, _t13, _t14, _t15, _t16, _t17, _t18, _t19,
-		_t20, _t21
+		_t20, _t21, _t22, _t23
 	};
 
-	public static int Count => 22;
+	public static int Count => 24;
 
 	public static IReadOnlyList<Type> All => _subtypes;
 

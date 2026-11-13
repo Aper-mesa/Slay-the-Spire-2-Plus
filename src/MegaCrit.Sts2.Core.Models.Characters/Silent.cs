@@ -75,6 +75,12 @@ public sealed class Silent : CharacterModel
 
 	public override Color RemoteTargetingLineOutline => new Color("004f04FF");
 
+	public override float DreadBgBrightness => 0.6f;
+
+	public override float DreadBgContrast => 1.1f;
+
+	public override Color DreadNameColor => new Color("6CFF52C0");
+
 	protected override List<(AnimState, string)> AnimationStates => base.AnimationStates.Concat(new _003C_003Ez__ReadOnlySingleElementList<(AnimState, string)>((new AnimState("shiv"), "Shiv"))).ToList();
 
 	public override List<string> GetArchitectAttackVfx()

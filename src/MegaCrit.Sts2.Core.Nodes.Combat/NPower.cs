@@ -123,6 +123,11 @@ public class NPower : Control
 		/// Cached name for the '_animInTween' field.
 		/// </summary>
 		public static readonly StringName _animInTween = "_animInTween";
+
+		/// <summary>
+		/// Cached name for the '_hoverTween' field.
+		/// </summary>
+		public static readonly StringName _hoverTween = "_hoverTween";
 	}
 
 	/// <summary>
@@ -143,6 +148,8 @@ public class NPower : Control
 	private CpuParticles2D _powerFlash;
 
 	private Tween? _animInTween;
+
+	private Tween? _hoverTween;
 
 	public NPowerContainer Container { get; set; }
 
@@ -258,14 +265,18 @@ public class NPower : Control
 	private void OnHovered()
 	{
 		NCombatRoom.Instance?.GetCreatureNode(Model.Owner)?.ShowHoverTips(Model.HoverTips);
-		_icon.Scale = Vector2.One * 1.1f;
+		_hoverTween?.Kill();
+		_hoverTween = CreateTween();
+		_hoverTween.TweenProperty(_icon, "scale", Vector2.One * 1.2f, 0.05);
 		CombatManager.Instance.StateTracker.CombatStateChanged += ShowPowerHoverTips;
 	}
 
 	private void OnUnhovered()
 	{
 		NCombatRoom.Instance?.GetCreatureNode(Model.Owner)?.HideHoverTips();
-		_icon.Scale = Vector2.One * 1f;
+		_hoverTween?.Kill();
+		_hoverTween = CreateTween();
+		_hoverTween.TweenProperty(_icon, "scale", Vector2.One, 1.0).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
 		CombatManager.Instance.StateTracker.CombatStateChanged -= ShowPowerHoverTips;
 	}
 
@@ -529,6 +540,11 @@ public class NPower : Control
 			_animInTween = VariantUtils.ConvertTo<Tween>(in value);
 			return true;
 		}
+		if (name == PropertyName._hoverTween)
+		{
+			_hoverTween = VariantUtils.ConvertTo<Tween>(in value);
+			return true;
+		}
 		return base.SetGodotClassPropertyValue(in name, in value);
 	}
 
@@ -561,6 +577,11 @@ public class NPower : Control
 			value = VariantUtils.CreateFrom(in _animInTween);
 			return true;
 		}
+		if (name == PropertyName._hoverTween)
+		{
+			value = VariantUtils.CreateFrom(in _hoverTween);
+			return true;
+		}
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
@@ -577,6 +598,7 @@ public class NPower : Control
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._amountLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._powerFlash, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._animInTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._hoverTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName.Container, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
@@ -591,6 +613,7 @@ public class NPower : Control
 		info.AddProperty(PropertyName._amountLabel, Variant.From(in _amountLabel));
 		info.AddProperty(PropertyName._powerFlash, Variant.From(in _powerFlash));
 		info.AddProperty(PropertyName._animInTween, Variant.From(in _animInTween));
+		info.AddProperty(PropertyName._hoverTween, Variant.From(in _hoverTween));
 	}
 
 	/// <inheritdoc />
@@ -617,6 +640,10 @@ public class NPower : Control
 		if (info.TryGetProperty(PropertyName._animInTween, out var value5))
 		{
 			_animInTween = value5.As<Tween>();
+		}
+		if (info.TryGetProperty(PropertyName._hoverTween, out var value6))
+		{
+			_hoverTween = value6.As<Tween>();
 		}
 	}
 }

@@ -23,246 +23,115 @@ using MegaCrit.Sts2.Core.Unlocks;
 
 namespace MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 
-/// <summary>
-/// The button you click to select a character before starting a run.
-/// </summary>
 [ScriptPath("res://src/Core/Nodes/Screens/CharacterSelect/NCharacterSelectButton.cs")]
 public class NCharacterSelectButton : NButton
 {
 	private enum State
 	{
-		/// <summary> This button is not selected by anyone. </summary>
 		NotSelected,
-		/// <summary> This button is selected by the local player (and maybe also remote players). </summary>
 		SelectedLocally,
-		/// <summary> This button is not selected locally, but is selected by at least one remote player. </summary>
 		SelectedRemotely
 	}
 
-	/// <summary>
-	/// Cached StringNames for the methods contained in this class, for fast lookup.
-	/// </summary>
 	public new class MethodName : NButton.MethodName
 	{
-		/// <summary>
-		/// Cached name for the '_Ready' method.
-		/// </summary>
 		public new static readonly StringName _Ready = "_Ready";
 
-		/// <summary>
-		/// Cached name for the 'OnFocus' method.
-		/// </summary>
 		public new static readonly StringName OnFocus = "OnFocus";
 
-		/// <summary>
-		/// Cached name for the 'OnPress' method.
-		/// </summary>
 		public new static readonly StringName OnPress = "OnPress";
 
-		/// <summary>
-		/// Cached name for the 'OnUnfocus' method.
-		/// </summary>
 		public new static readonly StringName OnUnfocus = "OnUnfocus";
 
-		/// <summary>
-		/// Cached name for the '_Process' method.
-		/// </summary>
 		public new static readonly StringName _Process = "_Process";
 
-		/// <summary>
-		/// Cached name for the 'LockForAnimation' method.
-		/// </summary>
 		public static readonly StringName LockForAnimation = "LockForAnimation";
 
-		/// <summary>
-		/// Cached name for the 'Reset' method.
-		/// </summary>
 		public static readonly StringName Reset = "Reset";
 
-		/// <summary>
-		/// Cached name for the 'OnRemotePlayerSelected' method.
-		/// </summary>
 		public static readonly StringName OnRemotePlayerSelected = "OnRemotePlayerSelected";
 
-		/// <summary>
-		/// Cached name for the 'OnRemotePlayerDeselected' method.
-		/// </summary>
 		public static readonly StringName OnRemotePlayerDeselected = "OnRemotePlayerDeselected";
 
-		/// <summary>
-		/// Cached name for the 'Select' method.
-		/// </summary>
 		public static readonly StringName Select = "Select";
 
-		/// <summary>
-		/// Cached name for the 'Deselect' method.
-		/// </summary>
 		public static readonly StringName Deselect = "Deselect";
 
-		/// <summary>
-		/// Cached name for the 'RefreshState' method.
-		/// </summary>
 		public static readonly StringName RefreshState = "RefreshState";
 
-		/// <summary>
-		/// Cached name for the 'GetSaturationForCurrentState' method.
-		/// </summary>
 		public static readonly StringName GetSaturationForCurrentState = "GetSaturationForCurrentState";
 
-		/// <summary>
-		/// Cached name for the 'GetValueForCurrentState' method.
-		/// </summary>
 		public static readonly StringName GetValueForCurrentState = "GetValueForCurrentState";
 
-		/// <summary>
-		/// Cached name for the 'AnimateSaturationToCurrentState' method.
-		/// </summary>
 		public static readonly StringName AnimateSaturationToCurrentState = "AnimateSaturationToCurrentState";
 
-		/// <summary>
-		/// Cached name for the 'RefreshOutline' method.
-		/// </summary>
 		public static readonly StringName RefreshOutline = "RefreshOutline";
 
-		/// <summary>
-		/// Cached name for the 'RefreshPlayerIcons' method.
-		/// </summary>
 		public static readonly StringName RefreshPlayerIcons = "RefreshPlayerIcons";
 
-		/// <summary>
-		/// Cached name for the 'DebugUnlock' method.
-		/// </summary>
 		public static readonly StringName DebugUnlock = "DebugUnlock";
 
-		/// <summary>
-		/// Cached name for the 'UnlockIfPossible' method.
-		/// </summary>
 		public static readonly StringName UnlockIfPossible = "UnlockIfPossible";
 
-		/// <summary>
-		/// Cached name for the 'UpdateShaderH' method.
-		/// </summary>
 		public static readonly StringName UpdateShaderH = "UpdateShaderH";
 
-		/// <summary>
-		/// Cached name for the 'UpdateShaderS' method.
-		/// </summary>
 		public static readonly StringName UpdateShaderS = "UpdateShaderS";
 
-		/// <summary>
-		/// Cached name for the 'UpdateShaderV' method.
-		/// </summary>
 		public static readonly StringName UpdateShaderV = "UpdateShaderV";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the properties and fields contained in this class, for fast lookup.
-	/// </summary>
 	public new class PropertyName : NButton.PropertyName
 	{
-		/// <summary>
-		/// Cached name for the 'IsRandom' property.
-		/// </summary>
 		public static readonly StringName IsRandom = "IsRandom";
 
-		/// <summary>
-		/// Cached name for the 'IsLocked' property.
-		/// </summary>
 		public static readonly StringName IsLocked = "IsLocked";
 
-		/// <summary>
-		/// Cached name for the 'IsSelected' property.
-		/// </summary>
 		public static readonly StringName IsSelected = "IsSelected";
 
-		/// <summary>
-		/// Cached name for the '_icon' field.
-		/// </summary>
 		public static readonly StringName _icon = "_icon";
 
-		/// <summary>
-		/// Cached name for the '_iconAdd' field.
-		/// </summary>
 		public static readonly StringName _iconAdd = "_iconAdd";
 
-		/// <summary>
-		/// Cached name for the '_lock' field.
-		/// </summary>
 		public static readonly StringName _lock = "_lock";
 
-		/// <summary>
-		/// Cached name for the '_outlineLocal' field.
-		/// </summary>
+		public static readonly StringName _rotating = "_rotating";
+
 		public static readonly StringName _outlineLocal = "_outlineLocal";
 
-		/// <summary>
-		/// Cached name for the '_outlineRemote' field.
-		/// </summary>
 		public static readonly StringName _outlineRemote = "_outlineRemote";
 
-		/// <summary>
-		/// Cached name for the '_outlineMixed' field.
-		/// </summary>
 		public static readonly StringName _outlineMixed = "_outlineMixed";
 
-		/// <summary>
-		/// Cached name for the '_shadow' field.
-		/// </summary>
 		public static readonly StringName _shadow = "_shadow";
 
-		/// <summary>
-		/// Cached name for the '_playerIconContainer' field.
-		/// </summary>
 		public static readonly StringName _playerIconContainer = "_playerIconContainer";
 
-		/// <summary>
-		/// Cached name for the '_hsv' field.
-		/// </summary>
 		public static readonly StringName _hsv = "_hsv";
 
-		/// <summary>
-		/// Cached name for the '_isLocked' field.
-		/// </summary>
 		public static readonly StringName _isLocked = "_isLocked";
 
-		/// <summary>
-		/// Cached name for the '_currentOutline' field.
-		/// </summary>
 		public static readonly StringName _currentOutline = "_currentOutline";
 
-		/// <summary>
-		/// Cached name for the '_isSelected' field.
-		/// </summary>
 		public static readonly StringName _isSelected = "_isSelected";
 
-		/// <summary>
-		/// Cached name for the '_state' field.
-		/// </summary>
 		public static readonly StringName _state = "_state";
 
-		/// <summary>
-		/// Cached name for the '_hoverTween' field.
-		/// </summary>
 		public static readonly StringName _hoverTween = "_hoverTween";
 
-		/// <summary>
-		/// Cached name for the '_hsvTween' field.
-		/// </summary>
 		public static readonly StringName _hsvTween = "_hsvTween";
+
+		public static readonly StringName _rotatingTween = "_rotatingTween";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the signals contained in this class, for fast lookup.
-	/// </summary>
 	public new class SignalName : NButton.SignalName
 	{
 	}
 
-	private static readonly StringName _v = new StringName("v");
+	private static readonly StringName _h = new StringName("h");
 
 	private static readonly StringName _s = new StringName("s");
 
-	private static readonly StringName _h = new StringName("h");
+	private static readonly StringName _v = new StringName("v");
 
 	private static readonly string _playerIconScenePath = SceneHelper.GetScenePath("screens/char_select/char_select_player_icon");
 
@@ -273,6 +142,8 @@ public class NCharacterSelectButton : NButton
 	private TextureRect _iconAdd;
 
 	private TextureRect _lock;
+
+	private TextureRect _rotating;
 
 	private Control _outlineLocal;
 
@@ -324,6 +195,8 @@ public class NCharacterSelectButton : NButton
 
 	private const float _notSelectedValue = 0.4f;
 
+	private Tween? _rotatingTween;
+
 	public static IEnumerable<string> AssetPaths => new _003C_003Ez__ReadOnlyArray<string>(new string[2] { _playerIconScenePath, _unlockedIconPath });
 
 	public bool IsRandom { get; private set; }
@@ -342,11 +215,13 @@ public class NCharacterSelectButton : NButton
 		_icon = GetNode<TextureRect>("%Icon");
 		_iconAdd = GetNode<TextureRect>("%IconAdd");
 		_lock = GetNode<TextureRect>("%Lock");
+		_rotating = GetNode<TextureRect>("%Rotating");
 		_outlineLocal = GetNode<Control>("%OutlineLocal");
 		_outlineRemote = GetNode<Control>("%OutlineRemote");
 		_outlineMixed = GetNode<Control>("%OutlineMixed");
 		_shadow = GetNode<Control>("%Shadow");
 		_playerIconContainer = GetNode<Control>("%PlayerIconContainer");
+		_rotating.Visible = false;
 		_hsv = (ShaderMaterial)_icon.Material;
 		_hsv.SetShaderParameter(_s, 0.2f);
 		_hsv.SetShaderParameter(_v, 0.4f);
@@ -360,13 +235,9 @@ public class NCharacterSelectButton : NButton
 		UnlockState unlockState = SaveManager.Instance.GenerateUnlockStateFromProgress();
 		if (character is RandomCharacter)
 		{
-			IsRandom = true;
-			_isLocked = ModelDb.AllCharacters.Any((CharacterModel c) => !unlockState.Characters.Contains(c));
+			throw new InvalidOperationException("You should use InitAsRandom or InitAsRotating for the random character!");
 		}
-		else
-		{
-			_isLocked = !unlockState.Characters.Contains(_character);
-		}
+		_isLocked = !unlockState.Characters.Contains(_character);
 		if (_isLocked)
 		{
 			_icon.Texture = character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("selectIcon") : character.CharacterSelectLockedIcon;
@@ -378,6 +249,32 @@ public class NCharacterSelectButton : NButton
 		}
 	}
 
+	public void InitAsRandom(ICharacterSelectButtonDelegate del)
+	{
+		_delegate = del;
+		_character = ModelDb.Character<RandomCharacter>();
+		UnlockState unlockState = SaveManager.Instance.GenerateUnlockStateFromProgress();
+		IsRandom = true;
+		_isLocked = ModelDb.AllCharacters.Any((CharacterModel c) => !unlockState.Characters.Contains(c));
+		_icon.Texture = (_isLocked ? _character.CharacterSelectLockedIcon : _character.CharacterSelectIcon);
+		_lock.Visible = _isLocked;
+	}
+
+	public void InitAsRotating(CharacterModel resolved, ICharacterSelectButtonDelegate del)
+	{
+		_delegate = del;
+		_character = ModelDb.Character<RotatingCharacter>();
+		IsRandom = true;
+		_isLocked = false;
+		_icon.Texture = resolved is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("selectIcon") : resolved.CharacterSelectIcon;
+		_lock.Visible = false;
+		_rotating.Visible = true;
+		_rotatingTween = CreateTween();
+		_rotatingTween.TweenProperty(_rotating, "rotation", (float)Math.PI * 2f, 10.0).From(0f).SetTrans(Tween.TransitionType.Linear);
+		_rotatingTween.SetLoops();
+		_rotatingTween.Pause();
+	}
+
 	protected override void OnFocus()
 	{
 		if (!_isSelected)
@@ -386,6 +283,7 @@ public class NCharacterSelectButton : NButton
 			Scale = _hoverScale;
 			_hsv.SetShaderParameter(_s, 1f);
 			_hsv.SetShaderParameter(_v, 1.1f);
+			_rotatingTween?.Play();
 			if (_isLocked)
 			{
 				HoverTip hoverTip = new HoverTip(new LocString("main_menu_ui", "CHARACTER_SELECT.locked.title"), _character.GetUnlockText());
@@ -404,6 +302,10 @@ public class NCharacterSelectButton : NButton
 		_hoverTween?.Kill();
 		_hoverTween = CreateTween().SetParallel();
 		_hoverTween.TweenProperty(this, "scale", Vector2.One, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
+		if (!_isSelected)
+		{
+			_rotatingTween?.Pause();
+		}
 		NHoverTipSet.Remove(this);
 		AnimateSaturationToCurrentState(_hoverTween);
 	}
@@ -430,10 +332,6 @@ public class NCharacterSelectButton : NButton
 		}
 	}
 
-	/// <summary>
-	/// There's a small delay before the unlock animation starts, and in that time, we want the button to look locked
-	/// even though it's not.
-	/// </summary>
 	public void LockForAnimation()
 	{
 		_icon.Texture = _character is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher ? MegaCrit.Sts2.Core.ClassicContent.ClassicWatcherAssets.Texture("selectIcon") : _character.CharacterSelectLockedIcon;
@@ -443,9 +341,6 @@ public class NCharacterSelectButton : NButton
 		Disable();
 	}
 
-	/// <summary>
-	/// Plays the unlock animation.
-	/// </summary>
 	public async Task AnimateUnlock()
 	{
 		GpuParticles2D chargeParticles = GetNode<GpuParticles2D>("%UnlockChargeParticles");
@@ -502,27 +397,26 @@ public class NCharacterSelectButton : NButton
 		RefreshState();
 	}
 
-	/// <summary>
-	/// When this button is clicked on (or navigated to via controller), this button is considered Selected!
-	/// </summary>
 	public void Select()
 	{
 		if (!_isSelected)
 		{
 			_hoverTween?.Kill();
 			_isSelected = true;
-			_delegate.SelectCharacter(this, _character);
+			_rotatingTween?.Play();
+			_delegate.SelectCharacter(this);
 			RefreshState();
 		}
 	}
 
-	/// <summary>
-	/// When a player selects a button that's NOT this one, selected buttons become deselected, and this is called.
-	/// </summary>
 	public void Deselect()
 	{
 		_isSelected = false;
 		RefreshState();
+		if (!IsFocused)
+		{
+			_rotatingTween?.Pause();
+		}
 	}
 
 	private void RefreshState()
@@ -552,10 +446,10 @@ public class NCharacterSelectButton : NButton
 	{
 		return _state switch
 		{
-			State.SelectedLocally => 1f, 
-			State.SelectedRemotely => 0.8f, 
-			State.NotSelected => 0.2f, 
-			_ => throw new ArgumentOutOfRangeException(), 
+			State.SelectedLocally => 1f,
+			State.SelectedRemotely => 0.8f,
+			State.NotSelected => 0.2f,
+			_ => throw new ArgumentOutOfRangeException(),
 		};
 	}
 
@@ -563,10 +457,10 @@ public class NCharacterSelectButton : NButton
 	{
 		return _state switch
 		{
-			State.SelectedLocally => 1.1f, 
-			State.SelectedRemotely => 0.4f, 
-			State.NotSelected => 0.8f, 
-			_ => throw new ArgumentOutOfRangeException(), 
+			State.SelectedLocally => 1.1f,
+			State.SelectedRemotely => 0.4f,
+			State.NotSelected => 0.8f,
+			_ => throw new ArgumentOutOfRangeException(),
 		};
 	}
 
@@ -663,11 +557,6 @@ public class NCharacterSelectButton : NButton
 		_hsv.SetShaderParameter(_v, value);
 	}
 
-	/// <summary>
-	/// Get the method information for all the methods declared in this class.
-	/// This method is used by Godot to register the available methods in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
@@ -718,7 +607,6 @@ public class NCharacterSelectButton : NButton
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool InvokeGodotClassMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
 	{
@@ -855,7 +743,6 @@ public class NCharacterSelectButton : NButton
 		return base.InvokeGodotClassMethod(in method, args, out ret);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
@@ -950,7 +837,6 @@ public class NCharacterSelectButton : NButton
 		return base.HasGodotClassMethod(in method);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool SetGodotClassPropertyValue(in godot_string_name name, in godot_variant value)
 	{
@@ -972,6 +858,11 @@ public class NCharacterSelectButton : NButton
 		if (name == PropertyName._lock)
 		{
 			_lock = VariantUtils.ConvertTo<TextureRect>(in value);
+			return true;
+		}
+		if (name == PropertyName._rotating)
+		{
+			_rotating = VariantUtils.ConvertTo<TextureRect>(in value);
 			return true;
 		}
 		if (name == PropertyName._outlineLocal)
@@ -1034,10 +925,14 @@ public class NCharacterSelectButton : NButton
 			_hsvTween = VariantUtils.ConvertTo<Tween>(in value);
 			return true;
 		}
+		if (name == PropertyName._rotatingTween)
+		{
+			_rotatingTween = VariantUtils.ConvertTo<Tween>(in value);
+			return true;
+		}
 		return base.SetGodotClassPropertyValue(in name, in value);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
@@ -1073,6 +968,11 @@ public class NCharacterSelectButton : NButton
 		if (name == PropertyName._lock)
 		{
 			value = VariantUtils.CreateFrom(in _lock);
+			return true;
+		}
+		if (name == PropertyName._rotating)
+		{
+			value = VariantUtils.CreateFrom(in _rotating);
 			return true;
 		}
 		if (name == PropertyName._outlineLocal)
@@ -1135,14 +1035,14 @@ public class NCharacterSelectButton : NButton
 			value = VariantUtils.CreateFrom(in _hsvTween);
 			return true;
 		}
+		if (name == PropertyName._rotatingTween)
+		{
+			value = VariantUtils.CreateFrom(in _rotatingTween);
+			return true;
+		}
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
-	/// <summary>
-	/// Get the property information for all the properties declared in this class.
-	/// This method is used by Godot to register the available properties in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<PropertyInfo> GetGodotPropertyList()
 	{
@@ -1150,6 +1050,7 @@ public class NCharacterSelectButton : NButton
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._icon, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._iconAdd, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._lock, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._rotating, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._outlineLocal, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._outlineRemote, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._outlineMixed, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -1163,12 +1064,12 @@ public class NCharacterSelectButton : NButton
 		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._state, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._hoverTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._hsvTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._rotatingTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName.IsLocked, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName.IsSelected, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void SaveGodotObjectData(GodotSerializationInfo info)
 	{
@@ -1177,6 +1078,7 @@ public class NCharacterSelectButton : NButton
 		info.AddProperty(PropertyName._icon, Variant.From(in _icon));
 		info.AddProperty(PropertyName._iconAdd, Variant.From(in _iconAdd));
 		info.AddProperty(PropertyName._lock, Variant.From(in _lock));
+		info.AddProperty(PropertyName._rotating, Variant.From(in _rotating));
 		info.AddProperty(PropertyName._outlineLocal, Variant.From(in _outlineLocal));
 		info.AddProperty(PropertyName._outlineRemote, Variant.From(in _outlineRemote));
 		info.AddProperty(PropertyName._outlineMixed, Variant.From(in _outlineMixed));
@@ -1189,9 +1091,9 @@ public class NCharacterSelectButton : NButton
 		info.AddProperty(PropertyName._state, Variant.From(in _state));
 		info.AddProperty(PropertyName._hoverTween, Variant.From(in _hoverTween));
 		info.AddProperty(PropertyName._hsvTween, Variant.From(in _hsvTween));
+		info.AddProperty(PropertyName._rotatingTween, Variant.From(in _rotatingTween));
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void RestoreGodotObjectData(GodotSerializationInfo info)
 	{
@@ -1212,53 +1114,61 @@ public class NCharacterSelectButton : NButton
 		{
 			_lock = value4.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._outlineLocal, out var value5))
+		if (info.TryGetProperty(PropertyName._rotating, out var value5))
 		{
-			_outlineLocal = value5.As<Control>();
+			_rotating = value5.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._outlineRemote, out var value6))
+		if (info.TryGetProperty(PropertyName._outlineLocal, out var value6))
 		{
-			_outlineRemote = value6.As<Control>();
+			_outlineLocal = value6.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._outlineMixed, out var value7))
+		if (info.TryGetProperty(PropertyName._outlineRemote, out var value7))
 		{
-			_outlineMixed = value7.As<Control>();
+			_outlineRemote = value7.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._shadow, out var value8))
+		if (info.TryGetProperty(PropertyName._outlineMixed, out var value8))
 		{
-			_shadow = value8.As<Control>();
+			_outlineMixed = value8.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._playerIconContainer, out var value9))
+		if (info.TryGetProperty(PropertyName._shadow, out var value9))
 		{
-			_playerIconContainer = value9.As<Control>();
+			_shadow = value9.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._hsv, out var value10))
+		if (info.TryGetProperty(PropertyName._playerIconContainer, out var value10))
 		{
-			_hsv = value10.As<ShaderMaterial>();
+			_playerIconContainer = value10.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._isLocked, out var value11))
+		if (info.TryGetProperty(PropertyName._hsv, out var value11))
 		{
-			_isLocked = value11.As<bool>();
+			_hsv = value11.As<ShaderMaterial>();
 		}
-		if (info.TryGetProperty(PropertyName._currentOutline, out var value12))
+		if (info.TryGetProperty(PropertyName._isLocked, out var value12))
 		{
-			_currentOutline = value12.As<Control>();
+			_isLocked = value12.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._isSelected, out var value13))
+		if (info.TryGetProperty(PropertyName._currentOutline, out var value13))
 		{
-			_isSelected = value13.As<bool>();
+			_currentOutline = value13.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._state, out var value14))
+		if (info.TryGetProperty(PropertyName._isSelected, out var value14))
 		{
-			_state = value14.As<State>();
+			_isSelected = value14.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._hoverTween, out var value15))
+		if (info.TryGetProperty(PropertyName._state, out var value15))
 		{
-			_hoverTween = value15.As<Tween>();
+			_state = value15.As<State>();
 		}
-		if (info.TryGetProperty(PropertyName._hsvTween, out var value16))
+		if (info.TryGetProperty(PropertyName._hoverTween, out var value16))
 		{
-			_hsvTween = value16.As<Tween>();
+			_hoverTween = value16.As<Tween>();
+		}
+		if (info.TryGetProperty(PropertyName._hsvTween, out var value17))
+		{
+			_hsvTween = value17.As<Tween>();
+		}
+		if (info.TryGetProperty(PropertyName._rotatingTween, out var value18))
+		{
+			_rotatingTween = value18.As<Tween>();
 		}
 	}
 }

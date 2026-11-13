@@ -17,7 +17,7 @@ public sealed class StatusCardPool : CardPoolModel
 
 	protected override CardModel[] GenerateAllCards()
 	{
-		return new CardModel[12]
+		return new CardModel[13]
 		{
 			ModelDb.Card<Beckon>(),
 			ModelDb.Card<Burn>(),
@@ -26,6 +26,7 @@ public sealed class StatusCardPool : CardPoolModel
 			ModelDb.Card<FranticEscape>(),
 			ModelDb.Card<Infection>(),
 			ModelDb.Card<Wither>(),
+			ModelDb.Card<Sadness>(),
 			ModelDb.Card<Slimed>(),
 			ModelDb.Card<Soot>(),
 			ModelDb.Card<Toxic>(),

@@ -130,7 +130,7 @@ public class NBossMapPoint : NMapPoint
 
 	private Tween? _hoverTween;
 
-	private ActModel _act;
+	private EncounterModel _bossEncounter;
 
 	private bool _usesSpine;
 
@@ -160,13 +160,13 @@ public class NBossMapPoint : NMapPoint
 
 	public static IEnumerable<string> AssetPaths => new _003C_003Ez__ReadOnlySingleElementList<string>(BossMapPointPath);
 
-	public static NBossMapPoint Create(MapPoint point, NMapScreen screen, IRunState runState)
+	public static NBossMapPoint Create(MapPoint point, NMapScreen screen, EncounterModel bossEncounter, IRunState runState)
 	{
 		NBossMapPoint nBossMapPoint = PreloadManager.Cache.GetScene(BossMapPointPath).Instantiate<NBossMapPoint>(PackedScene.GenEditState.Disabled);
 		nBossMapPoint.Point = point;
 		nBossMapPoint._screen = screen;
 		nBossMapPoint._runState = runState;
-		nBossMapPoint._act = runState.Act;
+		nBossMapPoint._bossEncounter = bossEncounter;
 		return nBossMapPoint;
 	}
 
@@ -177,12 +177,11 @@ public class NBossMapPoint : NMapPoint
 		_spriteContainer = GetNode<Node2D>("%SpriteContainer");
 		_spineSprite = GetNode<Node2D>("%SpineSprite");
 		_animController = new MegaSprite(_spineSprite);
-		EncounterModel encounterModel = ((Point == _runState.Map.SecondBossMapPoint) ? _runState.Act.SecondBossEncounter : _runState.Act.BossEncounter);
-		if (encounterModel.BossNodeSpineResource != null)
+		if (_bossEncounter.BossNodeSpineResource != null)
 		{
 			_usesSpine = true;
 			_spineSprite.Visible = true;
-			_animController.SetSkeletonDataRes(encounterModel.BossNodeSpineResource);
+			_animController.SetSkeletonDataRes(_bossEncounter.BossNodeSpineResource);
 			_animController.GetAnimationState().AddAnimation("animation");
 			_material = (ShaderMaterial)_animController.GetNormalMaterial();
 		}
@@ -193,10 +192,8 @@ public class NBossMapPoint : NMapPoint
 			_placeholderImage = GetNode<TextureRect>("%PlaceholderImage");
 			_placeholderOutline = GetNode<TextureRect>("%PlaceholderOutline");
 			_placeholderImage.Visible = true;
-			_placeholderImage.Texture = PreloadManager.Cache.GetAsset<Texture2D>(encounterModel.BossNodePath + ".png");
-			_placeholderOutline.Texture = PreloadManager.Cache.GetAsset<Texture2D>(encounterModel.BossNodePath + "_outline.png");
-			_placeholderImage.SelfModulate = _act.MapTraveledColor;
-			_placeholderOutline.SelfModulate = _act.MapBgColor;
+			_placeholderImage.Texture = PreloadManager.Cache.GetAsset<Texture2D>(_bossEncounter.BossNodePath + ".png");
+			_placeholderOutline.Texture = PreloadManager.Cache.GetAsset<Texture2D>(_bossEncounter.BossNodePath + "_outline.png");
 		}
 		RefreshColorInstantly();
 	}
@@ -244,21 +241,21 @@ public class NBossMapPoint : NMapPoint
 			MapPointState state = State;
 			if ((uint)(state - 1) <= 1u)
 			{
-				_material.SetShaderParameter(_blackLayerColor, _act.MapTraveledColor);
+				_material.SetShaderParameter(_blackLayerColor, _runState.Act.MapTraveledColor);
 			}
 			else
 			{
-				_material.SetShaderParameter(_blackLayerColor, _act.MapUntraveledColor);
+				_material.SetShaderParameter(_blackLayerColor, _runState.Act.MapUntraveledColor);
 			}
-			_material.SetShaderParameter(_mapColor, _act.MapBgColor);
+			_material.SetShaderParameter(_mapColor, _runState.Act.MapBgColor);
 		}
 		else
 		{
 			MapPointState state = State;
 			bool flag = (uint)(state - 1) <= 1u;
-			Color selfModulate = (flag ? _act.MapTraveledColor : _act.MapUntraveledColor);
+			Color selfModulate = (flag ? _runState.Act.MapTraveledColor : _runState.Act.MapUntraveledColor);
 			_placeholderImage.SelfModulate = selfModulate;
-			_placeholderOutline.SelfModulate = _act.MapBgColor;
+			_placeholderOutline.SelfModulate = _runState.Act.MapBgColor;
 		}
 	}
 

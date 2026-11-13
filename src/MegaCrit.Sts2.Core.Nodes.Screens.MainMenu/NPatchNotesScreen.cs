@@ -294,9 +294,9 @@ public class NPatchNotesScreen : Control, IScreenContext
 		}
 		LoadPatchNoteText(_patchNotePaths[_index]);
 		ActiveScreenContext.Instance.Update();
-		NHotkeyManager.Instance.PushHotkeyReleasedBinding(MegaInput.left, PreviousPatchNote);
-		NHotkeyManager.Instance.PushHotkeyReleasedBinding(MegaInput.right, NextPatchNote);
-		NHotkeyManager.Instance.PushHotkeyReleasedBinding(MegaInput.pauseAndBack, Close);
+		NHotkeyManager.Instance.PushHotkeyReleasedBinding(MegaInput.left, PreviousPatchNote, 0L);
+		NHotkeyManager.Instance.PushHotkeyReleasedBinding(MegaInput.right, NextPatchNote, 0L);
+		NHotkeyManager.Instance.PushHotkeyReleasedBinding(MegaInput.pauseAndBack, Close, 0L);
 	}
 
 	private void Close()

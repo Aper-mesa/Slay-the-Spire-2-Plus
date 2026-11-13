@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Debug;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Entities.Save;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Map;
@@ -106,17 +107,11 @@ public class ProgressSaveManager
 		return readSaveResult;
 	}
 
-	/// <summary>
-	/// Generate an unlock state from the current progress save.
-	/// </summary>
 	public UnlockState GenerateUnlockState()
 	{
 		return new UnlockState(Progress);
 	}
 
-	/// <summary>
-	/// Called after a loss. Marks the player as having lost to an encounter (not a monster).
-	/// </summary>
 	private void IncrementEncounterLoss(ModelId characterId, ModelId encounterId)
 	{
 		EncounterStats orCreateEncounterStats = Progress.GetOrCreateEncounterStats(encounterId);
@@ -138,9 +133,6 @@ public class ProgressSaveManager
 		}
 	}
 
-	/// <summary>
-	/// Called after a loss. Marks the player as having lost to a specific monster in an encounter.
-	/// </summary>
 	private void IncrementEnemyFightLoss(ModelId characterId, ModelId monster)
 	{
 		EnemyStats orCreateEnemyStats = Progress.GetOrCreateEnemyStats(monster);
@@ -186,14 +178,17 @@ public class ProgressSaveManager
 		}
 	}
 
-	/// <summary>
-	/// Called whenever a run is completed. This could be Death, Victory, or Abandon.
-	/// </summary>
-	public void UpdateWithRunData(SerializableRun serializableRun, bool victory)
+	public PostRunProgressUpdateResult UpdateWithRunData(SerializableRun serializableRun, bool victory)
 	{
 		bool flag = serializableRun.Players.Count == 1;
 		bool flag2 = serializableRun.GameMode == GameMode.Daily;
-		bool flag3 = serializableRun.GameMode == GameMode.Custom;
+		bool isCustomGame = serializableRun.IsCustomGame;
+		bool flag3 = serializableRun.GameMode == GameMode.Dread;
+		PostRunProgressUpdateResult result = new PostRunProgressUpdateResult
+		{
+			isSingleplayer = flag,
+			run = serializableRun
+		};
 		SerializablePlayer serializablePlayer;
 		if (flag)
 		{
@@ -206,7 +201,8 @@ public class ProgressSaveManager
 			if (serializablePlayer == null)
 			{
 				Log.Warn($"Local player with net id {playerId} not found in run! Progress will not be updated");
-				return;
+				result.success = false;
+				return result;
 			}
 		}
 		for (int num = 0; num < serializableRun.MapPointHistory.Count; num++)
@@ -232,19 +228,41 @@ public class ProgressSaveManager
 		{
 			int num2 = ScoreUtility.CalculateScore(serializableRun, victory);
 			Progress.ArchitectDamage += num2;
-			if (!flag2 && !flag3)
+			if (!flag2 && !isCustomGame)
 			{
-				if (flag)
+				if (serializableRun.GameMode == GameMode.Blitz)
 				{
+					result.oldMaxAscension = Progress.MaxBlitzAscension;
+					IncrementBlitzAscension(serializableRun);
+					result.newMaxAscension = Progress.MaxBlitzAscension;
+				}
+				else if (flag)
+				{
+					result.oldMaxAscension = orCreateCharacterStats.MaxAscension;
 					IncrementSingleplayerAscension(serializableRun, orCreateCharacterStats);
+					result.newMaxAscension = orCreateCharacterStats.MaxAscension;
 				}
 				else
 				{
+					result.oldMaxAscension = Progress.MaxMultiplayerAscension;
 					IncrementMultiplayerAscension(serializableRun);
+					result.newMaxAscension = Progress.MaxMultiplayerAscension;
 				}
 				orCreateCharacterStats.TotalWins++;
 				orCreateCharacterStats.CurrentWinStreak++;
 				orCreateCharacterStats.BestWinStreak = Math.Max(orCreateCharacterStats.BestWinStreak, orCreateCharacterStats.CurrentWinStreak);
+				if (flag3 && !isCustomGame)
+				{
+					CharacterStats orCreateCharacterStats2 = Progress.GetOrCreateCharacterStats(serializablePlayer.ExtraFields.IsPlayingRotatingCharacter ? ModelDb.GetId<RotatingCharacter>() : serializablePlayer.CharacterId);
+					int previousStreak = (flag ? orCreateCharacterStats2.CurrentSingleplayerDreadWinStreak : orCreateCharacterStats2.CurrentMultiplayerDreadWinStreak);
+					ModelId previousStartingRotationCharacter = ModelId.none;
+					if (serializablePlayer.ExtraFields.IsPlayingRotatingCharacter)
+					{
+						previousStartingRotationCharacter = (flag ? Progress.CurrentSingleplayerDreadStartingCharacterForRotation : Progress.CurrentMultiplayerDreadStartingCharacterForRotation);
+					}
+					UpdateDreadWinStreakOnVictory(orCreateCharacterStats2, flag);
+					SetPendingDreadWinStreakResult(orCreateCharacterStats2.Id, flag, wasReset: false, previousStartingRotationCharacter, previousStreak, 1);
+				}
 				if (orCreateCharacterStats.FastestWinTime < 0 || orCreateCharacterStats.FastestWinTime > serializableRun.RunTime)
 				{
 					orCreateCharacterStats.FastestWinTime = serializableRun.RunTime;
@@ -253,10 +271,37 @@ public class ProgressSaveManager
 		}
 		else
 		{
-			if (!flag2 && !flag3)
+			if (!flag2 && !isCustomGame)
 			{
 				orCreateCharacterStats.CurrentWinStreak = 0L;
 				orCreateCharacterStats.TotalLosses++;
+				if (flag3)
+				{
+					CharacterStats orCreateCharacterStats3 = Progress.GetOrCreateCharacterStats(serializablePlayer.ExtraFields.IsPlayingRotatingCharacter ? ModelDb.GetId<RotatingCharacter>() : serializablePlayer.CharacterId);
+					ModelId previousStartingRotationCharacter2 = ModelId.none;
+					int previousStreak2;
+					if (flag)
+					{
+						previousStreak2 = orCreateCharacterStats3.CurrentSingleplayerDreadWinStreak;
+						orCreateCharacterStats3.CurrentSingleplayerDreadWinStreak = 0;
+						if (serializablePlayer.ExtraFields.IsPlayingRotatingCharacter)
+						{
+							previousStartingRotationCharacter2 = Progress.CurrentSingleplayerDreadStartingCharacterForRotation;
+							Progress.CurrentSingleplayerDreadStartingCharacterForRotation = ModelId.none;
+						}
+					}
+					else
+					{
+						previousStreak2 = orCreateCharacterStats3.CurrentMultiplayerDreadWinStreak;
+						orCreateCharacterStats3.CurrentMultiplayerDreadWinStreak = 0;
+						if (serializablePlayer.ExtraFields.IsPlayingRotatingCharacter)
+						{
+							previousStartingRotationCharacter2 = Progress.CurrentMultiplayerDreadStartingCharacterForRotation;
+							Progress.CurrentMultiplayerDreadStartingCharacterForRotation = ModelId.none;
+						}
+					}
+					SetPendingDreadWinStreakResult(orCreateCharacterStats3.Id, flag, wasReset: true, previousStartingRotationCharacter2, previousStreak2, 0);
+				}
 			}
 			MapPointHistoryEntry mapPointHistoryEntry = serializableRun.MapPointHistory.LastOrDefault()?.LastOrDefault();
 			if (mapPointHistoryEntry != null)
@@ -282,7 +327,7 @@ public class ProgressSaveManager
 				Progress.MarkEventAsSeen(mapPointRoomHistoryEntry.ModelId);
 			}
 		}
-		if (!flag2 && !flag3)
+		if (!flag2 && !isCustomGame)
 		{
 			HashSet<ModelId> hashSet = serializablePlayer.Deck.Select((SerializableCard c) => c.Id).ToHashSet();
 			foreach (ModelId item2 in hashSet)
@@ -329,23 +374,85 @@ public class ProgressSaveManager
 		}
 		UpdateEpochsPostRun(serializablePlayer, serializableRun, victory);
 		SaveProgress();
+		result.success = true;
+		return result;
 	}
 
-	/// <summary>
-	/// Check for Epoch-related unlocks at the end of each run.
-	/// Singleplayer only.
-	/// </summary>
+	public void UpdateDreadWinStreakOnVictory(CharacterStats characterStats, bool isSingleplayer)
+	{
+		string gameVersion = NGame.GetGameVersion();
+		if (isSingleplayer)
+		{
+			var (val, bestSingleplayerDreadWinStreakOldVersion, bestSingleplayerDreadWinStreakOldVersionTag) = ReconcileDreadWinStreakVersion(gameVersion, characterStats.BestSingleplayerDreadWinStreakThisVersion, characterStats.BestSingleplayerDreadWinStreakThisVersionTag, characterStats.BestSingleplayerDreadWinStreakOldVersion, characterStats.BestSingleplayerDreadWinStreakOldVersionTag);
+			characterStats.CurrentSingleplayerDreadWinStreak++;
+			characterStats.BestSingleplayerDreadWinStreakThisVersion = Math.Max(val, characterStats.CurrentSingleplayerDreadWinStreak);
+			characterStats.BestSingleplayerDreadWinStreakThisVersionTag = gameVersion;
+			characterStats.BestSingleplayerDreadWinStreakOldVersion = bestSingleplayerDreadWinStreakOldVersion;
+			characterStats.BestSingleplayerDreadWinStreakOldVersionTag = bestSingleplayerDreadWinStreakOldVersionTag;
+		}
+		else
+		{
+			var (val2, bestMultiplayerDreadWinStreakOldVersion, bestMultiplayerDreadWinStreakOldVersionTag) = ReconcileDreadWinStreakVersion(gameVersion, characterStats.BestMultiplayerDreadWinStreakThisVersion, characterStats.BestMultiplayerDreadWinStreakThisVersionTag, characterStats.BestMultiplayerDreadWinStreakOldVersion, characterStats.BestMultiplayerDreadWinStreakOldVersionTag);
+			characterStats.CurrentMultiplayerDreadWinStreak++;
+			characterStats.BestMultiplayerDreadWinStreakThisVersion = Math.Max(val2, characterStats.CurrentMultiplayerDreadWinStreak);
+			characterStats.BestMultiplayerDreadWinStreakThisVersionTag = gameVersion;
+			characterStats.BestMultiplayerDreadWinStreakOldVersion = bestMultiplayerDreadWinStreakOldVersion;
+			characterStats.BestMultiplayerDreadWinStreakOldVersionTag = bestMultiplayerDreadWinStreakOldVersionTag;
+		}
+	}
+
+	public static (int ThisVersion, int OldVersion, string? OldVersionTag) ReconcileDreadWinStreakVersion(string currentVersion, int thisVersion, string? thisVersionTag, int oldVersion, string? oldVersionTag)
+	{
+		if (thisVersionTag == currentVersion)
+		{
+			return (ThisVersion: thisVersion, OldVersion: oldVersion, OldVersionTag: oldVersionTag);
+		}
+		if (thisVersion <= oldVersion)
+		{
+			return (ThisVersion: 0, OldVersion: oldVersion, OldVersionTag: oldVersionTag);
+		}
+		return (ThisVersion: 0, OldVersion: thisVersion, OldVersionTag: thisVersionTag);
+	}
+
+	private void SetPendingDreadWinStreakResult(ModelId characterId, bool isSingleplayer, bool wasReset, ModelId previousStartingRotationCharacter, int previousStreak, int streakIncrease)
+	{
+		PendingDreadWinStreakResult pendingDreadWinStreakResult = new PendingDreadWinStreakResult
+		{
+			CharacterId = characterId,
+			WasReset = wasReset,
+			InitialRotatingCharacterBeforeReset = previousStartingRotationCharacter,
+			WinStreakBeforeReset = previousStreak,
+			WinStreakIncrease = streakIncrease
+		};
+		if (isSingleplayer)
+		{
+			Progress.PendingSingleplayerDreadWinStreakResult = pendingDreadWinStreakResult;
+		}
+		else
+		{
+			Progress.PendingMultiplayerDreadWinStreakResult = pendingDreadWinStreakResult;
+		}
+	}
+
 	private void UpdateEpochsPostRun(SerializablePlayer serializablePlayer, SerializableRun serializableRun, bool victory)
 	{
 		TryObtainEpochPostRun(EpochModel.Get<NeowEpoch>(), serializablePlayer, serializableRun);
 		PostRunUnlockCharacterEpochCheck(serializablePlayer, serializableRun);
+		PostRunFoolBackfillCheck(serializablePlayer, serializableRun);
 		PostRunCharacterEpochChecks(serializablePlayer, serializableRun, victory);
-		int num = ModelDb.AllCharacters.Count((CharacterModel c) => !(c is MegaCrit.Sts2.Core.Models.Characters.ClassicDefect) && !(c is MegaCrit.Sts2.Core.Models.Characters.ClassicSilent) && !(c is MegaCrit.Sts2.Core.Models.Characters.ClassicIronclad) && !(c is MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher));
-		if (victory && Progress.CharacterStats.Count >= num)
+		List<ModelId> allCharacterIds = ModelDb.AllCharacters.Where((CharacterModel c) => c is not ClassicDefect && c is not ClassicSilent && c is not ClassicIronclad && c is not ClassicWatcher).Select((CharacterModel c) => c.Id).ToList();
+		int count = allCharacterIds.Count;
+		List<CharacterStats> list = Progress.CharacterStats.Values.Where((CharacterStats s) => s.Id != null && allCharacterIds.Contains(s.Id)).ToList();
+		int count2 = list.Count;
+		if (victory && count2 >= count)
 		{
 			TryObtainEpochPostRun(EpochModel.Get<DailyRunEpoch>(), serializablePlayer, serializableRun);
 		}
-		if (Progress.CharacterStats.Count >= num)
+		if (count2 >= count && list.All((CharacterStats stats) => stats.MaxAscension >= 10) && !GameModeHelper.AreAchievementsAndEpochsLocked(serializableRun.GameMode, serializableRun.IsCustomGame) && TryObtainEpochPostRun(EpochModel.Get<DreadEpoch>(), serializablePlayer, serializableRun))
+		{
+			Progress.ObtainEpochOverride(EpochModel.GetId<DreadEpoch>(), EpochState.Obtained);
+		}
+		if (count2 >= count)
 		{
 			TryObtainEpochPostRun(EpochModel.Get<OrobasEpoch>(), serializablePlayer, serializableRun);
 		}
@@ -353,12 +460,23 @@ public class ProgressSaveManager
 		{
 			TryObtainEpochPostRun(EpochModel.Get<DarvEpoch>(), serializablePlayer, serializableRun);
 		}
+		if (serializableRun.Ascension <= 0)
+		{
+			return;
+		}
+		if (!Progress.IsEmptyEpochSlotAvailable(EpochModel.Get<BlitzEpoch>().Id))
+		{
+			if (!GameModeHelper.AreAchievementsAndEpochsLockedForSerializableRun(serializableRun) && TryObtainEpochPostRun(EpochModel.Get<BlitzEpoch>(), serializablePlayer, serializableRun))
+			{
+				Progress.ObtainEpochOverride(EpochModel.GetId<BlitzEpoch>(), EpochState.Obtained);
+			}
+		}
+		else
+		{
+			TryObtainEpochPostRun(EpochModel.Get<BlitzEpoch>(), serializablePlayer, serializableRun);
+		}
 	}
 
-	/// <summary>
-	/// If you complete a run with a character for the first time,
-	/// there's generally an unlock for another character.
-	/// </summary>
 	private void PostRunUnlockCharacterEpochCheck(SerializablePlayer serializablePlayer, SerializableRun serializableRun)
 	{
 		CharacterModel byId = ModelDb.GetById<CharacterModel>(serializablePlayer.CharacterId);
@@ -371,15 +489,48 @@ public class ProgressSaveManager
 		{
 			text = EpochModel.GetId<Necrobinder1Epoch>();
 		}
+		else if (byId is Necrobinder)
+		{
+			text = EpochModel.GetId<Defect1Epoch>();
+		}
 		else
 		{
-			text = ((!(byId is Necrobinder)) ? null : EpochModel.GetId<Defect1Epoch>());
+			text = ((!(byId is Defect)) ? null : EpochModel.GetId<Fool1Epoch>());
 		}
 		string text2 = text;
 		if (text2 != null && TryObtainEpochPostRun(EpochModel.Get(text2), serializablePlayer, serializableRun))
 		{
 			Log.Info($"Epoch obtained for playing a run as {serializablePlayer.CharacterId}");
 		}
+	}
+
+	private void PostRunFoolBackfillCheck(SerializablePlayer serializablePlayer, SerializableRun serializableRun)
+	{
+		if (HasCompletedDefectRun() && TryObtainEpochPostRun(EpochModel.Get<Fool1Epoch>(), serializablePlayer, serializableRun))
+		{
+			Log.Info("Fool1Epoch obtained post-run for a player who has already completed a Defect run");
+		}
+	}
+
+	public void ObtainFoolEpochIfDefectRunCompleted()
+	{
+		string id = EpochModel.GetId<Fool1Epoch>();
+		if (HasCompletedDefectRun() && !Progress.IsEpochObtained(id))
+		{
+			Log.Info("Player has already completed a Defect run, obtaining Fool1Epoch");
+			Progress.ObtainEpoch(id);
+			SaveProgress();
+		}
+	}
+
+	private bool HasCompletedDefectRun()
+	{
+		CharacterStats statsForCharacter = Progress.GetStatsForCharacter(ModelDb.GetId<Defect>());
+		if (statsForCharacter != null)
+		{
+			return statsForCharacter.TotalWins + statsForCharacter.TotalLosses > 0;
+		}
+		return false;
 	}
 
 	private void PostRunCharacterEpochChecks(SerializablePlayer serializablePlayer, SerializableRun serializableRun, bool victory)
@@ -395,10 +546,6 @@ public class ProgressSaveManager
 		}
 	}
 
-	/// <summary>
-	/// When the player completes Ascension 1 they unlock Character Epoch 7.
-	/// This unlock grants the player the means to Kill the Architect and 3 cards.
-	/// </summary>
 	private void CheckAscensionOneCompleted(SerializablePlayer serializablePlayer, SerializableRun serializableRun)
 	{
 		if (serializableRun.Ascension == 1)
@@ -421,9 +568,13 @@ public class ProgressSaveManager
 			{
 				text = EpochModel.GetId<Defect7Epoch>();
 			}
+			else if (byId is Necrobinder)
+			{
+				text = EpochModel.GetId<Necrobinder7Epoch>();
+			}
 			else
 			{
-				text = ((!(byId is Necrobinder)) ? null : EpochModel.GetId<Necrobinder7Epoch>());
+				text = ((!(byId is Fool)) ? null : EpochModel.GetId<Fool7Epoch>());
 			}
 			string text2 = text;
 			if (text2 != null)
@@ -433,10 +584,6 @@ public class ProgressSaveManager
 		}
 	}
 
-	/// <summary>
-	/// Checks for Character5Epoch for all characters.
-	/// Requires defeating 15 Elites in the game with the character.
-	/// </summary>
 	private void CheckFifteenElitesDefeatedEpoch(Player localPlayer)
 	{
 		CharacterModel character = localPlayer.Character;
@@ -451,11 +598,18 @@ public class ProgressSaveManager
 					{
 						if (!(character is Necrobinder))
 						{
-							if (!(character is Deprived) && !(character is ClassicDefect) && !(character is ClassicSilent) && !(character is ClassicIronclad) && !(character is ClassicWatcher))
+							if (!(character is Fool))
 							{
-								throw new ArgumentOutOfRangeException("character", character, null);
+								if (!(character is Deprived) && !(character is ClassicDefect) && !(character is ClassicSilent) && !(character is ClassicIronclad) && !(character is ClassicWatcher))
+								{
+									throw new ArgumentOutOfRangeException("character", character, null);
+								}
+								epochModel = null;
 							}
-							epochModel = null;
+							else
+							{
+								epochModel = EpochModel.Get(EpochModel.GetId<Fool5Epoch>());
+							}
 						}
 						else
 						{
@@ -510,10 +664,6 @@ public class ProgressSaveManager
 		}
 	}
 
-	/// <summary>
-	/// Checks for Character6Epoch for all characters.
-	/// Requires defeating 15 Bosses in the game with the character.
-	/// </summary>
 	private void CheckFifteenBossesDefeatedEpoch(Player localPlayer)
 	{
 		CharacterModel character = localPlayer.Character;
@@ -530,9 +680,16 @@ public class ProgressSaveManager
 						{
 							if (!(character is Deprived) && !(character is ClassicDefect) && !(character is ClassicSilent) && !(character is ClassicIronclad) && !(character is ClassicWatcher))
 							{
-								throw new ArgumentOutOfRangeException("character", character, null);
+								if (!(character is Fool))
+								{
+									throw new ArgumentOutOfRangeException("character", character, null);
+								}
+								epochModel = EpochModel.Get(EpochModel.GetId<Fool6Epoch>());
 							}
-							epochModel = null;
+							else
+							{
+								epochModel = null;
+							}
 						}
 						else
 						{
@@ -586,10 +743,6 @@ public class ProgressSaveManager
 		}
 	}
 
-	/// <summary>
-	/// Helper function to obtain character unlocks 1, 2, and 3.
-	/// Requires the player to defeat a boss in an act for the first time (for each character!)
-	/// </summary>
 	private void ObtainCharUnlockEpoch(Player localPlayer, int act)
 	{
 		if (localPlayer.Character.IsPlayable && !(localPlayer.Character is ClassicDefect) && !(localPlayer.Character is ClassicSilent) && !(localPlayer.Character is ClassicIronclad) && !(localPlayer.Character is ClassicWatcher))
@@ -625,19 +778,13 @@ public class ProgressSaveManager
 		}
 	}
 
-	/// <summary>
-	/// Called mid-run (like when you kill a boss that unlocks an Epoch).
-	/// If this Epoch's slot is available, we obtain it and return true.
-	/// We return a bool so callers can log or show VFX accordingly.
-	/// </summary>
-	/// <param name="epoch">Epoch to try to obtain.</param>
-	/// <param name="localPlayer">The local player's Player instance.</param>
-	/// <returns>
-	/// True if you Obtained a new Epoch, false if not (you already have it OR the slot is unavailable).
-	/// </returns>
 	private bool TryObtainEpochMidRun(EpochModel epoch, Player localPlayer)
 	{
-		if (localPlayer.RunState.GameMode.AreAchievementsAndEpochsLocked())
+		if (GameModeHelper.AreAchievementsAndEpochsLockedForRun(localPlayer.RunState))
+		{
+			return false;
+		}
+		if (localPlayer.RunState.IsCustomGame)
 		{
 			return false;
 		}
@@ -649,20 +796,13 @@ public class ProgressSaveManager
 		return true;
 	}
 
-	/// <summary>
-	/// Called post-run (like after abandoning your first run, which unlocks the Silent).
-	/// If this Epoch's slot is available, we obtain it and return true.
-	/// We return a bool so callers can log or show VFX accordingly.
-	/// </summary>
-	/// <param name="epoch">Epoch to try to obtain.</param>
-	/// <param name="serializablePlayer">The serializable version of the local player's Player instance.</param>
-	/// <param name="serializableRun">The serializable version of the run.</param>
-	/// <returns>
-	/// True if you Obtained a new Epoch, false if not (you already have it OR the slot is unavailable).
-	/// </returns>
 	private bool TryObtainEpochPostRun(EpochModel epoch, SerializablePlayer serializablePlayer, SerializableRun serializableRun)
 	{
-		if (serializableRun.GameMode.AreAchievementsAndEpochsLocked())
+		if (GameModeHelper.AreAchievementsAndEpochsLockedForSerializableRun(serializableRun))
+		{
+			return false;
+		}
+		if (serializableRun.IsCustomGame)
 		{
 			return false;
 		}
@@ -674,16 +814,6 @@ public class ProgressSaveManager
 		return true;
 	}
 
-	/// <summary>
-	/// WARNING: This should only be called by <see cref="M:MegaCrit.Sts2.Core.Saves.Managers.ProgressSaveManager.TryObtainEpochMidRun(MegaCrit.Sts2.Core.Timeline.EpochModel,MegaCrit.Sts2.Core.Entities.Players.Player)" /> and
-	/// <see cref="M:MegaCrit.Sts2.Core.Saves.Managers.ProgressSaveManager.TryObtainEpochPostRun(MegaCrit.Sts2.Core.Timeline.EpochModel,MegaCrit.Sts2.Core.Saves.Runs.SerializablePlayer,MegaCrit.Sts2.Core.Saves.SerializableRun)" />.
-	/// If this Epoch's slot is available, we obtain it and return true.
-	/// We return a bool so callers can log or show VFX accordingly.
-	/// </summary>
-	/// <param name="epoch">Epoch to try to obtain.</param>
-	/// <returns>
-	/// True if you Obtained a new Epoch, false if not (you already have it OR the slot is unavailable).
-	/// </returns>
 	private bool TryObtainEpochInternal(EpochModel epoch)
 	{
 		if (Progress.IsEpochObtained(epoch.Id))
@@ -706,16 +836,6 @@ public class ProgressSaveManager
 		return true;
 	}
 
-	/// <summary>
-	/// Returns the set of epochs that the player has both obtained and may reveal.
-	/// In certain (buggy) scenarios, the player may end up obtaining epochs that are still hidden. An example scenario
-	/// (though this may be fixed in the future) is:
-	///  - The player joins a multiplayer daily, which allows them to play a character they have not unlocked
-	///  - The player obtains an epoch for that character which they can't see on the timeline
-	///
-	/// This method skips those sorts of epochs. However, it still returns epochs that are in ObtainedNoSlot state but
-	/// are about to be revealed by another epoch the player has obtained.
-	/// </summary>
 	public IEnumerable<SerializableEpoch> GetRevealableEpochs()
 	{
 		HashSet<string> satisfiedEpochIds = new HashSet<string>(from e in Progress.Epochs.Where((SerializableEpoch e) =>
@@ -764,9 +884,6 @@ public class ProgressSaveManager
 		return Progress.Epochs.Where((SerializableEpoch e) => satisfiedEpochIds.Contains(e.Id) && reachableSet.Contains(e.Id));
 	}
 
-	/// <summary>
-	/// Lots of checks and update of the progress save file after the end of each combat.
-	/// </summary>
 	public void UpdateAfterCombatWon(Player localPlayer, CombatRoom room)
 	{
 		CombatState combatState = room.CombatState;
@@ -826,10 +943,6 @@ public class ProgressSaveManager
 		}
 	}
 
-	/// <summary>
-	/// If the player wins a singleplayer run, this logic checks if they're playing on Max Ascension.
-	/// If so, increment it by 1.
-	/// </summary>
 	private static void IncrementSingleplayerAscension(SerializableRun run, CharacterStats charStats)
 	{
 		if (run.Ascension == charStats.MaxAscension)
@@ -846,10 +959,6 @@ public class ProgressSaveManager
 		}
 	}
 
-	/// <summary>
-	/// If the player wins a multiplayer run, this logic checks if they're playing on Max Ascension.
-	/// If so, increment it by 1.
-	/// </summary>
 	private void IncrementMultiplayerAscension(SerializableRun run)
 	{
 		if (run.Ascension == Progress.MaxMultiplayerAscension)
@@ -866,10 +975,22 @@ public class ProgressSaveManager
 		}
 	}
 
-	/// <summary>
-	/// Returns true if all ftues are disabled OR if the given ftue key exists (seen by the player before).
-	/// Is also disabled if there's no game (test mode)
-	/// </summary>
+	private void IncrementBlitzAscension(SerializableRun run)
+	{
+		if (run.Ascension == Progress.MaxBlitzAscension)
+		{
+			if (Progress.MaxBlitzAscension < 5)
+			{
+				Progress.MaxBlitzAscension++;
+				Progress.PreferredBlitzAscension = Progress.MaxBlitzAscension;
+			}
+		}
+		else
+		{
+			Log.Info($"Not playing on max blitz ascension ({Progress.MaxBlitzAscension})");
+		}
+	}
+
 	public bool SeenFtue(string ftueKey)
 	{
 		if (!Progress.EnableFtues)
@@ -879,10 +1000,6 @@ public class ProgressSaveManager
 		return Progress.FtueCompleted.Contains(ftueKey);
 	}
 
-	/// <summary>
-	/// Checks if a one-time popup has been seen before or not.
-	/// This is only used by the "Ascension Unlocked" popups for now.
-	/// </summary>
 	public bool SeenPopup(string popupKey)
 	{
 		if (TestMode.IsOn)

@@ -31,9 +31,10 @@ public sealed class Maul : CardModel
 		}
 	}
 
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[2]
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[3]
 	{
 		new DamageVar(5m, ValueProp.Move),
+		new HitCountVar(2),
 		new DynamicVar("Increase", 2m)
 	});
 
@@ -45,7 +46,7 @@ public sealed class Maul : CardModel
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay.Target, "cardPlay.Target");
-		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(2).FromCard(this, cardPlay)
+		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(DynamicVars.HitCount.IntValue).FromCard(this, cardPlay)
 			.Targeting(cardPlay.Target)
 			.WithHitVfxNode((Creature t) => NScratchVfx.Create(t, goingRight: true))
 			.Execute(choiceContext);

@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Debug;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Entities.Save;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
@@ -26,24 +27,6 @@ using Steamworks;
 
 namespace MegaCrit.Sts2.Core.Saves;
 
-/// <summary>
-/// Manages saving and loading game data, including settings, progress, current runs, and run history.
-/// Implements the Singleton pattern for global access to save functionality.
-/// </summary>
-/// <remarks>
-/// The SaveManager coordinates multiple specialized save managers:
-/// - <see cref="T:MegaCrit.Sts2.Core.Saves.Managers.SettingsSaveManager" />: Handles user settings (not cloud synced)
-/// - <see cref="T:MegaCrit.Sts2.Core.Saves.Managers.ProgressSaveManager" />: Manages global game progress and statistics
-/// - <see cref="T:MegaCrit.Sts2.Core.Saves.Managers.RunSaveManager" />: Handles saving/loading of active runs
-/// - <see cref="T:MegaCrit.Sts2.Core.Saves.Managers.RunHistorySaveManager" />: Manages historical run data
-///
-/// This specialized manager architecture improves testability by allowing each save manager
-/// to be tested independently with appropriate mocks and stubs.
-///
-/// Save files are stored in a user-scoped, platform-specific location:
-/// - In editor: C:\Users\{USER}\AppData\Roaming\SlayTheSpire2\{platform}\{userId}\saves
-/// - In builds: C:\Users\{USER}\AppData\Roaming\Godot\app_userdata\sts2\{platform}\{userId}\saves
-/// </remarks>
 public class SaveManager : IProfileIdProvider
 {
 	private static SaveManager? _mockInstance;
@@ -84,10 +67,6 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// The number of epochs the end-of-run score bar can grant. Derived from
-	/// <see cref="P:MegaCrit.Sts2.Core.Timeline.EpochModel.AgnosticUnlockOrder" /> so the two can never disagree.
-	/// </summary>
 	public static int TotalAgnosticUnlocks => EpochModel.AgnosticUnlockOrder.Count;
 
 	public SettingsSave SettingsSave => _settingsSaveManager.Settings;
@@ -116,9 +95,6 @@ public class SaveManager : IProfileIdProvider
 
 	public int CurrentProfileId => _currentProfileId ?? throw new InvalidOperationException("InitProfileId must be called on SaveManager!");
 
-	/// <summary>
-	/// If the SaveManager is in the middle of saving the run, then this is non-null and not completed.
-	/// </summary>
 	public Task? CurrentRunSaveTask { get; private set; }
 
 	public event Action? Saved
@@ -145,20 +121,11 @@ public class SaveManager : IProfileIdProvider
 		_mockInstance = null;
 	}
 
-	/// <summary>
-	/// Constructor with dependency injection support.
-	/// </summary>
-	/// <param name="saveStore">The file I/O backend to use.</param>
-	/// <param name="forceSynchronous">Force all operations to be performed synchronously. Only use in tests.</param>
 	public SaveManager(ISaveStore saveStore, bool forceSynchronous = false)
 		: this(saveStore, saveStore, forceSynchronous)
 	{
 	}
 
-	/// <summary>
-	/// Constructor with a separate local-only store for settings.
-	/// Settings are machine-specific (display, controller, window) and must not be cloud-synced.
-	/// </summary>
 	public SaveManager(ISaveStore saveStore, ISaveStore localOnlyStore, bool forceSynchronous = false)
 	{
 		_saveStore = saveStore;
@@ -171,12 +138,6 @@ public class SaveManager : IProfileIdProvider
 		_runHistorySaveManager = new RunHistorySaveManager(saveStore, _migrationManager, this);
 	}
 
-	/// <summary>
-	/// Constructs the default SaveManager for this platform and configuration.
-	///  - If we are currently in test mode, then this returns a SaveManager that doesn't actually save to disk.
-	///  - If cloud saves are enabled, then this returns a SaveManager that saves both to cloud and to disk for the
-	///    appropriate save backend.
-	/// </summary>
 	private static SaveManager ConstructDefault()
 	{
 		ISaveStore saveStore;
@@ -197,12 +158,6 @@ public class SaveManager : IProfileIdProvider
 		return new SaveManager(saveStore, saveStore2);
 	}
 
-	/// <summary>
-	/// Sets CurrentProfileId.
-	/// This is called during the initialization of the game. It must be called after cloud sync has completed to allow
-	/// the profile save to sync.
-	/// </summary>
-	/// <param name="profileId">The profile ID to use. If null, it will be read from file.</param>
 	public void InitProfileId(int? profileId = null)
 	{
 		CleanupTemporaryFiles();
@@ -230,12 +185,6 @@ public class SaveManager : IProfileIdProvider
 		return _saveStore.GetFullPath(Path.Combine(UserDataPathProvider.GetProfileDir(CurrentProfileId), userData));
 	}
 
-	/// <summary>
-	/// Switches the current profile ID and saves it to the profile save file.
-	/// Methods on the SaveManager will start reporting new data right after, but you will must call InitPrefsData and
-	/// InitProgressData so that PrefsData and ProgressData will report old data.
-	/// </summary>
-	/// <param name="profileId">The profile ID to switch to.</param>
 	public void SwitchProfileId(int profileId)
 	{
 		Log.Info($"Switching save profiles to {profileId}");
@@ -292,9 +241,6 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// Increments and saves the NumReloads field of a save file.
-	/// </summary>
 	public async Task IncrementNumReloads(SerializableRun save, NetGameType type, bool forceInTest = false)
 	{
 		save.NumReloads++;
@@ -328,20 +274,11 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// Called whenever the player wins, loses, or abandons run.
-	/// Updates the progress.save file using the current_run.save file or similar.
-	/// </summary>
-	/// <param name="serializableRun">The serialized run data.</param>
-	/// <param name="victory">Whether or not the run ended in a victory.</param>
-	public void UpdateProgressWithRunData(SerializableRun serializableRun, bool victory)
+	public PostRunProgressUpdateResult UpdateProgressWithRunData(SerializableRun serializableRun, bool victory)
 	{
-		_progressSaveManager.UpdateWithRunData(serializableRun, victory);
+		return _progressSaveManager.UpdateWithRunData(serializableRun, victory);
 	}
 
-	/// <summary>
-	/// Called when the player wins a combat.
-	/// </summary>
 	public void UpdateProgressAfterCombatWon(Player localPlayer, CombatRoom combatRoom)
 	{
 		_progressSaveManager.UpdateAfterCombatWon(localPlayer, combatRoom);
@@ -371,18 +308,6 @@ public class SaveManager : IProfileIdProvider
 		_saveStore.DeleteDirectory(directory);
 	}
 
-	/// <summary>
-	/// Recursively deletes all files and subdirectories within the given directory.
-	/// </summary>
-	/// <remarks>
-	/// PRG-5240: When using cloud storage, we must also delete cloud-only files.
-	/// Cloud-only files can exist when:
-	/// - Old run history files were "forgotten" from cloud quota tracking but still exist on Steam servers
-	/// - Files were uploaded from another device but not yet synced locally
-	///
-	/// If we only deleted local files, cloud-only files would be restored on next game launch
-	/// by SyncCloudToLocal, causing deleted profile data (like old run history) to reappear.
-	/// </remarks>
 	private void DeleteInDirectoryRecursive(string directory)
 	{
 		string[] directoriesInDirectory = _saveStore.GetDirectoriesInDirectory(directory);
@@ -438,64 +363,33 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// Initializes a default settings file for testing purposes.
-	/// This is separate from InitSettingsData because that is used directly in tests.
-	/// </summary>
 	public ReadSaveResult<SettingsSave> InitSettingsDataForTest()
 	{
 		_settingsSaveManager.Settings = new SettingsSave();
 		return new ReadSaveResult<SettingsSave>(_settingsSaveManager.Settings);
 	}
 
-	/// <summary>
-	/// Initializes a default prefs file for testing purposes.
-	/// This is separate from InitPrefsData because that is used directly in tests.
-	/// </summary>
 	public ReadSaveResult<PrefsSave> InitPrefsDataForTest()
 	{
 		_prefsSaveManager.Prefs = new PrefsSave();
 		return new ReadSaveResult<PrefsSave>(_prefsSaveManager.Prefs);
 	}
 
-	/// <summary>
-	/// Loads the settings file for the first time. This should only be called once early on in the lifetime of the game.
-	/// If the settings save could not be read because it was corrupt or did not exist, a new one is created.
-	/// </summary>
-	/// <returns>The result of reading the settings save file.</returns>
 	public ReadSaveResult<SettingsSave> InitSettingsData()
 	{
 		return _settingsSaveManager.LoadSettings();
 	}
 
-	/// <summary>
-	/// Loads the prefs file for the first time.
-	/// This should be called once early on in the lifetime of the game, and then only when the player switches profiles
-	/// after that. If the progress save could not be read because it was corrupt or did not exist, a new one is created.
-	/// </summary>
-	/// <returns>The result of reading the prefs save file.</returns>
 	public ReadSaveResult<PrefsSave> InitPrefsData()
 	{
 		return _prefsSaveManager.LoadPrefs();
 	}
 
-	/// <summary>
-	/// Loads the progress file for the first time.
-	/// This should be called once early on in the lifetime of the game, and then only when the player switches profiles
-	/// after that. If the progress save could not be read because it was corrupt or did not exist, a new one is created.
-	/// </summary>
-	/// <returns>The result of reading the progress save file.</returns>
 	public ReadSaveResult<SerializableProgress> InitProgressData()
 	{
 		return _progressSaveManager.LoadProgress();
 	}
 
-	/// <summary>
-	/// Synchronizes files that are cloud-saved in the background.
-	/// When this is called, we copy all newer files from the cloud save backend to the user:// directory, overwriting
-	/// the saves that are there.
-	/// If there is no active cloud save backend, then this method does nothing.
-	/// </summary>
 	public async Task SyncCloudToLocal()
 	{
 		if (!(_saveStore is CloudSaveStore cloudStore))
@@ -537,12 +431,6 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// Deletes settings.save from cloud storage if it exists. Settings are machine-specific (display,
-	/// controller, window) and were never intended to be cloud-synced. A stale cloud copy was uploaded
-	/// by earlier versions and can cause sync conflicts when the local settings legitimately differ
-	/// (e.g., different platform, different display configuration).
-	/// </summary>
 	private static void DeleteSettingsFromCloud(CloudSaveStore cloudStore)
 	{
 		try
@@ -559,10 +447,6 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// Removes current_run.save files that have already been saved to run history.
-	/// This prevents stale saves from being restored after cloud sync issues (e.g., Steam Deck suspend).
-	/// </summary>
 	private void CleanupStaleCurrentRunSaves()
 	{
 		for (int i = 1; i <= 3; i++)
@@ -572,9 +456,6 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// Checks if a current_run.save file for a specific profile is stale (already exists in history) and deletes it.
-	/// </summary>
 	private void CleanupStaleCurrentRunSaveForProfile(int profileId, string runSaveFileName)
 	{
 		string runSavePath = RunSaveManager.GetRunSavePath(profileId, runSaveFileName);
@@ -620,10 +501,6 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// Removes orphaned .tmp files from all save directories.
-	/// These can be left behind if the game crashes or is force-killed during an async write.
-	/// </summary>
 	private void CleanupTemporaryFiles()
 	{
 		_saveStore.DeleteTemporaryFiles("");
@@ -635,10 +512,6 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// Extracts the start_time field from a serialized run save JSON without full deserialization.
-	/// Returns null if the field cannot be extracted.
-	/// </summary>
 	private static long? ExtractStartTimeFromRunSave(string json)
 	{
 		try
@@ -655,14 +528,6 @@ public class SaveManager : IProfileIdProvider
 		return null;
 	}
 
-	/// <summary>
-	/// This returns true under the following circumstances:
-	/// - If there is a cloud save backend with no files uploaded and we have save files locally
-	/// - If the cloud save backend is present and has a local cache, but cloud sync is not enabled
-	///
-	/// If true is returned, then OverwriteCloudWithLocal should be called.
-	/// If false is returned, then SyncCloudToLocal should be called.
-	/// </summary>
 	public bool ShouldOverwriteCloudWithLocal()
 	{
 		if (!(_saveStore is CloudSaveStore cloudSaveStore))
@@ -684,12 +549,6 @@ public class SaveManager : IProfileIdProvider
 		return true;
 	}
 
-	/// <summary>
-	/// If any cloud backend is enabled, but there are no files uploaded to that backend and we have save files on our
-	/// end, then this uploads all of our files to the cloud.
-	/// If there is no active cloud save backend, then this method does nothing.
-	/// This is used to upload all save files to the cloud for the first time when we enable a cloud save backend.
-	/// </summary>
 	public async Task OverwriteCloudWithLocal()
 	{
 		if (!(_saveStore is CloudSaveStore cloudStore))
@@ -729,22 +588,11 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// Load the current run save.
-	/// </summary>
-	/// <returns>The current run save, wrapped in a result object that contains some status info.</returns>
 	public ReadSaveResult<SerializableRun> LoadRunSave()
 	{
 		return _runSaveManager.LoadRunSave();
 	}
 
-	/// <summary>
-	/// Load and validate the current multiplayer run save.
-	/// Performs deep validation to ensure all save content is valid and handles corruption automatically.
-	/// If the save contains deprecated content, the model IDs are automatically replaced with the deprecated versions.
-	/// </summary>
-	/// <param name="localPlayerId">The local player ID to validate against</param>
-	/// <returns>The current multiplayer run save with validation status</returns>
 	public ReadSaveResult<SerializableRun> LoadAndCanonicalizeMultiplayerRunSave(ulong localPlayerId)
 	{
 		return _runSaveManager.LoadAndCanonicalizeMultiplayerRunSave(localPlayerId);
@@ -788,10 +636,6 @@ public class SaveManager : IProfileIdProvider
 		return JsonSerializationUtility.FromJson<T>(json);
 	}
 
-	/// <summary>
-	/// Returns true if all ftues are disabled OR if the given ftue key exists (seen by the player before).
-	/// Is also disabled if there's no game (test mode)
-	/// </summary>
 	public bool SeenFtue(string ftueKey)
 	{
 		return _progressSaveManager.SeenFtue(ftueKey);
@@ -807,12 +651,6 @@ public class SaveManager : IProfileIdProvider
 		_progressSaveManager.SaveProgress();
 	}
 
-	/// <summary>
-	/// Generates an unlock state from the current progress save.
-	/// This object can be used to query what the player has unlocked.
-	/// This should only be called from the main menu. When in a run, you should use the unlock state on <see cref="T:MegaCrit.Sts2.Core.Runs.RunManager" />
-	/// or on Player. See the documentation in UnlockState for why.
-	/// </summary>
 	public UnlockState GenerateUnlockStateFromProgress()
 	{
 		return _progressSaveManager.GenerateUnlockState();
@@ -866,36 +704,26 @@ public class SaveManager : IProfileIdProvider
 		return Progress.DiscoveredRelics.Contains(relic.Id);
 	}
 
-	/// <summary>
-	/// Sets an Epoch Slot to be available but not revealed/obtained.
-	/// </summary>
 	public void UnlockSlot(string epochId)
 	{
 		Progress.UnlockSlot(epochId);
 	}
 
-	/// <summary>
-	/// Sets or creates an Epoch to any EpochState we wish.
-	/// Used by TimelineExpansions for overriding behaviors.
-	/// </summary>
 	public void ObtainEpoch(string epochId)
 	{
 		Progress.ObtainEpoch(epochId);
 	}
 
-	/// <summary>
-	/// Sets or creates an Epoch to any EpochState we wish.
-	/// Used by TimelineExpansions for overriding behaviors.
-	/// </summary>
 	public void ObtainEpochOverride(string epochId, EpochState state)
 	{
 		Progress.ObtainEpochOverride(epochId, state);
 	}
 
-	/// <summary>
-	/// Reveals an Epoch. Sets an Epoch to IsComplete.
-	/// Occurs when the player clicks on an Obtained Epoch in the Timeline screen.
-	/// </summary>
+	public void ObtainFoolEpochIfDefectRunCompleted()
+	{
+		_progressSaveManager.ObtainFoolEpochIfDefectRunCompleted();
+	}
+
 	public void RevealEpoch(string epochId, bool isDebug = false)
 	{
 		Progress.RevealEpoch(epochId);
@@ -905,9 +733,6 @@ public class SaveManager : IProfileIdProvider
 		}
 	}
 
-	/// <summary>
-	/// Called by the debug Reset Progress button in the Timeline screen.
-	/// </summary>
 	public void ResetTimelineProgress()
 	{
 		Progress.ResetEpochs();
@@ -915,21 +740,11 @@ public class SaveManager : IProfileIdProvider
 		SaveProgressFile();
 	}
 
-	/// <summary>
-	/// Checks if an epoch has been revealed on the timeline.
-	/// You should only be querying this from the main menu. When you are inside of a run, you should be using
-	/// <see cref="P:MegaCrit.Sts2.Core.Runs.RunState.UnlockState" /> or <see cref="P:MegaCrit.Sts2.Core.Entities.Players.Player.UnlockState" />.
-	/// </summary>
 	public bool IsEpochRevealed<T>() where T : EpochModel
 	{
 		return Progress.IsEpochRevealed(EpochModel.GetId<T>());
 	}
 
-	/// <summary>
-	/// Checks if an epoch has been revealed on the timeline.
-	/// You should only be querying this from the main menu. When you are inside of a run, you should be using
-	/// <see cref="P:MegaCrit.Sts2.Core.Runs.RunState.UnlockState" /> or <see cref="P:MegaCrit.Sts2.Core.Entities.Players.Player.UnlockState" />.
-	/// </summary>
 	public bool IsEpochRevealed(string id)
 	{
 		return Progress.IsEpochRevealed(id);
@@ -945,13 +760,9 @@ public class SaveManager : IProfileIdProvider
 		return GetCardUnlockEpochIds().Length * 3;
 	}
 
-	/// <summary>
-	/// Helper method which returns every Epoch that unlocks cards in the game.
-	/// Modify this list to affect our total card unlock statistics.
-	/// </summary>
 	private static string[] GetCardUnlockEpochIds()
 	{
-		return new string[20]
+		return new string[23]
 		{
 			EpochModel.GetId<Colorless1Epoch>(),
 			EpochModel.GetId<Colorless2Epoch>(),
@@ -972,7 +783,10 @@ public class SaveManager : IProfileIdProvider
 			EpochModel.GetId<Defect7Epoch>(),
 			EpochModel.GetId<Necrobinder2Epoch>(),
 			EpochModel.GetId<Necrobinder5Epoch>(),
-			EpochModel.GetId<Necrobinder7Epoch>()
+			EpochModel.GetId<Necrobinder7Epoch>(),
+			EpochModel.GetId<Fool2Epoch>(),
+			EpochModel.GetId<Fool5Epoch>(),
+			EpochModel.GetId<Fool7Epoch>()
 		};
 	}
 
@@ -986,13 +800,9 @@ public class SaveManager : IProfileIdProvider
 		return GetRelicUnlockEpochIds().Length * 3;
 	}
 
-	/// <summary>
-	/// Helper method which returns every Epoch that unlocks relics in the game.
-	/// Modify this list to affect our total relic unlock statistics.
-	/// </summary>
 	private static string[] GetRelicUnlockEpochIds()
 	{
-		return new string[15]
+		return new string[17]
 		{
 			EpochModel.GetId<Relic1Epoch>(),
 			EpochModel.GetId<Relic2Epoch>(),
@@ -1008,7 +818,9 @@ public class SaveManager : IProfileIdProvider
 			EpochModel.GetId<Defect3Epoch>(),
 			EpochModel.GetId<Defect6Epoch>(),
 			EpochModel.GetId<Necrobinder3Epoch>(),
-			EpochModel.GetId<Necrobinder6Epoch>()
+			EpochModel.GetId<Necrobinder6Epoch>(),
+			EpochModel.GetId<Fool3Epoch>(),
+			EpochModel.GetId<Fool6Epoch>()
 		};
 	}
 
@@ -1022,13 +834,9 @@ public class SaveManager : IProfileIdProvider
 		return GetPotionUnlockEpochIds().Length * 3;
 	}
 
-	/// <summary>
-	/// Helper method which returns every Epoch that unlocks relics in the game.
-	/// Modify this list to affect our total relic unlock statistics.
-	/// </summary>
 	private static string[] GetPotionUnlockEpochIds()
 	{
-		return new string[7]
+		return new string[8]
 		{
 			EpochModel.GetId<Potion1Epoch>(),
 			EpochModel.GetId<Potion2Epoch>(),
@@ -1036,13 +844,11 @@ public class SaveManager : IProfileIdProvider
 			EpochModel.GetId<Silent4Epoch>(),
 			EpochModel.GetId<Regent4Epoch>(),
 			EpochModel.GetId<Defect4Epoch>(),
-			EpochModel.GetId<Necrobinder4Epoch>()
+			EpochModel.GetId<Necrobinder4Epoch>(),
+			EpochModel.GetId<Fool4Epoch>()
 		};
 	}
 
-	/// <summary>
-	/// Returns the sum of the Ascension progress of every character the player has.
-	/// </summary>
 	public int GetAggregateAscensionProgress()
 	{
 		return Progress.CharacterStats.Values.Sum((CharacterStats stat) => stat.MaxAscension);
@@ -1058,17 +864,11 @@ public class SaveManager : IProfileIdProvider
 		return Progress.EnemyStats.Values.Sum((EnemyStats enemy) => enemy.TotalWins);
 	}
 
-	/// <summary>
-	/// <see cref="M:MegaCrit.Sts2.Core.Saves.Managers.ProgressSaveManager.GetRevealableEpochs" />
-	/// </summary>
 	public IEnumerable<SerializableEpoch> GetRevealableEpochs()
 	{
 		return _progressSaveManager.GetRevealableEpochs();
 	}
 
-	/// <summary>
-	/// Returns the number of Epochs we have that the player has discovered but not yet revealed in the Timeline.
-	/// </summary>
 	public int GetDiscoveredEpochCount()
 	{
 		return GetRevealableEpochs().Count();
@@ -1094,14 +894,6 @@ public class SaveManager : IProfileIdProvider
 		return Progress.CurrentScore;
 	}
 
-	/// <summary>
-	/// Called whenever the score bar is filled. Grants the next epoch in
-	/// <see cref="P:MegaCrit.Sts2.Core.Timeline.EpochModel.AgnosticUnlockOrder" />, or returns null once the player has them all.
-	/// </summary>
-	/// <remarks>
-	/// NOTE: This path ignores the <see cref="M:MegaCrit.Sts2.Core.Runs.GameModeExtension.AreAchievementsAndEpochsLocked(MegaCrit.Sts2.Core.Runs.GameMode)" /> check
-	/// that the mid-run and post-run grants respect.
-	/// </remarks>
 	public EpochModel? GrantNextUnlock()
 	{
 		string text = Progress.GrantNextUnlock();
@@ -1112,9 +904,6 @@ public class SaveManager : IProfileIdProvider
 		return null;
 	}
 
-	/// <summary>
-	/// The player needs to complete any run to access the compendium or be a dev.
-	/// </summary>
 	public bool IsCompendiumAvailable()
 	{
 		if (Progress.NumberOfRuns <= 0)

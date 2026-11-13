@@ -179,7 +179,7 @@ public class NCombatVfxSpawner : Control
 	[Export(PropertyHint.None, "")]
 	private NGaseousScreenVfx _gaseousScreenVfx;
 
-	private decimal _damage = 10m;
+	private const decimal _damage = 10m;
 
 	private bool _shiftPressed;
 
@@ -264,7 +264,7 @@ public class NCombatVfxSpawner : Control
 	{
 		NGrandFinaleVfx child = NGrandFinaleVfx.Create(_playerPosition.GlobalPosition);
 		_combatVfxContainer.AddChildSafely(child);
-		await Cmd.Wait(NGrandFinaleVfx.totalAnticipationDuration);
+		await Cmd.Wait(1.625f);
 		NGrandFinaleImpactVfx child2 = NGrandFinaleImpactVfx.Create(_enemyPosition.GlobalPosition, _enemyGroundPosition.GlobalPosition);
 		_combatVfxContainer.AddChildSafely(child2);
 	}

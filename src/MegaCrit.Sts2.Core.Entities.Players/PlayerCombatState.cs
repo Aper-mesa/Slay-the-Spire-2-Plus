@@ -4,6 +4,7 @@ using System.Linq;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.FoolArrows;
 using MegaCrit.Sts2.Core.Entities.Orbs;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Models;
@@ -23,6 +24,8 @@ public class PlayerCombatState
 	private int _stars;
 
 	private PlayerTurnPhase _phase;
+
+	private readonly List<ArrowSlot> _arrows;
 
 	public IReadOnlyList<Creature> Pets => _pets;
 
@@ -120,11 +123,17 @@ public class PlayerCombatState
 
 	public OrbQueue OrbQueue { get; }
 
+	public IReadOnlyList<ArrowSlot> Arrows => _arrows.ToList();
+
+	public int AvailableArrowCount => _arrows.Count((ArrowSlot a) => a.IsAvailable);
+
 	public event Action? PlayerTurnPhaseChanged;
 
 	public event Action<int, int>? EnergyChanged;
 
 	public event Action<int, int>? StarsChanged;
+
+	public event Action? ArrowsChanged;
 
 	public PlayerCombatState(Player player)
 	{
@@ -137,6 +146,11 @@ public class PlayerCombatState
 		OrbQueue = new OrbQueue(player);
 		OrbQueue.Clear();
 		OrbQueue.AddCapacity(player.BaseOrbSlotCount);
+		_arrows = new List<ArrowSlot>();
+		for (int i = 0; i < player.Character.BaseArrowSlotCount; i++)
+		{
+			GainArrow();
+		}
 	}
 
 	public void AfterCombatEnd()
@@ -162,6 +176,12 @@ public class PlayerCombatState
 	public void ResetEnergy()
 	{
 		Energy = MaxEnergy;
+	}
+
+	public void GainArrow()
+	{
+		_arrows.Add(new ArrowSlot(_player));
+		ArrowsChanged?.Invoke();
 	}
 
 	public void AddMaxEnergyToCurrent()

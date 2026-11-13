@@ -22,7 +22,7 @@ public sealed class Astrolabe : RelicModel
 		List<CardModel> list = (await CardSelectCmd.FromDeckForTransformation(prefs: new CardSelectorPrefs(CardSelectorPrefs.TransformSelectionPrompt, DynamicVars.Cards.IntValue), player: Owner)).ToList();
 		foreach (CardModel item in list)
 		{
-			CardModel cardModel = CardFactory.CreateRandomCardForTransform(item, isInCombat: false, Owner.RunState.Rng.Niche);
+			CardModel cardModel = CardFactory.CreateRandomCardForTransform(item, isInCombat: false, Owner.PlayerRng.Transformations);
 			CardCmd.Upgrade(cardModel);
 			await CardCmd.Transform(item, cardModel);
 		}

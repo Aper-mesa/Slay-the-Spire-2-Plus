@@ -102,15 +102,15 @@ public class NGrandFinaleVfx : Node2D
 
 	private CancellationTokenSource? _cts;
 
-	private static readonly float _spotlightDuration = 1.25f;
+	private const float _spotlightDuration = 1.25f;
 
-	private static readonly float _anticipationDuration = 0.25f;
+	private const float _anticipationDuration = 0.25f;
 
-	private static readonly float _slashDuration = 0.125f;
+	private const float _slashDuration = 0.125f;
 
-	private static readonly float _hitDuration = 0.0125f;
+	private const float _hitDuration = 0.0125f;
 
-	public static readonly float totalAnticipationDuration = _spotlightDuration + _anticipationDuration + _slashDuration;
+	public const float totalAnticipationDuration = 1.625f;
 
 	public static NGrandFinaleVfx? Create(Creature creature)
 	{
@@ -142,7 +142,7 @@ public class NGrandFinaleVfx : Node2D
 		_anticipationParticles.GlobalPosition = playerPosition;
 		_slashParticles.GlobalPosition = playerPosition;
 		_endParticles.GlobalPosition = playerPosition;
-		_spotlight.Modulate = new Color(1f, 1f, 1f, 0f);
+		_spotlight.Modulate = StsColors.transparentWhite;
 	}
 
 	public override void _Ready()
@@ -158,20 +158,20 @@ public class NGrandFinaleVfx : Node2D
 	private async Task PlaySequence()
 	{
 		_cts = new CancellationTokenSource();
-		_spotlightParticles.GlobalPosition = new Vector2(GetViewportRect().Size.X / 2f, 0f);
+		_spotlightParticles.GlobalPosition = new Vector2(GetViewportRect().Size.X * 0.5f, 0f);
 		Tween tween = GetTree().CreateTween();
-		tween.TweenProperty(_spotlight, "modulate", new Color(1f, 1f, 1f), 1.0);
+		tween.TweenProperty(_spotlight, "modulate", Colors.White, 1.0);
 		_spotlightParticles.Restart();
-		await Cmd.Wait(_spotlightDuration, _cts.Token);
+		await Cmd.Wait(1.25f, _cts.Token);
 		_anticipationParticles.Restart();
-		await Cmd.Wait(_anticipationDuration, _cts.Token);
+		await Cmd.Wait(0.25f, _cts.Token);
 		_slashParticles.Restart();
-		await Cmd.Wait(_slashDuration, _cts.Token);
+		await Cmd.Wait(0.125f, _cts.Token);
 		NGame.Instance?.ScreenShake(ShakeStrength.Strong, ShakeDuration.Normal);
-		await Cmd.Wait(_hitDuration, _cts.Token);
+		await Cmd.Wait(0.0125f, _cts.Token);
 		_endParticles.Restart();
 		Tween tween2 = GetTree().CreateTween();
-		tween2.TweenProperty(_spotlight, "modulate", new Color(1f, 1f, 1f, 0f), 0.5);
+		tween2.TweenProperty(_spotlight, "modulate", StsColors.transparentWhite, 0.5);
 		await Cmd.Wait(2f, _cts.Token);
 		this.QueueFreeSafely();
 	}

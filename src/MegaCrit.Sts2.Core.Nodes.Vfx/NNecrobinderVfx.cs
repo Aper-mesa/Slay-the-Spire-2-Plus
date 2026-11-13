@@ -151,9 +151,9 @@ public class NNecrobinderVfx : Node
 
 	private static readonly StringName _opactyString = new StringName("opacity");
 
-	private Tween _tween;
+	private Tween? _tween;
 
-	private Tween _tween2;
+	private Tween? _tween2;
 
 	private GpuParticles2D? _scytheFireParticles1;
 

@@ -150,7 +150,7 @@ public class NAncientNameBanner : Control
 		_tween.TweenProperty(_titleLabel, "modulate:a", 0f, 1.0).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
 		_tween.TweenProperty(_epithetLabel, "modulate", Colors.Red, 1.0).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
 		_tween.TweenProperty(_epithetLabel, "modulate:a", 0f, 1.0).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
-		if (await _tween.AwaitFinished(this) && this.IsValid())
+		if (await _tween.AwaitFinished(this) == TweenOutcome.Finished && this.IsValid())
 		{
 			_moveTween.Kill();
 			_moveTween = CreateTween().SetParallel();
@@ -165,7 +165,7 @@ public class NAncientNameBanner : Control
 			_titleLabel.AddThemeColorOverride(ThemeConstants.RichTextLabel.DefaultColor, StsColors.cream);
 			_epithetLabel.HorizontalAlignment = HorizontalAlignment.Left;
 			_epithetLabel.VerticalAlignment = VerticalAlignment.Bottom;
-			_epithetLabel.Modulate = new Color(1f, 1f, 1f, 0f);
+			_epithetLabel.Modulate = StsColors.transparentWhite;
 			_epithetLabel.AddThemeFontSizeOverride(ThemeConstants.Label.FontSize, 18);
 			_epithetLabel.AddThemeColorOverride(ThemeConstants.Label.FontOutlineColor, Colors.Transparent);
 			_epithetLabel.AddThemeColorOverride(ThemeConstants.Label.FontShadowColor, Colors.Transparent);

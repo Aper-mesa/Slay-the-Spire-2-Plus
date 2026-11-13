@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -28,6 +29,8 @@ public sealed class InterceptPower : PowerModel
 
 	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new StringVar("Covering"));
 
+	public bool IsCovering => GetInternalData<Data>().coveredCreatures.Count > 0;
+
 	protected override object InitInternalData()
 	{
 		return new Data();
@@ -36,10 +39,22 @@ public sealed class InterceptPower : PowerModel
 	public void AddCoveredCreature(Creature c)
 	{
 		List<Creature> coveredCreatures = GetInternalData<Data>().coveredCreatures;
-		if (!GetInternalData<Data>().coveredCreatures.Contains(c))
+		if (!coveredCreatures.Contains(c))
 		{
 			coveredCreatures.Add(c);
 		}
+		RefreshCoveringNames();
+	}
+
+	public void RemoveCoveredCreature(Creature c)
+	{
+		GetInternalData<Data>().coveredCreatures.Remove(c);
+		RefreshCoveringNames();
+	}
+
+	private void RefreshCoveringNames()
+	{
+		List<Creature> coveredCreatures = GetInternalData<Data>().coveredCreatures;
 		StringVar stringVar = (StringVar)DynamicVars["Covering"];
 		stringVar.StringValue = "";
 		for (int i = 0; i < coveredCreatures.Count; i++)
@@ -69,9 +84,24 @@ public sealed class InterceptPower : PowerModel
 		return GetInternalData<Data>().coveredCreatures.Count + 1;
 	}
 
+	public override async Task AfterRemoved(Creature oldOwner)
+	{
+		if (oldOwner.CombatState == null)
+		{
+			return;
+		}
+		List<CoveredPower> list = (from c in oldOwner.CombatState.GetTeammatesOf(oldOwner).SelectMany((Creature t) => t.GetPowerInstances<CoveredPower>())
+			where c.Applier == oldOwner
+			select c).ToList();
+		foreach (CoveredPower item in list)
+		{
+			await PowerCmd.Remove(item);
+		}
+	}
+
 	public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
 	{
-		if (side == CombatSide.Enemy)
+		if (side == CombatSide.Enemy && Owner.Powers.Contains(this))
 		{
 			await PowerCmd.Remove(this);
 		}

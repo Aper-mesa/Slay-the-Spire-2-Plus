@@ -26,7 +26,7 @@ public abstract class RestSiteOption
 
 	public LocString Title => new LocString("rest_site_ui", "OPTION_" + OptionId + ".name");
 
-	public virtual LocString Description => new LocString("rest_site_ui", "OPTION_" + OptionId + ".description");
+	public virtual LocString Description => new LocString("rest_site_ui", IsEnabled ? ("OPTION_" + OptionId + ".description") : ("OPTION_" + OptionId + ".descriptionDisabled"));
 
 	private string IconPath => ImageHelper.GetImagePath("ui/rest_site/option_" + OptionId.ToLowerInvariant() + ".png");
 

@@ -85,11 +85,12 @@ public class RewardsSet
 	public RewardsSet WithRewardsFromRoom(AbstractRoom room)
 	{
 		Room = room;
-		if (room.RoomType == RoomType.Boss && Player.RunState.CurrentActIndex >= Player.RunState.Acts.Count - 1)
+		List<Reward> list = new List<Reward>();
+		if (Hook.TryReplaceDefaultRoomRewards(Player.RunState, Player, list, room))
 		{
-			return this;
+			Rewards.AddRange(list);
 		}
-		if (!TryGenerateTutorialRewards(Player, room))
+		else if ((room.RoomType != RoomType.Boss || Player.RunState.CurrentActIndex < Player.RunState.Acts.Count - 1) && !TryGenerateTutorialRewards(Player, room))
 		{
 			Rewards.AddRange(GenerateRewardsFor(Player, room));
 		}
@@ -344,44 +345,44 @@ public class RewardsSet
 				player.RunState.CreateCard<SetupStrike>(player),
 				player.RunState.CreateCard<Tremble>(player),
 				player.RunState.CreateCard<BloodWall>(player)
-			}, null), 
+			}, null),
 			1 => (new CardModel[3]
 			{
 				player.RunState.CreateCard<Breakthrough>(player),
 				player.RunState.CreateCard<Inflame>(player),
 				player.RunState.CreateCard<Anger>(player)
-			}, null), 
+			}, null),
 			2 => (new CardModel[3]
 			{
 				player.RunState.CreateCard<IronWave>(player),
 				player.RunState.CreateCard<Dismantle>(player),
 				player.RunState.CreateCard<Cinder>(player)
-			}, ModelDb.Potion<FirePotion>().ToMutable()), 
+			}, ModelDb.Potion<FirePotion>().ToMutable()),
 			3 => (new CardModel[3]
 			{
 				player.RunState.CreateCard<Stomp>(player),
 				player.RunState.CreateCard<ShrugItOff>(player),
 				player.RunState.CreateCard<Armaments>(player)
-			}, null), 
+			}, null),
 			4 => (new CardModel[3]
 			{
 				player.RunState.CreateCard<Thunderclap>(player),
 				player.RunState.CreateCard<SetupStrike>(player),
 				player.RunState.CreateCard<Rage>(player)
-			}, ModelDb.Potion<StrengthPotion>().ToMutable()), 
+			}, ModelDb.Potion<StrengthPotion>().ToMutable()),
 			5 => (new CardModel[3]
 			{
 				player.RunState.CreateCard<BattleTrance>(player),
 				player.RunState.CreateCard<TrueGrit>(player),
 				player.RunState.CreateCard<Uppercut>(player)
-			}, null), 
+			}, null),
 			6 => (new CardModel[3]
 			{
 				player.RunState.CreateCard<Bloodletting>(player),
 				player.RunState.CreateCard<Whirlwind>(player),
 				player.RunState.CreateCard<Tremble>(player)
-			}, ModelDb.Potion<EnergyPotion>().ToMutable()), 
-			_ => null, 
+			}, ModelDb.Potion<EnergyPotion>().ToMutable()),
+			_ => null,
 		};
 	}
 

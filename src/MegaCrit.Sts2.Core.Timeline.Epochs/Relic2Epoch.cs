@@ -16,7 +16,7 @@ public class Relic2Epoch : EpochModel
 
 	public override EpochEra Era => EpochEra.Seeds1;
 
-	public override int EraPosition => 1;
+	public override int EraPosition => 2;
 
 	public override string StoryId => "Magnum_Opus";
 

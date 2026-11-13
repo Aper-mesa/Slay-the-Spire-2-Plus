@@ -75,6 +75,12 @@ public sealed class Necrobinder : CharacterModel
 
 	public override Color RemoteTargetingLineOutline => new Color("702D6FFF");
 
+	public override float DreadBgBrightness => 0.7f;
+
+	public override float DreadBgContrast => 1.05f;
+
+	public override Color DreadNameColor => new Color("FF8FEAC0");
+
 	public override string CharacterTransitionSfx => "event:/sfx/ui/wipe_ironclad";
 
 	protected override List<(AnimState, string)> AnimationStates => new List<(AnimState, string)>

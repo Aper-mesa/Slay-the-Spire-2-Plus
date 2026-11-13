@@ -19,8 +19,9 @@ public class NeowEpoch : EpochModel
 
 	public override EpochModel[] GetTimelineExpansion()
 	{
-		return new EpochModel[12]
+		return new EpochModel[13]
 		{
+			EpochModel.Get(EpochModel.GetId<BlitzEpoch>()),
 			EpochModel.Get(EpochModel.GetId<Colorless1Epoch>()),
 			EpochModel.Get(EpochModel.GetId<CustomAndSeedsEpoch>()),
 			EpochModel.Get(EpochModel.GetId<DailyRunEpoch>()),

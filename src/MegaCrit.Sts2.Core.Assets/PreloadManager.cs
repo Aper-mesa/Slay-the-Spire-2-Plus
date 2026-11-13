@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Merchant;
 using MegaCrit.Sts2.Core.Entities.RestSite;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
@@ -13,6 +14,7 @@ using MegaCrit.Sts2.Core.Nodes.Relics;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
+using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.TestSupport;
 
@@ -60,6 +62,7 @@ public static class PreloadManager
 	public static async Task LoadCommonAndMainMenuAssets()
 	{
 		Cache.UnloadMissedCacheAssets();
+		EnsureAtlasesLoaded();
 		await LoadAssetSets("Common", AssetSets.CommonAssets, AssetSets.MainMenuSet);
 	}
 
@@ -81,6 +84,7 @@ public static class PreloadManager
 		{
 			List<CharacterModel> list = characters.ToList();
 			bool isMultiplayer = RunManager.Instance.NetService.Type.IsMultiplayer();
+			EnsureAtlasesLoaded();
 			AssetSets.RunSet = new HashSet<string>(GetRunAssetPaths(list, isMultiplayer));
 			await (await LoadAssetSets("characters=" + string.Join(',', list.Select((CharacterModel c) => c.Id.Entry)), AssetSets.CommonAssets, AssetSets.RunSet)).WaitForCompletion();
 			GC.Collect();
@@ -91,6 +95,7 @@ public static class PreloadManager
 	{
 		if (!TestMode.IsOn)
 		{
+			EnsureAtlasesLoaded();
 			AssetSets.Act = new HashSet<string>(act.AssetPaths);
 			await (await LoadAssetSets("Act=" + act.Id.Entry, AssetSets.CommonAssets, AssetSets.RunSet, AssetSets.Act)).WaitForCompletion();
 			GC.Collect();
@@ -121,7 +126,17 @@ public static class PreloadManager
 
 	public static async Task LoadRoomMerchantAssets()
 	{
-		await LoadRoomAssets("Merchant Room", NMerchantRoom.AssetPaths);
+		await LoadRoomAssets("Standard Merchant Room", NStandardMerchantRoom.AssetPaths);
+	}
+
+	public static async Task LoadRoomBlitzMerchantAssets(BackgroundAssets backgroundAssets, IEnumerable<BlitzMerchantEntry> entries)
+	{
+		List<string> list = new List<string>();
+		list.AddRange(NBlitzMerchantRoom.AssetPaths);
+		list.AddRange(backgroundAssets.AssetPaths);
+		list.AddRange(entries.Select((BlitzMerchantEntry e) => e.IconPath));
+		list.AddRange(entries.Select((BlitzMerchantEntry e) => e.SmallIconPath));
+		await LoadRoomAssets("Blitz Merchant Room", new _003C_003Ez__ReadOnlyList<string>(list));
 	}
 
 	public static async Task LoadRoomRestSite(ActModel actModel, IEnumerable<RestSiteOption> restSiteOptions)
@@ -173,6 +188,21 @@ public static class PreloadManager
 			return AssetLoadingSession.Empty();
 		}
 		return LoadAssets(needLoaded, name);
+	}
+
+	/// <summary>
+	/// Loads every atlas on the main thread before a threaded preload session starts.
+	/// Sprite .tres paths (and scenes that reference them) otherwise lazy-load their atlas through
+	/// AtlasResourceLoader on Godot's loader threads, where the nested synchronous loads can
+	/// deadlock the threaded loader. The main menu flow gets this ordering from
+	/// OneTimeInitialization.ExecuteDeferred; flows that skip the menu (scene bootstrapper) do not.
+	/// </summary>
+	private static void EnsureAtlasesLoaded()
+	{
+		if (Enabled && !TestMode.IsOn)
+		{
+			AtlasManager.LoadAllAtlases();
+		}
 	}
 
 	private static AssetLoadingSession LoadAssets(IEnumerable<string> assetPaths, string name)

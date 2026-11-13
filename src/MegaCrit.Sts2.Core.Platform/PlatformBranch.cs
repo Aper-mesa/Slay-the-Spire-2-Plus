@@ -25,7 +25,8 @@ public enum PlatformBranch
 	/// </summary>
 	PublicBeta,
 	/// <summary>
-	/// Private beta branch, i.e. what Byrdlett has access to.
+	/// Private beta branch, i.e. what Byrdlett has access to. Every Steam branch whose name starts with "private-"
+	/// resolves to this member.
 	/// </summary>
 	PrivateBeta,
 	/// <summary>

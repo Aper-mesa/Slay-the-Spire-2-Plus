@@ -28,7 +28,7 @@ public sealed class WaterloggedScriptorium : EventModel
 	{
 		new MaxHpVar(6m),
 		new GoldVar(55),
-		new GoldVar("PricklySpongeGold", 99),
+		new GoldVar("PricklySpongeGold", 120),
 		new CardsVar(2)
 	});
 

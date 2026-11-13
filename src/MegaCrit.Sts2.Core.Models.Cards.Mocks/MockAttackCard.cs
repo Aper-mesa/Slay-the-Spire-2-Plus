@@ -17,6 +17,8 @@ public sealed class MockAttackCard : MockCardModel
 
 	private bool _fromOsty;
 
+	private bool _fromArrow;
+
 	private TargetType _targetingType = TargetType.AnyEnemy;
 
 	public override CardType Type => CardType.Attack;
@@ -63,6 +65,13 @@ public sealed class MockAttackCard : MockCardModel
 		AssertMutable();
 		_fromOsty = true;
 		MockTag(CardTag.OstyAttack);
+		return this;
+	}
+
+	public MockAttackCard MockFromArrow()
+	{
+		AssertMutable();
+		_fromArrow = true;
 		return this;
 	}
 
@@ -137,7 +146,15 @@ public sealed class MockAttackCard : MockCardModel
 		{
 			attackCommand = attackCommand.Unpowered();
 		}
-		await attackCommand.Execute(choiceContext);
+		if (!_fromArrow)
+		{
+			await attackCommand.Execute(choiceContext);
+		}
+		else
+		{
+			attackCommand.FromArrow();
+			await ArrowCmd.ShootArrowAtTarget(cardPlay.Target, Owner, attackCommand, choiceContext);
+		}
 		if (_mockExtraLogic != null)
 		{
 			await _mockExtraLogic(this);

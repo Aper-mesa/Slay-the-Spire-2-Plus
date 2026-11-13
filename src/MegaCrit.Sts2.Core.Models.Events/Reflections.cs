@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Characters;
 using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
@@ -15,6 +16,8 @@ namespace MegaCrit.Sts2.Core.Models.Events;
 
 public sealed class Reflections : EventModel
 {
+	public override FoolPronounGuess FoolPronounGuess => FoolPronounGuess.It;
+
 	public override void OnRoomEnter()
 	{
 		NEventRoom.Instance?.VfxContainer?.AddChildSafely(NMirrorVfx.Create());

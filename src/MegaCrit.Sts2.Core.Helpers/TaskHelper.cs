@@ -33,9 +33,9 @@ public static class TaskHelper
 		{
 			if (!(ex is OperationCanceledException))
 			{
+				UnobservedFault?.Invoke(ex);
 				Log.Error(ex.ToString());
 				SentryService.CaptureException(ex);
-				UnobservedFault?.Invoke(ex);
 			}
 			throw;
 		}

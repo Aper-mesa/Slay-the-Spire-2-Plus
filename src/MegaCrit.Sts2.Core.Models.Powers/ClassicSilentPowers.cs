@@ -84,7 +84,7 @@ public sealed class ClassicSilentCorpseExplosionPower : ClassicSilentPowerModel
     protected override PowerModel ArtPower => ModelDb.Power<PoisonPower>();
     public override PowerType Type => PowerType.Debuff;
 
-    public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+    public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
     {
         if (creature != Owner || !creature.IsDead) return;
         var targets = Owner.CombatState.Creatures.Where(c => c.Side == Owner.Side).Where(c => c != Owner && c.IsAlive).ToList();

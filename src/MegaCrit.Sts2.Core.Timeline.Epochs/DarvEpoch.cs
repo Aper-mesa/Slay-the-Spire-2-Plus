@@ -12,7 +12,7 @@ public class DarvEpoch : EpochModel
 
 	public override EpochEra Era => EpochEra.Invitation4;
 
-	public override int EraPosition => 1;
+	public override int EraPosition => 3;
 
 	public override string StoryId => "Tales_From_The_Spire";
 

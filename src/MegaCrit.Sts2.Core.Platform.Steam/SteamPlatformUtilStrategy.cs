@@ -21,7 +21,7 @@ public class SteamPlatformUtilStrategy : IPlatformUtilStrategy
 
 	private bool _isPlatformOverlayOpen;
 
-	private Callback<GameOverlayActivated_t>? _steamOverlayCallback;
+	private readonly Callback<GameOverlayActivated_t>? _steamOverlayCallback;
 
 	public bool SupportsInviteDialog => true;
 
@@ -144,32 +144,32 @@ public class SteamPlatformUtilStrategy : IPlatformUtilStrategy
 	{
 		return GetRawLanguage() switch
 		{
-			"arabic" => "ara", 
-			"schinese" => "zhs", 
-			"tchinese" => "zht", 
-			"czech" => "cze", 
-			"dutch" => "dut", 
-			"english" => "eng", 
-			"french" => "fra", 
-			"german" => "deu", 
-			"greek" => "gre", 
-			"indonesian" => "ind", 
-			"italian" => "ita", 
-			"japanese" => "jpn", 
-			"korean" => "kor", 
-			"norwegian" => "nor", 
-			"polish" => "pol", 
-			"portuguese" => "por", 
-			"brazilian" => "ptb", 
-			"russian" => "rus", 
-			"spanish" => "spa", 
-			"latam" => "esp", 
-			"swedish" => "swe", 
-			"thai" => "tha", 
-			"turkish" => "tur", 
-			"ukrainian" => "ukr", 
-			"vietnamese" => "vie", 
-			_ => null, 
+			"arabic" => "ara",
+			"schinese" => "zhs",
+			"tchinese" => "zht",
+			"czech" => "cze",
+			"dutch" => "dut",
+			"english" => "eng",
+			"french" => "fra",
+			"german" => "deu",
+			"greek" => "gre",
+			"indonesian" => "ind",
+			"italian" => "ita",
+			"japanese" => "jpn",
+			"korean" => "kor",
+			"norwegian" => "nor",
+			"polish" => "pol",
+			"portuguese" => "por",
+			"brazilian" => "ptb",
+			"russian" => "rus",
+			"spanish" => "spa",
+			"latam" => "esp",
+			"swedish" => "swe",
+			"thai" => "tha",
+			"turkish" => "tur",
+			"ukrainian" => "ukr",
+			"vietnamese" => "vie",
+			_ => null,
 		};
 	}
 

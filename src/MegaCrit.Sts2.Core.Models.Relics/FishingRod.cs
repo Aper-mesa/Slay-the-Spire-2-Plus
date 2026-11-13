@@ -50,7 +50,7 @@ public sealed class FishingRod : RelicModel
 		{
 			Flash();
 			IEnumerable<CardModel> items = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => c.IsUpgradable);
-			CardModel cardModel = Owner.RunState.Rng.Niche.NextItem(items);
+			CardModel cardModel = Owner.PlayerRng.NonCombatGeneration.NextItem(items);
 			if (cardModel != null)
 			{
 				CardCmd.Upgrade(cardModel);

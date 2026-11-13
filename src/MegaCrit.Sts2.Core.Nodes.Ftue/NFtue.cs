@@ -4,6 +4,7 @@ using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 
@@ -55,6 +56,7 @@ public class NFtue : Control, IScreenContext
 
 	public override void _EnterTree()
 	{
+		this.ApplyRtlTextToLabels();
 		FocusMode = FocusModeEnum.All;
 		FocusNeighborBottom = GetPath();
 		FocusNeighborTop = GetPath();

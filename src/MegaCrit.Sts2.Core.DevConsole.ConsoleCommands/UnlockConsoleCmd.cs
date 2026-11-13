@@ -194,6 +194,7 @@ public class UnlockConsoleCmd : AbstractConsoleCmd
 			throw new NotImplementedException();
 		}
 		SaveManager.Instance.Progress.MaxMultiplayerAscension = 10;
+		SaveManager.Instance.Progress.MaxBlitzAscension = 5;
 		foreach (CharacterModel allCharacter in ModelDb.AllCharacters)
 		{
 			CharacterStats orCreateCharacterStats = SaveManager.Instance.Progress.GetOrCreateCharacterStats(allCharacter.Id);

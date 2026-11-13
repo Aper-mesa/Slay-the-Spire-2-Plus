@@ -36,6 +36,32 @@ public class CombatRoomHandler : IRoomHandler, IHandler
 
 	public async Task HandleAsync(Rng random, CancellationToken ct)
 	{
+		RunState runState = RunManager.Instance.DebugOnlyGetState();
+		AbstractRoom room = runState.CurrentRoom;
+		Player player = LocalContext.GetMe(runState);
+		bool won = false;
+		CombatManager.Instance.CombatWon += OnCombatWon;
+		try
+		{
+			await PlayCombatAsync(random, ct);
+			await WaitHelper.Until(() => won || player.Creature.IsDead || runState.CurrentRoom != room, ct, TimeSpan.FromSeconds(10L), "Combat ended but neither won nor left the room");
+		}
+		finally
+		{
+			CombatManager.Instance.CombatWon -= OnCombatWon;
+		}
+		if (!won && player.Creature.IsAlive)
+		{
+			throw new InvalidOperationException("Combat ended without a win: the run left the room mid-fight");
+		}
+		void OnCombatWon(CombatRoom _)
+		{
+			won = true;
+		}
+	}
+
+	private async Task PlayCombatAsync(Rng random, CancellationToken ct)
+	{
 		AutoSlayLog.Action("Waiting for combat to start");
 		await WaitHelper.Until(() => CombatManager.Instance.IsInProgress, ct, AutoSlayConfig.nodeWaitTimeout, "Combat not started");
 		AutoSlayLog.Action("Combat started, applying defensive buffs");
@@ -49,14 +75,14 @@ public class CombatRoomHandler : IRoomHandler, IHandler
 		{
 			ct.ThrowIfCancellationRequested();
 			turnCount++;
-			AutoSlayer.CurrentWatchdog?.Reset($"Waiting for a playable turn after turn {lastPlayedTurnNumber}");
+			Watchdog.Current?.Reset($"Waiting for a playable turn after turn {lastPlayedTurnNumber}");
 			await WaitHelper.Until(() => IsPlayableTurnAfter(player, lastPlayedTurnNumber) || !CombatManager.Instance.IsInProgress, ct, TimeSpan.FromSeconds(28L), () => $"No playable turn after turn {lastPlayedTurnNumber} (phase={player.PlayerCombatState?.Phase}, turnNumber={player.PlayerCombatState?.TurnNumber})");
 			if (!CombatManager.Instance.IsInProgress)
 			{
 				break;
 			}
 			int playingTurnNumber = (lastPlayedTurnNumber = player.PlayerCombatState.TurnNumber);
-			AutoSlayer.CurrentWatchdog?.Reset($"Combat turn {playingTurnNumber}");
+			Watchdog.Current?.Reset($"Combat turn {playingTurnNumber}");
 			if (playingTurnNumber >= 3)
 			{
 				await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), playerCreature, 200m, playerCreature, null);
@@ -75,7 +101,7 @@ public class CombatRoomHandler : IRoomHandler, IHandler
 				ct.ThrowIfCancellationRequested();
 				if (cardsPlayed > 0 && cardsPlayed % 10 == 0)
 				{
-					AutoSlayer.CurrentWatchdog?.Reset($"Combat turn {playingTurnNumber}, played {cardsPlayed} cards");
+					Watchdog.Current?.Reset($"Combat turn {playingTurnNumber}, played {cardsPlayed} cards");
 				}
 				CardPile pile = PileType.Hand.GetPile(player);
 				List<CardModel> list = pile.Cards.Where((CardModel c) => c.CanPlay(out UnplayableReason _, out AbstractModel _) && !attemptedCards.Contains(c)).ToList();
@@ -104,7 +130,7 @@ public class CombatRoomHandler : IRoomHandler, IHandler
 			}
 			AutoSlayLog.Action($"Turn {playingTurnNumber} was ended by the game, not by AutoSlay");
 		}
-		AutoSlayer.CurrentWatchdog?.Reset("Waiting for combat to end");
+		Watchdog.Current?.Reset("Waiting for combat to end");
 		await WaitHelper.Until(() => !CombatManager.Instance.IsInProgress, ct, TimeSpan.FromSeconds(28L), () => $"Combat did not end after {turnCount} turns (phase={player.PlayerCombatState?.Phase}, turnNumber={player.PlayerCombatState?.TurnNumber})");
 		AutoSlayLog.Action("Combat finished");
 	}
@@ -178,11 +204,11 @@ public class CombatRoomHandler : IRoomHandler, IHandler
 		}
 		return potion.TargetType switch
 		{
-			TargetType.AnyEnemy => random.NextItem(combatState.HittableEnemies.ToList()), 
-			TargetType.AnyAlly => combatState.PlayerCreatures.FirstOrDefault((Creature c) => c.IsAlive), 
-			TargetType.AnyPlayer => combatState.PlayerCreatures.FirstOrDefault((Creature c) => c.IsAlive), 
-			TargetType.Self => combatState.PlayerCreatures.FirstOrDefault((Creature c) => c.IsAlive), 
-			_ => null, 
+			TargetType.AnyEnemy => random.NextItem(combatState.HittableEnemies.ToList()),
+			TargetType.AnyAlly => combatState.PlayerCreatures.FirstOrDefault((Creature c) => c.IsAlive),
+			TargetType.AnyPlayer => combatState.PlayerCreatures.FirstOrDefault((Creature c) => c.IsAlive),
+			TargetType.Self => combatState.PlayerCreatures.FirstOrDefault((Creature c) => c.IsAlive),
+			_ => null,
 		};
 	}
 }

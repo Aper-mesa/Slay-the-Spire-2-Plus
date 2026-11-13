@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.RestSite;
@@ -19,6 +20,10 @@ public sealed class ByrdonisEgg : CardModel
 	public override bool TryModifyRestSiteOptions(Player player, ICollection<RestSiteOption> options)
 	{
 		if (player != Owner)
+		{
+			return false;
+		}
+		if (options.Any((RestSiteOption o) => o is HatchRestSiteOption))
 		{
 			return false;
 		}

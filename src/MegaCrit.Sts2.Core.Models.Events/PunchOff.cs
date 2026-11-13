@@ -80,8 +80,7 @@ public sealed class PunchOff : EventModel
 			VfxCmd.PlayOnCreatureCenter(rightEnemy, "vfx/vfx_attack_blunt");
 			vfxContainer?.AddChildSafely(NHitSparkVfx.Create(rightEnemy, requireInteractable: false));
 			await CreatureCmd.TriggerAnim(rightEnemy, "Hit", 0f);
-			await Cmd.Wait(1.2f);
-			if (_punchCts.IsCancellationRequested)
+			if (!(await Cmd.TryWait(1.2f)) || _punchCts.IsCancellationRequested)
 			{
 				break;
 			}

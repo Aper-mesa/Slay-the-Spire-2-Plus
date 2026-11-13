@@ -37,6 +37,12 @@ public class ExtraPlayerFields
 	/// </summary>
 	public int DebuffsApplied { get; set; }
 
+	/// <summary>
+	/// Set to true if the game mode is Dread and the player is playing their rotating character.
+	/// Modifies how stats are set after a Dread game is won or lost.
+	/// </summary>
+	public bool IsPlayingRotatingCharacter { get; set; }
+
 	public SerializableExtraPlayerFields ToSerializable()
 	{
 		return new SerializableExtraPlayerFields
@@ -45,7 +51,8 @@ public class ExtraPlayerFields
 			WongoPoints = WongoPoints,
 			CccomboBadgeUnlocked = CccomboBadgeUnlocked,
 			DamageDealt = DamageDealt,
-			DebuffsApplied = DebuffsApplied
+			DebuffsApplied = DebuffsApplied,
+			IsPlayingRotatingCharacter = IsPlayingRotatingCharacter
 		};
 	}
 
@@ -57,7 +64,8 @@ public class ExtraPlayerFields
 			WongoPoints = save.WongoPoints,
 			CccomboBadgeUnlocked = save.CccomboBadgeUnlocked,
 			DamageDealt = save.DamageDealt,
-			DebuffsApplied = save.DebuffsApplied
+			DebuffsApplied = save.DebuffsApplied,
+			IsPlayingRotatingCharacter = save.IsPlayingRotatingCharacter
 		};
 	}
 }

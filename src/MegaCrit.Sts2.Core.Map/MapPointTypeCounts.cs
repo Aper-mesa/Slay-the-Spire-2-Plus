@@ -40,7 +40,9 @@ public class MapPointTypeCounts
 
 	public MapPointTypeCounts(ActMap existingMap)
 	{
-		MapPoint[] source = existingMap.GetAllMapPoints().ToArray();
+		MapPoint[] source = (from p in existingMap.GetAllMapPoints()
+			where p.CanBeModified
+			select p).ToArray();
 		NumOfUnknowns = source.Count((MapPoint p) => p.PointType == MapPointType.Unknown);
 		NumOfRests = source.Count((MapPoint p) => p.PointType == MapPointType.RestSite);
 	}

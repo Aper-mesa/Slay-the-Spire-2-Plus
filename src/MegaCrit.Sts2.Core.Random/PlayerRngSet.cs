@@ -28,6 +28,11 @@ public class PlayerRngSet
 	/// </summary>
 	public Rng Transformations => GetRng(PlayerRngType.Transformations);
 
+	/// <summary>
+	/// Determines choice of cards or potions for non-deterministic generation outside of combat.
+	/// </summary>
+	public Rng NonCombatGeneration => GetRng(PlayerRngType.NonCombatGeneration);
+
 	public ulong Seed { get; }
 
 	public PlayerRngSet(ulong seed)
@@ -65,6 +70,14 @@ public class PlayerRngSet
 		foreach (var (key, serializable) in save.Rngs)
 		{
 			playerRngSet._rngs[key] = new Rng(serializable);
+		}
+		PlayerRngType[] values = Enum.GetValues<PlayerRngType>();
+		foreach (PlayerRngType playerRngType2 in values)
+		{
+			if (!playerRngSet._rngs.ContainsKey(playerRngType2))
+			{
+				playerRngSet._rngs[playerRngType2] = playerRngSet.CreateRng(playerRngType2);
+			}
 		}
 		return playerRngSet;
 	}

@@ -6,13 +6,15 @@ public sealed class TalesFromTheSpireStory : StoryModel
 {
 	protected override string Id => "TALES_FROM_THE_SPIRE";
 
-	public override EpochModel[] Epochs => new EpochModel[6]
+	public override EpochModel[] Epochs => new EpochModel[8]
 	{
 		EpochModel.Get<Colorless5Epoch>(),
 		EpochModel.Get<OrobasEpoch>(),
 		EpochModel.Get<Event1Epoch>(),
 		EpochModel.Get<UnderdocksEpoch>(),
 		EpochModel.Get<DarvEpoch>(),
-		EpochModel.Get<DailyRunEpoch>()
+		EpochModel.Get<BlitzEpoch>(),
+		EpochModel.Get<DailyRunEpoch>(),
+		EpochModel.Get<DreadEpoch>()
 	};
 }

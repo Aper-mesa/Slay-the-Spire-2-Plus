@@ -42,6 +42,7 @@ public class TemporaryCardCostOffset
 	/// <summary>
 	/// A temporary cost offset that is cleared when the card is played OR at the end of the current
 	/// turn, whichever comes first.
+	/// See <see cref="M:MegaCrit.Sts2.Core.Entities.Cards.TemporaryCardCost.ThisTurn(System.Int32)" /> for the tickets that confirmed the one-play behavior as designed.
 	/// </summary>
 	public static TemporaryCardCostOffset ThisTurn(int offset)
 	{

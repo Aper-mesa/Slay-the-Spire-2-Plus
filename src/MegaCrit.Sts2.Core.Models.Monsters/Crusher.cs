@@ -88,6 +88,18 @@ public sealed class Crusher : MonsterModel
 
 	private int GuardedStrikeDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 14, 12);
 
+	private int PlatingAmount
+	{
+		get
+		{
+			if (!AscensionHelper.IsDread())
+			{
+				return 0;
+			}
+			return 14;
+		}
+	}
+
 	protected override MonsterMoveStateMachine GenerateMoveStateMachine()
 	{
 		List<MonsterState> list = new List<MonsterState>();
@@ -114,6 +126,10 @@ public sealed class Crusher : MonsterModel
 		await base.AfterAddedToRoom();
 		await PowerCmd.Apply<BackAttackLeftPower>(new ThrowingPlayerChoiceContext(), Creature, 1m, Creature, null);
 		await PowerCmd.Apply<CrabRagePower>(new ThrowingPlayerChoiceContext(), Creature, 1m, Creature, null);
+		if (PlatingAmount > 0)
+		{
+			await PowerCmd.Apply<PlatingPower>(new ThrowingPlayerChoiceContext(), Creature, PlatingAmount, Creature, null);
+		}
 		Background?.SetVisible(visible: true);
 	}
 

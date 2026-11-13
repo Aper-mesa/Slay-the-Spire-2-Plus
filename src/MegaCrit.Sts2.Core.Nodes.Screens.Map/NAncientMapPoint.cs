@@ -6,6 +6,7 @@ using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Map;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Runs;
@@ -151,6 +152,8 @@ public class NAncientMapPoint : NMapPoint
 
 	private const float _scaleBase = 1f;
 
+	private AncientEventModel _ancient;
+
 	private float _elapsedTime = Rng.Chaotic.NextFloat(3140f);
 
 	protected override Color TraveledColor => StsColors.pathDotTraveled;
@@ -181,12 +184,13 @@ public class NAncientMapPoint : NMapPoint
 		}
 	}
 
-	public static NAncientMapPoint Create(MapPoint point, NMapScreen screen, IRunState runState)
+	public static NAncientMapPoint Create(MapPoint point, NMapScreen screen, AncientEventModel ancient, IRunState runState)
 	{
 		NAncientMapPoint nAncientMapPoint = PreloadManager.Cache.GetScene(AncientMapPointPath).Instantiate<NAncientMapPoint>(PackedScene.GenEditState.Disabled);
 		nAncientMapPoint.Point = point;
 		nAncientMapPoint._screen = screen;
 		nAncientMapPoint._runState = runState;
+		nAncientMapPoint._ancient = ancient;
 		return nAncientMapPoint;
 	}
 
@@ -194,10 +198,9 @@ public class NAncientMapPoint : NMapPoint
 	{
 		ConnectSignals();
 		_icon = GetNode<TextureRect>("Icon");
-		_icon.Texture = _runState.Act.Ancient.MapIcon;
+		_icon.Texture = _ancient.MapIcon;
 		_outline = GetNode<TextureRect>("Icon/Outline");
-		_outline.Texture = _runState.Act.Ancient.MapIconOutline;
-		_outline.Modulate = _runState.Act.MapBgColor;
+		_outline.Texture = _ancient.MapIconOutline;
 		RefreshColorInstantly();
 	}
 
@@ -259,6 +262,7 @@ public class NAncientMapPoint : NMapPoint
 	protected override void RefreshColorInstantly()
 	{
 		_icon.SelfModulate = TargetColor;
+		_outline.Modulate = _runState.Act.MapBgColor;
 	}
 
 	private void AnimHover()

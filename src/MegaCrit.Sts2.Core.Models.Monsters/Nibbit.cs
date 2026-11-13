@@ -19,6 +19,8 @@ public sealed class Nibbit : MonsterModel
 {
 	private const string _sliceMove = "SLICE_MOVE";
 
+	private const string _hissSfx = "event:/sfx/enemy/enemy_attacks/nibbit/nibbit_hiss";
+
 	private bool _isFront;
 
 	private bool _isAlone;
@@ -110,6 +112,7 @@ public sealed class Nibbit : MonsterModel
 
 	private async Task HissMove(IReadOnlyList<Creature> targets)
 	{
+		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/nibbit/nibbit_hiss");
 		await CreatureCmd.TriggerAnim(Creature, "Cast", 0.6f);
 		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, HissStrengthGain, Creature, null);
 	}

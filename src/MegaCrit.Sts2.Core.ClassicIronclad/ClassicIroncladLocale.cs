@@ -233,6 +233,7 @@ public static class ClassicIroncladLocale
         LocManager.RegisterRuntimeStrings("zhs", "characters", new Dictionary<string, string>
         {
             ["CLASSIC_IRONCLAD.title"] = "铁甲战士（经典）",
+            ["CLASSIC_IRONCLAD.shortTitle"] = "铁甲战士（经典）",
             ["CLASSIC_IRONCLAD.titleObject"] = "铁甲战士（经典）",
             ["CLASSIC_IRONCLAD.description"] = "铁甲军团的最后一名战士。\n出卖灵魂，从恶魔那里获得了力量。",
             ["CLASSIC_IRONCLAD.unlockText"] = "进行一局游戏以解锁。",
@@ -474,6 +475,7 @@ public static class ClassicIroncladLocale
         LocManager.RegisterRuntimeStrings("eng", "characters", new Dictionary<string, string>
         {
             ["CLASSIC_IRONCLAD.title"] = "Ironclad (Classic)",
+            ["CLASSIC_IRONCLAD.shortTitle"] = "Ironclad (Classic)",
             ["CLASSIC_IRONCLAD.titleObject"] = "Ironclad (Classic)",
             ["CLASSIC_IRONCLAD.description"] = "The last soldier of the Ironclads.\nSold his soul to harness demonic energies.",
             ["CLASSIC_IRONCLAD.unlockText"] = "Play a run to unlock.",

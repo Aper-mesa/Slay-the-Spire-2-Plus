@@ -178,8 +178,8 @@ public abstract class AfflictionModel : AbstractModel
 	}
 
 	/// <summary>
-	/// Checks whether the specified card can be afflicted with this affliction. For example, Ringing can only
-	/// afflict attacks, so this will return true if an Attack is passed, but false if a Skill is passed.
+	/// Checks whether the specified card can be afflicted with this affliction. For example, Tainted can only
+	/// afflict Skills, so this will return true if a Skill is passed, but false if an Attack is passed.
 	///
 	/// Note: Do not override this method to REMOVE restrictions, just to ADD them. When you override it, make sure to
 	/// call `base.CanAfflict`, and then add your own restrictions afterwards. You can also override some other methods

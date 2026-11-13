@@ -10,7 +10,7 @@ public class MegaSkeleton : MegaSpineBinding
 {
 	protected override string SpineClassName => "SpineSkeleton";
 
-	protected override IEnumerable<string> SpineMethods => new _003C_003Ez__ReadOnlyArray<string>(new string[6] { "find_bone", "get_bounds", "get_data", "set_skin", "set_skin_by_name", "set_slots_to_setup_pose" });
+	protected override IEnumerable<string> SpineMethods => new _003C_003Ez__ReadOnlyArray<string>(new string[7] { "find_bone", "find_slot", "get_bounds", "get_data", "set_skin", "set_skin_by_name", "set_slots_to_setup_pose" });
 
 	public MegaSkeleton(Variant native)
 		: base(native)
@@ -25,6 +25,16 @@ public class MegaSkeleton : MegaSpineBinding
 			return null;
 		}
 		return new MegaBone(native);
+	}
+
+	public MegaSlot? FindSlot(string slotName)
+	{
+		Variant native = Call("find_slot", slotName);
+		if (native.AsGodotObject() == null)
+		{
+			return null;
+		}
+		return new MegaSlot(native);
 	}
 
 	public Rect2 GetBounds()

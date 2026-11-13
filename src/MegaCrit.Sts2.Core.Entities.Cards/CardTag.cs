@@ -43,5 +43,22 @@ public enum CardTag
 	/// <summary>
 	/// Makes this card a "Shiv" card (<see cref="F:MegaCrit.Sts2.Core.Entities.Cards.CardTag.Shiv" />).
 	/// </summary>
-	Shiv
+	Shiv,
+	/// <summary>
+	/// Makes this card a "Wah" cards like <see cref="T:MegaCrit.Sts2.Core.Models.Cards.WahKi" />, <see cref="T:MegaCrit.Sts2.Core.Models.Cards.WahCho" />, and <see cref="T:MegaCrit.Sts2.Core.Models.Cards.WahChoKi" />
+	/// </summary>
+	Wah,
+	/// <summary>
+	/// Makes this card a "Cho" cards like <see cref="T:MegaCrit.Sts2.Core.Models.Cards.WahCho" /> and <see cref="T:MegaCrit.Sts2.Core.Models.Cards.WahChoKi" />
+	/// </summary>
+	Cho,
+	/// <summary>
+	/// Makes this card a "Ki" cards like <see cref="T:MegaCrit.Sts2.Core.Models.Cards.KiHop" /> and <see cref="T:MegaCrit.Sts2.Core.Models.Cards.WahChoKi" />
+	/// </summary>
+	Ki,
+	/// <summary>
+	/// Makes this card a "Shoot" card (<see cref="T:MegaCrit.Sts2.Core.Models.Cards.FoolishShot" />, <see cref="T:MegaCrit.Sts2.Core.Models.Cards.RainShot" />, etc).
+	///
+	/// </summary>
+	Shoot
 }

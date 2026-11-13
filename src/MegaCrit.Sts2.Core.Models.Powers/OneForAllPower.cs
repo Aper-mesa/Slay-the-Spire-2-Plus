@@ -29,9 +29,16 @@ public sealed class OneForAllPower : PowerModel
 		{
 			return 0m;
 		}
-		if (cardPlay != null && cardPlay.Resources.EnergySpent != 0)
+		if (cardPlay != null)
 		{
-			return 0m;
+			if (!cardPlay.IsAutoPlay && cardPlay.Resources.EnergySpent != 0)
+			{
+				return 0m;
+			}
+			if (cardPlay.IsAutoPlay && cardPlay.Resources.EnergyValue != 0)
+			{
+				return 0m;
+			}
 		}
 		if (cardPlay == null && cardSource.EnergyCost.GetWithModifiers(CostModifiers.All) != 0)
 		{

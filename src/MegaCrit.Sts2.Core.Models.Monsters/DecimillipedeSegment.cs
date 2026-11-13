@@ -171,9 +171,9 @@ public abstract class DecimillipedeSegment : MonsterModel
 		list.Add(randomBranchState);
 		return new MonsterMoveStateMachine(list, (StarterMoveIdx % 3) switch
 		{
-			0 => (MonsterState)moveState, 
-			1 => moveState2, 
-			_ => moveState3, 
+			0 => (MonsterState)moveState,
+			1 => moveState2,
+			_ => moveState3,
 		});
 	}
 
@@ -238,7 +238,7 @@ public abstract class DecimillipedeSegment : MonsterModel
 		await Cmd.Wait(0.5f);
 	}
 
-	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (creature != Creature)
 		{

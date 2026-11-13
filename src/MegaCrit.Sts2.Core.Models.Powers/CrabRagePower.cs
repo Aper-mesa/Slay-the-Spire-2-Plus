@@ -28,7 +28,7 @@ public sealed class CrabRagePower : PowerModel
 		new BlockVar(99m, ValueProp.Unpowered)
 	});
 
-	public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (creature != Owner && creature.Side == Owner.Side)
 		{

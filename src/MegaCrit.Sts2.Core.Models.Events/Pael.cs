@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Ancients;
+using MegaCrit.Sts2.Core.Entities.Characters;
 using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Models.Enchantments;
@@ -13,6 +14,8 @@ namespace MegaCrit.Sts2.Core.Models.Events;
 
 public class Pael : AncientEventModel
 {
+	public override FoolPronounGuess FoolPronounGuess => FoolPronounGuess.Neutral;
+
 	public override IEnumerable<EventOption> AllPossibleOptions => OptionPool1.Concat(OptionPool2).Concat(OptionPool3).Concat(new _003C_003Ez__ReadOnlyArray<EventOption>(new EventOption[4] { PaelsClawOption, PaelsToothOption, PaelsLegionOption, PaelsGrowthOption }));
 
 	public override Color ButtonColor => new Color(0.03f, 0.08f, 0f, 0.75f);
@@ -27,12 +30,23 @@ public class Pael : AncientEventModel
 
 	private EventOption PaelsLegionOption => RelicOption<PaelsLegion>();
 
-	private IEnumerable<EventOption> OptionPool1 => new _003C_003Ez__ReadOnlyArray<EventOption>(new EventOption[3]
+	private List<EventOption> OptionPool1
 	{
-		RelicOption<PaelsFlesh>(),
-		RelicOption<PaelsHorn>(),
-		RelicOption<PaelsTears>()
-	});
+		get
+		{
+			int num = 3;
+			List<EventOption> list = new List<EventOption>(num);
+			CollectionsMarshal.SetCount(list, num);
+			Span<EventOption> span = CollectionsMarshal.AsSpan(list);
+			int num2 = 0;
+			span[num2] = RelicOption<PaelsFlesh>();
+			num2++;
+			span[num2] = RelicOption<PaelsHorn>();
+			num2++;
+			span[num2] = RelicOption<PaelsTears>();
+			return list;
+		}
+	}
 
 	private List<EventOption> OptionPool2
 	{
@@ -157,26 +171,23 @@ public class Pael : AncientEventModel
 
 	protected override IReadOnlyList<EventOption> GenerateInitialOptions()
 	{
-		EventOption eventOption = Rng.NextItem(OptionPool1);
-		List<EventOption> list = OptionPool2.ToList();
+		List<EventOption> optionPool = OptionPool2;
 		IReadOnlyList<CardModel> cards = Owner.Deck.Cards;
 		if (cards.Count((CardModel c) => ModelDb.Enchantment<Goopy>().CanEnchant(c)) >= 3)
 		{
-			list.Add(PaelsClawOption);
+			optionPool.Add(PaelsClawOption);
 		}
 		if (cards.Count((CardModel c) => c.IsRemovable) >= 5)
 		{
-			list.Add(PaelsToothOption);
+			optionPool.Add(PaelsToothOption);
 		}
-		list.AddRange(list);
-		list.Add(PaelsGrowthOption);
-		EventOption eventOption2 = Rng.NextItem(list);
-		List<EventOption> list2 = OptionPool3.ToList();
+		optionPool.AddRange(optionPool);
+		optionPool.Add(PaelsGrowthOption);
+		List<EventOption> optionPool2 = OptionPool3;
 		if (!Owner.HasEventPet())
 		{
-			list2.Add(PaelsLegionOption);
+			optionPool2.Add(PaelsLegionOption);
 		}
-		EventOption eventOption3 = Rng.NextItem(list2);
-		return new _003C_003Ez__ReadOnlyArray<EventOption>(new EventOption[3] { eventOption, eventOption2, eventOption3 });
+		return GetOptionsFromThreePools(OptionPool1, optionPool, optionPool2);
 	}
 }

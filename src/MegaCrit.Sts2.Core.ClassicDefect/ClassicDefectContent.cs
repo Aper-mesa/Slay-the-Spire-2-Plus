@@ -44,6 +44,7 @@ public static class ClassicDefectContent
 		LocManager.RegisterRuntimeStrings("zhs", "characters", new Dictionary<string, string>
 		{
 			["CLASSIC_DEFECT.title"] = "故障机器人（经典）",
+			["CLASSIC_DEFECT.shortTitle"] = "故障机器人（经典）",
 			["CLASSIC_DEFECT.titleObject"] = "故障机器人（经典）",
 			["CLASSIC_DEFECT.description"] = "一具不停改造自己来生存下去的自动机械。\n在不得不战斗时，它会使用充能球科技来作战。",
 			["CLASSIC_DEFECT.unlockText"] = "用[pink]{Prerequisite}[/pink]进行一局游戏来解锁这个角色。",
@@ -62,6 +63,7 @@ public static class ClassicDefectContent
 		LocManager.RegisterRuntimeStrings("eng", "characters", new Dictionary<string, string>
 		{
 			["CLASSIC_DEFECT.title"] = "Defect (Classic)",
+			["CLASSIC_DEFECT.shortTitle"] = "Defect (Classic)",
 			["CLASSIC_DEFECT.titleObject"] = "Defect (Classic)",
 			["CLASSIC_DEFECT.description"] = "An automaton that keeps remaking itself to survive.\nWhen forced to fight, it uses orb technology.",
 			["CLASSIC_DEFECT.unlockText"] = "Play a run as [pink]{Prerequisite}[/pink] to unlock this character.",

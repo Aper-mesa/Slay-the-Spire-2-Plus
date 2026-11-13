@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using MegaCrit.Sts2.Core.Models.Dread;
+using MegaCrit.Sts2.Core.Models.Dread.Dominions;
 using MegaCrit.Sts2.Core.Models.Monsters;
 using MegaCrit.Sts2.Core.Rooms;
 
@@ -24,5 +26,10 @@ public sealed class TheInsatiableBoss : EncounterModel
 	protected override IReadOnlyList<(MonsterModel, string?)> GenerateMonsters()
 	{
 		return new _003C_003Ez__ReadOnlySingleElementList<(MonsterModel, string)>((ModelDb.Monster<TheInsatiable>().ToMutable(), null));
+	}
+
+	public override DominionModel GetDominion()
+	{
+		return ModelDb.Dominion<InsatiableDominion>();
 	}
 }

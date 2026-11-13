@@ -29,7 +29,7 @@ public sealed class FragrantMushroom : RelicModel
 	public override async Task AfterObtained()
 	{
 		await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(), Owner.Creature, DynamicVars.HpLoss.BaseValue, ValueProp.Unblockable | ValueProp.Unpowered, null, null);
-		IEnumerable<CardModel> enumerable = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => c?.IsUpgradable ?? false).ToList().StableShuffle(Owner.RunState.Rng.Niche)
+		IEnumerable<CardModel> enumerable = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => c?.IsUpgradable ?? false).ToList().StableShuffle(Owner.PlayerRng.NonCombatGeneration)
 			.Take(DynamicVars.Cards.IntValue);
 		foreach (CardModel item in enumerable)
 		{

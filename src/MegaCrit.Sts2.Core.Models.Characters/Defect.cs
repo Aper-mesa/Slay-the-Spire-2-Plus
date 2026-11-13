@@ -72,6 +72,12 @@ public sealed class Defect : CharacterModel
 
 	public override Color RemoteTargetingLineOutline => new Color("163E64FF");
 
+	public override float DreadBgBrightness => 0.45f;
+
+	public override float DreadBgContrast => 1.5f;
+
+	public override Color DreadNameColor => new Color("4DC3FFC0");
+
 	public override string CharacterTransitionSfx => "event:/sfx/ui/wipe_ironclad";
 
 	protected override List<(AnimState, string)> AnimationStates => new List<(AnimState, string)>

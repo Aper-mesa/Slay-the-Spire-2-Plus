@@ -19,6 +19,9 @@ public class RunHistory : ISaveSchema
 	[JsonPropertyName("game_mode")]
 	public GameMode GameMode { get; init; } = GameMode.Standard;
 
+	[JsonPropertyName("is_custom_game")]
+	public bool IsCustomGame { get; init; }
+
 	[JsonPropertyName("win")]
 	public bool Win { get; init; }
 

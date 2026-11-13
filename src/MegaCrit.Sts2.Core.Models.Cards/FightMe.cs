@@ -20,7 +20,7 @@ public sealed class FightMe : CardModel
 	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[4]
 	{
 		new DamageVar(5m, ValueProp.Move),
-		new RepeatVar(2),
+		new HitCountVar(2),
 		new PowerVar<StrengthPower>(3m),
 		new DynamicVar("EnemyStrength", 1m)
 	});
@@ -33,7 +33,7 @@ public sealed class FightMe : CardModel
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay.Target, "cardPlay.Target");
-		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(DynamicVars.Repeat.IntValue).FromCard(this, cardPlay)
+		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(DynamicVars.HitCount.IntValue).FromCard(this, cardPlay)
 			.Targeting(cardPlay.Target)
 			.WithHitFx("vfx/vfx_attack_blunt", null, "heavy_attack.mp3")
 			.Execute(choiceContext);

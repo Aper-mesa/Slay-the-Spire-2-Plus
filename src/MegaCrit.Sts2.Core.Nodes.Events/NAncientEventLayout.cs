@@ -349,7 +349,9 @@ public class NAncientEventLayout : NEventLayout
 		{
 			_ancientBgContainer.RemoveChildSafely(child);
 		}
-		_ancientBgContainer.AddChildSafely(_ancientEvent.CreateBackgroundScene().Instantiate<Control>(PackedScene.GenEditState.Disabled));
+		Control control = _ancientEvent.CreateBackgroundScene().Instantiate<Control>(PackedScene.GenEditState.Disabled);
+		_ancientEvent.ConfigureBackgroundScene(control);
+		_ancientBgContainer.AddChildSafely(control);
 		if (_ancientEvent.HasAmbientBgm)
 		{
 			SfxCmd.PlayLoop(_ancientEvent.AmbientBgm);

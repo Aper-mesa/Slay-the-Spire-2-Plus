@@ -7,7 +7,7 @@ namespace MegaCrit.Sts2.Core.Multiplayer.Game;
 /// Represents a player's vote for the map coordinate to move to next.
 /// Used in multiplayer to tally player votes and move on to the one that the majority have voted for.
 /// </summary>
-public struct MapVote : IPacketSerializable
+public record struct MapVote : IPacketSerializable
 {
 	/// <summary>
 	/// How many map generations have occurred before this map vote was received.

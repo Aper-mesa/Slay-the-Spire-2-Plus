@@ -112,7 +112,7 @@ public abstract class NSubmenu : Control, IScreenContext
 	/// </summary>
 	protected Control? _lastFocusedControl;
 
-	public Control? DefaultFocusedControl => _lastFocusedControl ?? InitialFocusedControl;
+	public virtual Control? DefaultFocusedControl => _lastFocusedControl ?? InitialFocusedControl;
 
 	/// <summary>
 	/// The initial control the submenu is focused on when it is first opened

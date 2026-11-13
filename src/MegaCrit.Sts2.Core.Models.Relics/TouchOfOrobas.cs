@@ -47,6 +47,10 @@ public sealed class TouchOfOrobas : RelicModel
 		{
 			ModelDb.Relic<CrackedCore>().Id,
 			ModelDb.Relic<InfusedCore>()
+		},
+		{
+			ModelDb.Relic<SongBow>().Id,
+			ModelDb.Relic<Storyteller>()
 		}
 	};
 

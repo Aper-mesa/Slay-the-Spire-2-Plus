@@ -4,5 +4,6 @@ public enum PlayerRngType
 {
 	Rewards,
 	Shops,
-	Transformations
+	Transformations,
+	NonCombatGeneration
 }

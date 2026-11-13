@@ -62,6 +62,16 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		public static readonly StringName ConfirmSelection = "ConfirmSelection";
 
 		/// <summary>
+		/// Cached name for the 'OnSkipButtonReleased' method.
+		/// </summary>
+		public static readonly StringName OnSkipButtonReleased = "OnSkipButtonReleased";
+
+		/// <summary>
+		/// Cached name for the 'UpdateSkipButton' method.
+		/// </summary>
+		public static readonly StringName UpdateSkipButton = "UpdateSkipButton";
+
+		/// <summary>
 		/// Cached name for the 'AfterOverlayOpened' method.
 		/// </summary>
 		public static readonly StringName AfterOverlayOpened = "AfterOverlayOpened";
@@ -118,6 +128,11 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		public static readonly StringName _bundlePreviewCards = "_bundlePreviewCards";
 
 		/// <summary>
+		/// Cached name for the '_skipButton' field.
+		/// </summary>
+		public static readonly StringName _skipButton = "_skipButton";
+
+		/// <summary>
 		/// Cached name for the '_previewCancelButton' field.
 		/// </summary>
 		public static readonly StringName _previewCancelButton = "_previewCancelButton";
@@ -151,6 +166,11 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		/// Cached name for the '_cardTween' field.
 		/// </summary>
 		public static readonly StringName _cardTween = "_cardTween";
+
+		/// <summary>
+		/// Cached name for the '_canSkip' field.
+		/// </summary>
+		public static readonly StringName _canSkip = "_canSkip";
 	}
 
 	/// <summary>
@@ -167,6 +187,8 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 	private Control _bundlePreviewContainer;
 
 	private Control _bundlePreviewCards;
+
+	private NChoiceSelectionSkipButton _skipButton;
 
 	private NBackButton _previewCancelButton;
 
@@ -185,6 +207,8 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 	private const float _cardXSpacing = 400f;
 
 	private Tween? _cardTween;
+
+	private bool _canSkip;
 
 	private static string ScenePath => SceneHelper.GetScenePath("/screens/card_selection/choose_a_bundle_selection_screen");
 
@@ -213,6 +237,7 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		_bundlePreviewCards = GetNode<Control>("%Cards");
 		_previewCancelButton = GetNode<NBackButton>("%Cancel");
 		_previewConfirmButton = GetNode<NConfirmButton>("%Confirm");
+		_skipButton = GetNode<NChoiceSelectionSkipButton>("%SkipButton");
 		_banner = GetNode<NCommonBanner>("Banner");
 		_banner.label.SetTextAutoSize(new LocString("gameplay_ui", "CHOOSE_A_PACK").GetRawText());
 		_banner.AnimateIn();
@@ -220,6 +245,8 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		_previewConfirmButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(ConfirmSelection));
 		_previewCancelButton.Disable();
 		_previewConfirmButton.Disable();
+		_skipButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnSkipButtonReleased));
+		UpdateSkipButton();
 		Vector2 vector = Vector2.Left * (_bundles.Count - 1) * 400f * 0.5f;
 		for (int i = 0; i < _bundles.Count; i++)
 		{
@@ -252,11 +279,12 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		}
 	}
 
-	public static NChooseABundleSelectionScreen ShowScreen(IReadOnlyList<IReadOnlyList<CardModel>> bundles)
+	public static NChooseABundleSelectionScreen ShowScreen(IReadOnlyList<IReadOnlyList<CardModel>> bundles, bool canSkip = false)
 	{
 		NChooseABundleSelectionScreen nChooseABundleSelectionScreen = PreloadManager.Cache.GetScene(ScenePath).Instantiate<NChooseABundleSelectionScreen>(PackedScene.GenEditState.Disabled);
 		nChooseABundleSelectionScreen.Name = "NChooseABundleSelectionScreen";
 		nChooseABundleSelectionScreen._bundles = bundles;
+		nChooseABundleSelectionScreen._canSkip = canSkip;
 		NOverlayStack.Instance?.Push(nChooseABundleSelectionScreen);
 		return nChooseABundleSelectionScreen;
 	}
@@ -270,6 +298,8 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		_bundleRow.Visible = false;
 		_previewCancelButton.Enable();
 		_previewConfirmButton.Enable();
+		_skipButton.Disable();
+		_skipButton.Visible = false;
 		Vector2 vector = Vector2.Right * (bundleNode.Bundle.Count - 1) * 400f * 0.5f;
 		IReadOnlyList<NCard> readOnlyList = bundleNode.RemoveCardNodes();
 		_cardTween?.Kill();
@@ -319,6 +349,7 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		_previewConfirmButton.Disable();
 		_selectedBundle = null;
 		_bundleRow.Visible = true;
+		UpdateSkipButton();
 	}
 
 	private void ConfirmSelection(NButton _)
@@ -333,11 +364,31 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		_completionSource.SetResult(new _003C_003Ez__ReadOnlySingleElementList<IReadOnlyList<CardModel>>(_selectedBundle.Bundle));
 	}
 
+	private void OnSkipButtonReleased(NButton _)
+	{
+		_completionSource.SetResult(Array.Empty<IReadOnlyList<CardModel>>());
+	}
+
 	public async Task<IEnumerable<IReadOnlyList<CardModel>>> CardsSelected()
 	{
 		IEnumerable<IReadOnlyList<CardModel>> result = await _completionSource.Task;
 		NOverlayStack.Instance.Remove(this);
 		return result;
+	}
+
+	private void UpdateSkipButton()
+	{
+		if (_canSkip)
+		{
+			_skipButton.Enable();
+			_skipButton.Visible = true;
+			_skipButton.AnimateIn();
+		}
+		else
+		{
+			_skipButton.Disable();
+			_skipButton.Visible = false;
+		}
 	}
 
 	public void AfterOverlayOpened()
@@ -362,6 +413,10 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 			_previewCancelButton.Enable();
 			_previewConfirmButton.Enable();
 		}
+		else
+		{
+			UpdateSkipButton();
+		}
 	}
 
 	public void AfterOverlayHidden()
@@ -369,6 +424,7 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		Visible = false;
 		_previewCancelButton.Disable();
 		_previewConfirmButton.Disable();
+		_skipButton.Disable();
 	}
 
 	/// <summary>
@@ -379,7 +435,7 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(10);
+		List<MethodInfo> list = new List<MethodInfo>(12);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnBundleClicked, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
@@ -398,6 +454,11 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		{
 			new PropertyInfo(Variant.Type.Object, "_", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
 		}, null));
+		list.Add(new MethodInfo(MethodName.OnSkipButtonReleased, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Object, "_", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName.UpdateSkipButton, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.AfterOverlayOpened, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.AfterOverlayClosed, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.AfterOverlayShown, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -442,6 +503,18 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		if (method == MethodName.ConfirmSelection && args.Count == 1)
 		{
 			ConfirmSelection(VariantUtils.ConvertTo<NButton>(in args[0]));
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.OnSkipButtonReleased && args.Count == 1)
+		{
+			OnSkipButtonReleased(VariantUtils.ConvertTo<NButton>(in args[0]));
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.UpdateSkipButton && args.Count == 0)
+		{
+			UpdateSkipButton();
 			ret = default;
 			return true;
 		}
@@ -500,6 +573,14 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		{
 			return true;
 		}
+		if (method == MethodName.OnSkipButtonReleased)
+		{
+			return true;
+		}
+		if (method == MethodName.UpdateSkipButton)
+		{
+			return true;
+		}
 		if (method == MethodName.AfterOverlayOpened)
 		{
 			return true;
@@ -538,6 +619,11 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 			_bundlePreviewCards = VariantUtils.ConvertTo<Control>(in value);
 			return true;
 		}
+		if (name == PropertyName._skipButton)
+		{
+			_skipButton = VariantUtils.ConvertTo<NChoiceSelectionSkipButton>(in value);
+			return true;
+		}
 		if (name == PropertyName._previewCancelButton)
 		{
 			_previewCancelButton = VariantUtils.ConvertTo<NBackButton>(in value);
@@ -571,6 +657,11 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		if (name == PropertyName._cardTween)
 		{
 			_cardTween = VariantUtils.ConvertTo<Tween>(in value);
+			return true;
+		}
+		if (name == PropertyName._canSkip)
+		{
+			_canSkip = VariantUtils.ConvertTo<bool>(in value);
 			return true;
 		}
 		return base.SetGodotClassPropertyValue(in name, in value);
@@ -610,6 +701,11 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 			value = VariantUtils.CreateFrom(in _bundlePreviewCards);
 			return true;
 		}
+		if (name == PropertyName._skipButton)
+		{
+			value = VariantUtils.CreateFrom(in _skipButton);
+			return true;
+		}
 		if (name == PropertyName._previewCancelButton)
 		{
 			value = VariantUtils.CreateFrom(in _previewCancelButton);
@@ -645,6 +741,11 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 			value = VariantUtils.CreateFrom(in _cardTween);
 			return true;
 		}
+		if (name == PropertyName._canSkip)
+		{
+			value = VariantUtils.CreateFrom(in _canSkip);
+			return true;
+		}
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
@@ -660,6 +761,7 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._bundleRow, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._bundlePreviewContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._bundlePreviewCards, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._skipButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._previewCancelButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._previewConfirmButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._selectedBundle, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -667,6 +769,7 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._peekButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._fadeTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._cardTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._canSkip, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName.ScreenType, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName.UseSharedBackstop, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName.DefaultFocusedControl, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -681,6 +784,7 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		info.AddProperty(PropertyName._bundleRow, Variant.From(in _bundleRow));
 		info.AddProperty(PropertyName._bundlePreviewContainer, Variant.From(in _bundlePreviewContainer));
 		info.AddProperty(PropertyName._bundlePreviewCards, Variant.From(in _bundlePreviewCards));
+		info.AddProperty(PropertyName._skipButton, Variant.From(in _skipButton));
 		info.AddProperty(PropertyName._previewCancelButton, Variant.From(in _previewCancelButton));
 		info.AddProperty(PropertyName._previewConfirmButton, Variant.From(in _previewConfirmButton));
 		info.AddProperty(PropertyName._selectedBundle, Variant.From(in _selectedBundle));
@@ -688,6 +792,7 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		info.AddProperty(PropertyName._peekButton, Variant.From(in _peekButton));
 		info.AddProperty(PropertyName._fadeTween, Variant.From(in _fadeTween));
 		info.AddProperty(PropertyName._cardTween, Variant.From(in _cardTween));
+		info.AddProperty(PropertyName._canSkip, Variant.From(in _canSkip));
 	}
 
 	/// <inheritdoc />
@@ -707,33 +812,41 @@ public class NChooseABundleSelectionScreen : Control, IOverlayScreen, IScreenCon
 		{
 			_bundlePreviewCards = value3.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._previewCancelButton, out var value4))
+		if (info.TryGetProperty(PropertyName._skipButton, out var value4))
 		{
-			_previewCancelButton = value4.As<NBackButton>();
+			_skipButton = value4.As<NChoiceSelectionSkipButton>();
 		}
-		if (info.TryGetProperty(PropertyName._previewConfirmButton, out var value5))
+		if (info.TryGetProperty(PropertyName._previewCancelButton, out var value5))
 		{
-			_previewConfirmButton = value5.As<NConfirmButton>();
+			_previewCancelButton = value5.As<NBackButton>();
 		}
-		if (info.TryGetProperty(PropertyName._selectedBundle, out var value6))
+		if (info.TryGetProperty(PropertyName._previewConfirmButton, out var value6))
 		{
-			_selectedBundle = value6.As<NCardBundle>();
+			_previewConfirmButton = value6.As<NConfirmButton>();
 		}
-		if (info.TryGetProperty(PropertyName._banner, out var value7))
+		if (info.TryGetProperty(PropertyName._selectedBundle, out var value7))
 		{
-			_banner = value7.As<NCommonBanner>();
+			_selectedBundle = value7.As<NCardBundle>();
 		}
-		if (info.TryGetProperty(PropertyName._peekButton, out var value8))
+		if (info.TryGetProperty(PropertyName._banner, out var value8))
 		{
-			_peekButton = value8.As<NPeekButton>();
+			_banner = value8.As<NCommonBanner>();
 		}
-		if (info.TryGetProperty(PropertyName._fadeTween, out var value9))
+		if (info.TryGetProperty(PropertyName._peekButton, out var value9))
 		{
-			_fadeTween = value9.As<Tween>();
+			_peekButton = value9.As<NPeekButton>();
 		}
-		if (info.TryGetProperty(PropertyName._cardTween, out var value10))
+		if (info.TryGetProperty(PropertyName._fadeTween, out var value10))
 		{
-			_cardTween = value10.As<Tween>();
+			_fadeTween = value10.As<Tween>();
+		}
+		if (info.TryGetProperty(PropertyName._cardTween, out var value11))
+		{
+			_cardTween = value11.As<Tween>();
+		}
+		if (info.TryGetProperty(PropertyName._canSkip, out var value12))
+		{
+			_canSkip = value12.As<bool>();
 		}
 	}
 }

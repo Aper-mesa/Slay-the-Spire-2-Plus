@@ -133,7 +133,7 @@ public class NPowerContainer : Control
 		{
 			float x = _powerNodes[0].Size.X;
 			float b = Mathf.CeilToInt(Size.X / x);
-			b = Mathf.Max(Mathf.CeilToInt((float)_powerNodes.Count / 2f), b);
+			b = Mathf.Max(Mathf.CeilToInt((float)_powerNodes.Count * 0.5f), b);
 			for (int i = 0; i < _powerNodes.Count; i++)
 			{
 				_powerNodes[i].Position = new Vector2(x * ((float)i % b), Mathf.Floor((float)i / b) * x);

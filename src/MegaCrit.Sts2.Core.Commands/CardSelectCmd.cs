@@ -29,190 +29,6 @@ namespace MegaCrit.Sts2.Core.Commands;
 
 public static class CardSelectCmd
 {
-	private sealed class StackedSelectorScope : IDisposable
-	{
-		private readonly MegaCrit.Sts2.Core.TestSupport.ICardSelector _selector;
-
-		private readonly Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> _stack;
-
-		private bool _disposed;
-
-		public StackedSelectorScope(Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> stack, MegaCrit.Sts2.Core.TestSupport.ICardSelector selector)
-		{
-			_stack = stack;
-			_selector = selector;
-		}
-
-		public void Dispose()
-		{
-			if (!_disposed)
-			{
-				_disposed = true;
-				if (_stack.Count > 0 && _stack.Peek() == _selector)
-				{
-					_stack.Pop();
-				}
-			}
-		}
-	}
-
-	/// <summary>
-	/// Used by <see cref="M:MegaCrit.Sts2.Core.Commands.CardSelectCmd.SuspendSelectorForTest(System.Boolean)" /> to conform to the normal interface when there's no card selector.
-	/// </summary>
-	private sealed class NoOpScope : IDisposable
-	{
-		public void Dispose()
-		{
-		}
-	}
-
-	/// <summary>
-	/// Used by <see cref="M:MegaCrit.Sts2.Core.Commands.CardSelectCmd.SuspendSelectorForTest(System.Boolean)" /> to temporarily suspend the current card selector so it can be
-	/// restored later.
-	/// </summary>
-	private sealed class RestoreSelectorScope : IDisposable
-	{
-		private readonly Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> _stack;
-
-		private readonly MegaCrit.Sts2.Core.TestSupport.ICardSelector _saved;
-
-		private bool _disposed;
-
-		public RestoreSelectorScope(Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> stack, MegaCrit.Sts2.Core.TestSupport.ICardSelector saved)
-		{
-			_stack = stack;
-			_saved = saved;
-		}
-
-		public void Dispose()
-		{
-			if (!_disposed)
-			{
-				_disposed = true;
-				_stack.Push(_saved);
-			}
-		}
-	}
-
-	private sealed class SelectorScope : IDisposable
-	{
-		private readonly Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> _stack;
-
-		private bool _disposed;
-
-		public SelectorScope(Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> stack)
-		{
-			_stack = stack;
-		}
-
-		public void Dispose()
-		{
-			if (!_disposed)
-			{
-				_disposed = true;
-				_stack.Clear();
-			}
-		}
-	}
-
-	private static readonly Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> _selectorStack = new Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector>();
-
-	private static readonly Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> _localSelectorStack = new Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector>();
-
-	/// <summary>
-	/// The currently active automated card selector.
-	/// Used by AutoSlay and gameplay effects that auto-play cards (e.g., WhisperingEarring).
-	/// When set, card selection UI is bypassed and cards are selected automatically.
-	/// Returns the top of the stack, or null if empty.
-	/// </summary>
-	public static MegaCrit.Sts2.Core.TestSupport.ICardSelector? Selector
-	{
-		get
-		{
-			if (_selectorStack.Count <= 0)
-			{
-				return null;
-			}
-			return _selectorStack.Peek();
-		}
-	}
-
-	/// <summary>
-	/// The currently active automated card selector used in tests.
-	/// Used by tests. This differs from Selector; it is used within player choices in a NON-deterministic spot. It
-	/// should only be used in tests when blocking on player choice is part of the scenario.
-	/// </summary>
-	public static MegaCrit.Sts2.Core.TestSupport.ICardSelector? LocalSelector
-	{
-		get
-		{
-			if (_localSelectorStack.Count <= 0)
-			{
-				return null;
-			}
-			return _localSelectorStack.Peek();
-		}
-	}
-
-	/// <summary>
-	/// Clears all active selectors. Call this during run cleanup to prevent selectors
-	/// leaked by stuck async tasks (e.g., WhisperingEarring mid-auto-play when a run ends)
-	/// from affecting subsequent runs.
-	/// </summary>
-	public static void Reset()
-	{
-		if (!TestMode.IsOn && (_selectorStack.Count > 0 || _localSelectorStack.Count > 0))
-		{
-			Log.Warn($"CardSelectCmd.Reset: clearing {_selectorStack.Count}/{_localSelectorStack.Count} leaked selector(s) from the stack.");
-			_selectorStack.Clear();
-			_localSelectorStack.Clear();
-		}
-	}
-
-	/// <summary>
-	/// Sets the automated card selector for the duration of the returned scope.
-	/// Disposing the scope clears all selectors.
-	/// Throws if a selector is already active (use PushSelector for stacking behavior).
-	/// </summary>
-	public static IDisposable UseSelector(MegaCrit.Sts2.Core.TestSupport.ICardSelector selector, bool localOnly = false)
-	{
-		Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> stack = (localOnly ? _localSelectorStack : _selectorStack);
-		if (stack.Count > 0)
-		{
-			throw new InvalidOperationException("A card selector is already active.");
-		}
-		stack.Push(selector);
-		return new SelectorScope(stack);
-	}
-
-	/// <summary>
-	/// Pushes a new selector onto the stack. When disposed, the previous selector is restored.
-	/// Use this when you need temporary selector behavior (e.g., WhisperingEarring's auto-play).
-	/// </summary>
-	public static IDisposable PushSelector(MegaCrit.Sts2.Core.TestSupport.ICardSelector selector, bool localOnly = false)
-	{
-		Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> stack = (localOnly ? _localSelectorStack : _selectorStack);
-		stack.Push(selector);
-		return new StackedSelectorScope(stack, selector);
-	}
-
-	/// <summary>
-	/// TEST ONLY!
-	/// Temporarily pops the top of the selector stack so tests can exercise the network-synchronized card-selection
-	/// branches that are otherwise bypassed when a selector is active.
-	/// Returns a no-op scope if the stack is already empty.
-	/// </summary>
-	public static IDisposable SuspendSelectorForTest(bool localOnly = false)
-	{
-		Stack<MegaCrit.Sts2.Core.TestSupport.ICardSelector> stack = (localOnly ? _localSelectorStack : _selectorStack);
-		if (stack.Count == 0)
-		{
-			return new NoOpScope();
-		}
-		MegaCrit.Sts2.Core.TestSupport.ICardSelector saved = stack.Pop();
-		return new RestoreSelectorScope(stack, saved);
-	}
-
 	private static bool ShouldSelectLocalCard(Player player)
 	{
 		if (LocalContext.IsMe(player))
@@ -222,11 +38,6 @@ public static class CardSelectCmd
 		return false;
 	}
 
-	/// <summary>
-	/// Reports a potential softlock to Sentry and logs an error. Called when a selection screen would have been
-	/// shown with 0 options, which would leave the player stuck. The caller returns empty to gracefully recover,
-	/// but the underlying cause is still a bug that should be investigated and fixed.
-	/// </summary>
 	private static void ReportSoftlock()
 	{
 		string text = "A selection screen was about to be shown with 0 options. Returning empty to prevent softlock.";
@@ -234,21 +45,6 @@ public static class CardSelectCmd
 		SentryService.CaptureException(new SoftlockException(text));
 	}
 
-	/// <summary>
-	/// Begins card selection for the given player, selecting from a small list.
-	/// Only works with a small number of cards (right now 3 or fewer). Good for in-combat card generator effects like
-	/// Attack Potion.
-	/// If the player is the local player, this brings up the card selection screen.
-	/// If the player is a remote player, this waits for that player to select a card.
-	/// </summary>
-	/// <param name="context">The context to signal when player choice has begun and ended.</param>
-	/// <param name="cards">Cards to show.</param>
-	/// <param name="player">The player that is picking cards.</param>
-	/// <param name="canSkip">
-	///     Whether or not the card choice can be skipped.
-	///     NOTE: If we add any more params like this, we should probably refactor it to use CardSelectorPrefs.
-	/// </param>
-	/// <returns>The card that was selected.</returns>
 	public static async Task<CardModel?> FromChooseACardScreen(PlayerChoiceContext context, IReadOnlyList<CardModel> cards, Player player, bool canSkip = false)
 	{
 		if (cards.Count > 3)
@@ -261,10 +57,11 @@ public static class CardSelectCmd
 			return null;
 		}
 		UndoEndTurnIfNecessary(player);
+		ICardSelector selector = RunManager.Instance.CardSelectorStack.GetSelector(player);
 		CardModel result;
-		if (Selector != null)
+		if (selector != null)
 		{
-			result = (await Selector.GetSelectedCards(cards, 0, 1)).FirstOrDefault();
+			result = (await selector.GetSelectedCards(cards, 0, 1)).FirstOrDefault();
 		}
 		else
 		{
@@ -272,9 +69,10 @@ public static class CardSelectCmd
 			await context.SignalPlayerChoiceBegun(player, PlayerChoiceOptions.None);
 			if (ShouldSelectLocalCard(player))
 			{
-				if (LocalSelector != null)
+				ICardSelector localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+				if (localSelector != null)
 				{
-					result = (await LocalSelector.GetSelectedCards(cards, 0, 1)).FirstOrDefault();
+					result = (await localSelector.GetSelectedCards(cards, 0, 1)).FirstOrDefault();
 				}
 				else
 				{
@@ -304,18 +102,6 @@ public static class CardSelectCmd
 		return result;
 	}
 
-	/// <summary>
-	/// Begins card selection for the given player, selecting from a grid.
-	/// Intended for cards that the player will add to their deck. Supports flashing modifications of the card creation
-	/// by relics over the card.
-	/// If the player is the local player, this brings up the card selection screen.
-	/// If the player is a remote player, this waits for that player to select a card.
-	/// </summary>
-	/// <param name="context">The context to use when signalling player choice.</param>
-	/// <param name="cards">Cards to show in the grid, including any modifications applied to those cards.</param>
-	/// <param name="player">The player that is picking cards.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <returns>The selected cards.</returns>
 	public static async Task<IEnumerable<CardModel>> FromSimpleGridForRewards(PlayerChoiceContext context, List<CardCreationResult> cards, Player player, CardSelectorPrefs prefs)
 	{
 		if (CombatManager.Instance.IsEnding)
@@ -329,7 +115,8 @@ public static class CardSelectCmd
 			return Array.Empty<CardModel>();
 		}
 		uint? choiceId = null;
-		if (Selector == null)
+		ICardSelector selector = RunManager.Instance.CardSelectorStack.GetSelector(player);
+		if (selector == null)
 		{
 			choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
 			await context.SignalPlayerChoiceBegun(player, PlayerChoiceOptions.None);
@@ -339,17 +126,18 @@ public static class CardSelectCmd
 		{
 			result = cards.Select((CardCreationResult c) => c.Card).ToList();
 		}
-		else if (Selector != null)
+		else if (selector != null)
 		{
 			IEnumerable<CardModel> options = cards.Select((CardCreationResult c) => c.Card);
-			result = (await Selector.GetSelectedCards(options, prefs.MinSelect, prefs.MaxSelect)).ToList();
+			result = (await selector.GetSelectedCards(options, prefs.MinSelect, prefs.MaxSelect)).ToList();
 		}
 		else if (ShouldSelectLocalCard(player))
 		{
-			if (LocalSelector != null)
+			ICardSelector localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+			if (localSelector != null)
 			{
 				IEnumerable<CardModel> options2 = cards.Select((CardCreationResult c) => c.Card);
-				result = (await LocalSelector.GetSelectedCards(options2, prefs.MinSelect, prefs.MaxSelect)).ToList();
+				result = (await localSelector.GetSelectedCards(options2, prefs.MinSelect, prefs.MaxSelect)).ToList();
 			}
 			else
 			{
@@ -373,18 +161,6 @@ public static class CardSelectCmd
 		return result;
 	}
 
-	/// <summary>
-	/// Begins card selection for the given player, selecting from a grid.
-	/// Good for selecting cards from potentially large lists (draw/discard pile, "any Ironclad card", etc.) without
-	/// any extra bespoke UI (no upgrade/enchant previews, etc.).
-	/// If the player is the local player, this brings up the card selection screen.
-	/// If the player is a remote player, this waits for that player to select a card.
-	/// </summary>
-	/// <param name="context">The context to use when signalling player choice.</param>
-	/// <param name="cardsIn">Cards to show in the grid. It is copied after passed.</param>
-	/// <param name="player">The player that is picking cards.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <returns>The selected cards.</returns>
 	public static async Task<IEnumerable<CardModel>> FromSimpleGrid(PlayerChoiceContext context, IReadOnlyList<CardModel> cardsIn, Player player, CardSelectorPrefs prefs)
 	{
 		if (CombatManager.Instance.IsEnding)
@@ -394,7 +170,8 @@ public static class CardSelectCmd
 		UndoEndTurnIfNecessary(player);
 		List<CardModel> cards = cardsIn.ToList();
 		uint? choiceId = null;
-		if (Selector == null)
+		ICardSelector selector = RunManager.Instance.CardSelectorStack.GetSelector(player);
+		if (selector == null)
 		{
 			choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
 			await context.SignalPlayerChoiceBegun(player, PlayerChoiceOptions.None);
@@ -408,15 +185,16 @@ public static class CardSelectCmd
 		{
 			result = cards.ToList();
 		}
-		else if (Selector != null)
+		else if (selector != null)
 		{
-			result = (await Selector.GetSelectedCards(cards, prefs.MinSelect, prefs.MaxSelect)).ToList();
+			result = (await selector.GetSelectedCards(cards, prefs.MinSelect, prefs.MaxSelect)).ToList();
 		}
 		else if (ShouldSelectLocalCard(player))
 		{
-			if (LocalSelector != null)
+			ICardSelector localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+			if (localSelector != null)
 			{
-				result = (await LocalSelector.GetSelectedCards(cards, prefs.MinSelect, prefs.MaxSelect)).ToList();
+				result = (await localSelector.GetSelectedCards(cards, prefs.MinSelect, prefs.MaxSelect)).ToList();
 			}
 			else
 			{
@@ -452,13 +230,18 @@ public static class CardSelectCmd
 		{
 			return Array.Empty<CardModel>();
 		}
+		if (player.Creature.IsDead)
+		{
+			return Array.Empty<CardModel>();
+		}
 		if (!pile.IsCombatPile)
 		{
 			throw new InvalidOperationException("Cannot perform on a non combat pile");
 		}
 		UndoEndTurnIfNecessary(player);
 		uint? choiceId = null;
-		if (Selector == null)
+		ICardSelector selector = RunManager.Instance.CardSelectorStack.GetSelector(player);
+		if (selector == null)
 		{
 			choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
 			await context.SignalPlayerChoiceBegun(player, PlayerChoiceOptions.None);
@@ -484,27 +267,28 @@ public static class CardSelectCmd
 		{
 			result = enumerable;
 		}
-		else if (Selector != null)
+		else if (selector != null)
 		{
 			if (pile.Type == PileType.Draw)
 			{
-				enumerable = from c in enumerable
-					orderby c.Rarity, c.Id
-					select c;
+				enumerable = from x in enumerable
+					orderby x.Rarity, x
+					select x;
 			}
-			result = (await Selector.GetSelectedCards(enumerable, prefs.MinSelect, prefs.MaxSelect)).ToList();
+			result = (await selector.GetSelectedCards(enumerable, prefs.MinSelect, prefs.MaxSelect)).ToList();
 		}
 		else if (ShouldSelectLocalCard(player))
 		{
-			if (LocalSelector != null)
+			ICardSelector localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+			if (localSelector != null)
 			{
 				if (pile.Type == PileType.Draw)
 				{
-					enumerable = from c in enumerable
-						orderby c.Rarity, c.Id
-						select c;
+					enumerable = from x in enumerable
+						orderby x.Rarity, x
+						select x;
 				}
-				result = (await LocalSelector.GetSelectedCards(enumerable, prefs.MinSelect, prefs.MaxSelect)).ToList();
+				result = (await localSelector.GetSelectedCards(enumerable, prefs.MinSelect, prefs.MaxSelect)).ToList();
 			}
 			else
 			{
@@ -527,13 +311,6 @@ public static class CardSelectCmd
 		return result;
 	}
 
-	/// <summary>
-	/// Select from the upgradable cards in the player's deck. Shows an upgrade preview before returning. Good for
-	/// "select a card to upgrade" screens (Rest Site smith, some events, etc.).
-	/// </summary>
-	/// <param name="player">Player whose deck to show.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <returns>Selected cards.</returns>
 	public static async Task<IEnumerable<CardModel>> FromDeckForUpgrade(Player player, CardSelectorPrefs prefs)
 	{
 		List<CardModel> list = PileType.Deck.GetPile(player).Cards.Where((CardModel c) => c.IsUpgradable).ToList();
@@ -541,23 +318,25 @@ public static class CardSelectCmd
 		{
 			return Array.Empty<CardModel>();
 		}
+		ICardSelector selector = RunManager.Instance.CardSelectorStack.GetSelector(player);
 		IEnumerable<CardModel> enumerable;
 		if (list.Count <= prefs.MinSelect && !prefs.RequireManualConfirmation)
 		{
 			enumerable = list;
 		}
-		else if (Selector != null)
+		else if (selector != null)
 		{
-			enumerable = await Selector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
+			enumerable = await selector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
 		}
 		else
 		{
 			uint choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
 			if (ShouldSelectLocalCard(player))
 			{
-				if (LocalSelector != null)
+				ICardSelector localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+				if (localSelector != null)
 				{
-					enumerable = await LocalSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
+					enumerable = await localSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
 				}
 				else
 				{
@@ -575,17 +354,6 @@ public static class CardSelectCmd
 		return enumerable;
 	}
 
-	/// <summary>
-	/// Select from the transformable cards in the player's deck. Shows a transform preview before returning. Good for
-	/// "select a card to upgrade" screens (Rest Site smith, some events, etc.).
-	/// </summary>
-	/// <param name="player">Player whose deck to show.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <param name="cardToTransformation">
-	/// A delegate that is called to get the possible transformations for a card. If unsupplied, it will use the default
-	/// transformation (the card is transformed to any other card from the same pool).
-	/// </param>
-	/// <returns>Selected cards.</returns>
 	public static async Task<IEnumerable<CardModel>> FromDeckForTransformation(Player player, CardSelectorPrefs prefs, Func<CardModel, CardTransformation>? cardToTransformation = null)
 	{
 		List<CardModel> list = PileType.Deck.GetPile(player).Cards.Where((CardModel c) => c.Type != CardType.Quest && c.IsTransformable).ToList();
@@ -593,23 +361,25 @@ public static class CardSelectCmd
 		{
 			return Array.Empty<CardModel>();
 		}
+		ICardSelector selector = RunManager.Instance.CardSelectorStack.GetSelector(player);
 		IEnumerable<CardModel> enumerable;
 		if (list.Count <= prefs.MinSelect && !prefs.RequireManualConfirmation)
 		{
 			enumerable = list;
 		}
-		else if (Selector != null)
+		else if (selector != null)
 		{
-			enumerable = await Selector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
+			enumerable = await selector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
 		}
 		else
 		{
 			uint choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
 			if (ShouldSelectLocalCard(player))
 			{
-				if (LocalSelector != null)
+				ICardSelector localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+				if (localSelector != null)
 				{
-					enumerable = await LocalSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
+					enumerable = await localSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
 				}
 				else
 				{
@@ -631,45 +401,17 @@ public static class CardSelectCmd
 		return enumerable;
 	}
 
-	/// <summary>
-	/// Select from the enchantable cards in the player's deck. Shows an enchant preview before returning. Good for
-	/// "select a card to enchant" screens (events, etc.).
-	/// </summary>
-	/// <param name="player">Player whose deck to show.</param>
-	/// <param name="enchantment">Enchantment to apply to the card.</param>
-	/// <param name="amount">Amount of the enchantment to apply to the card.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <returns>Selected cards.</returns>
 	public static async Task<IEnumerable<CardModel>> FromDeckForEnchantment(Player player, EnchantmentModel enchantment, int amount, CardSelectorPrefs prefs)
 	{
 		return await FromDeckForEnchantment(player, enchantment, amount, null, prefs);
 	}
 
-	/// <summary>
-	/// Select from the enchantable cards in the player's deck. Shows an enchant preview before returning. Good for
-	/// "select a card to enchant" screens (events, etc.).
-	/// </summary>
-	/// <param name="player">Player whose deck to show.</param>
-	/// <param name="enchantment">Enchantment to apply to the card.</param>
-	/// <param name="amount">Amount of the enchantment to apply to the card.</param>
-	/// <param name="additionalFilter">Additional filter which should return true for cards that should be included in the selection.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <returns>Selected cards.</returns>
 	public static async Task<IEnumerable<CardModel>> FromDeckForEnchantment(Player player, EnchantmentModel enchantment, int amount, Func<CardModel?, bool>? additionalFilter, CardSelectorPrefs prefs)
 	{
 		IReadOnlyList<CardModel> cards = PileType.Deck.GetPile(player).Cards.Where((CardModel c) => enchantment.CanEnchant(c) && (additionalFilter?.Invoke(c) ?? true)).ToList();
 		return await FromDeckForEnchantment(cards, enchantment, amount, prefs);
 	}
 
-	/// <summary>
-	/// Select from the enchantable cards in the player's deck. Shows an enchant preview before returning. Good for
-	/// "select a card to enchant" screens (events, etc.).
-	/// </summary>
-	/// <param name="cards">Cards to select from. All must be in the player's deck and enchantable.</param>
-	/// <param name="enchantment">Enchantment to apply to the card.</param>
-	/// <param name="amount">Amount of the enchantment to apply to the card.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <returns>Selected cards.</returns>
 	public static async Task<IEnumerable<CardModel>> FromDeckForEnchantment(IReadOnlyList<CardModel> cards, EnchantmentModel enchantment, int amount, CardSelectorPrefs prefs)
 	{
 		if (cards.Any((CardModel c) => c.Pile.Type != PileType.Deck || !enchantment.CanEnchant(c)))
@@ -683,14 +425,15 @@ public static class CardSelectCmd
 			Dictionary<CardModel, int> indexMap = PileType.Deck.GetPile(owner).Cards.Select((CardModel card, int index) => new { card, index }).ToDictionary(x => x.card, x => x.index);
 			list = cards.OrderBy((CardModel c) => indexMap[c]).ToList();
 		}
+		ICardSelector cardSelector = ((cards.Count > 0) ? RunManager.Instance.CardSelectorStack.GetSelector(cards[0].Owner) : null);
 		IEnumerable<CardModel> enumerable;
 		if (cards.Count <= prefs.MinSelect)
 		{
 			enumerable = cards;
 		}
-		else if (Selector != null)
+		else if (cardSelector != null)
 		{
-			enumerable = await Selector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
+			enumerable = await cardSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
 		}
 		else
 		{
@@ -702,9 +445,10 @@ public static class CardSelectCmd
 			uint choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
 			if (ShouldSelectLocalCard(player))
 			{
-				if (LocalSelector != null)
+				ICardSelector localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+				if (localSelector != null)
 				{
-					enumerable = await LocalSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
+					enumerable = await localSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
 				}
 				else
 				{
@@ -725,32 +469,12 @@ public static class CardSelectCmd
 		return enumerable;
 	}
 
-	/// <summary>
-	/// Select from removable cards in the player's deck. Good for "select a card to remove" screens like the Merchant's
-	/// card removal option.
-	/// </summary>
-	/// <param name="player">Player whose deck to remove from.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <param name="filter">
-	/// Optional filter to exclude certain cards (like hiding un-upgradable cards for the Magic Pot relic).
-	/// Note: We already automatically hide unremovable cards, so this filter doesn't have to worry about that.
-	/// </param>
-	/// <returns>Selected cards.</returns>
 	public static Task<IEnumerable<CardModel>> FromDeckForRemoval(Player player, CardSelectorPrefs prefs, Func<CardModel, bool>? filter = null)
 	{
 		List<CardModel> deck = PileType.Deck.GetPile(player).Cards.ToList();
 		return FromDeckGeneric(player, prefs, (CardModel c) => c.IsRemovable && (filter == null || filter(c)), (CardModel c) => (c.Type != CardType.Curse) ? deck.IndexOf(c) : (-999999999));
 	}
 
-	/// <summary>
-	/// A generic select screen for the cards in the player's deck. Shows a card selection before returning.
-	/// Does not include upgrading, transforming, or applying enchantments to cards, as those have special UI
-	/// </summary>
-	/// <param name="player">Player whose deck to select from.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <param name="filter">Optional filter to exclude certain cards (like un-removable cards from the deck card removal screen).</param>
-	/// <param name="sortingOrder">Optional func to define the sort order of the cards.</param>
-	/// <returns>Selected cards.</returns>
 	public static async Task<IEnumerable<CardModel>> FromDeckGeneric(Player player, CardSelectorPrefs prefs, Func<CardModel, bool>? filter = null, Func<CardModel, int>? sortingOrder = null)
 	{
 		List<CardModel> source = PileType.Deck.GetPile(player).Cards.ToList();
@@ -767,23 +491,25 @@ public static class CardSelectCmd
 		{
 			return Array.Empty<CardModel>();
 		}
+		ICardSelector selector = RunManager.Instance.CardSelectorStack.GetSelector(player);
 		IEnumerable<CardModel> enumerable;
 		if (!prefs.RequireManualConfirmation && list.Count <= prefs.MinSelect)
 		{
 			enumerable = list;
 		}
-		else if (Selector != null)
+		else if (selector != null)
 		{
-			enumerable = await Selector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
+			enumerable = await selector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
 		}
 		else
 		{
 			uint choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
 			if (ShouldSelectLocalCard(player))
 			{
-				if (LocalSelector != null)
+				ICardSelector localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+				if (localSelector != null)
 				{
-					enumerable = await LocalSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
+					enumerable = await localSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
 				}
 				else
 				{
@@ -802,18 +528,6 @@ public static class CardSelectCmd
 		return enumerable;
 	}
 
-	/// <summary>
-	/// Begins card selection, targeting a specific player's hand.
-	/// If the player is the local player, this brings up the card selection screen.
-	/// If the player is a remote player, this waits for that player to select a card.
-	/// Good for simple hand selection without any extra bespoke UI (no upgrade/enchant previews, etc.).
-	/// </summary>
-	/// <param name="context">The context to use when signalling player choice.</param>
-	/// <param name="player">Player whose hand to select from.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <param name="filter">Function describing which cards can be selected. All can be selected if null.</param>
-	/// <param name="source">Model that kicked off the hand selection.</param>
-	/// <returns>The card that was chosen by the given player.</returns>
 	public static Task<IEnumerable<CardModel>> FromHand(PlayerChoiceContext context, Player player, CardSelectorPrefs prefs, Func<CardModel, bool>? filter, AbstractModel source)
     {
         return FromHandInternal(context, player, prefs, filter, source, preserveEndTurn: false);
@@ -831,13 +545,14 @@ public static class CardSelectCmd
 		{
 			return Array.Empty<CardModel>();
 		}
-		if (ShouldSelectLocalCard(player))
+		if (player.Creature.IsDead)
 		{
-			NPlayerHand.Instance?.CancelAllCardPlay();
+			return Array.Empty<CardModel>();
 		}
 		if (!preserveEndTurn) UndoEndTurnIfNecessary(player);
 		uint? choiceId = null;
-		if (Selector == null)
+		ICardSelector selector = RunManager.Instance.CardSelectorStack.GetSelector(player);
+		if (selector == null)
 		{
 			choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
 			await context.SignalPlayerChoiceBegun(player, PlayerChoiceOptions.CancelPlayCardActions);
@@ -852,15 +567,16 @@ public static class CardSelectCmd
 		{
 			result = list;
 		}
-		else if (Selector != null)
+		else if (selector != null)
 		{
-			result = await Selector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
+			result = await selector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
 		}
 		else if (ShouldSelectLocalCard(player))
 		{
-			if (LocalSelector != null)
+			ICardSelector localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+			if (localSelector != null)
 			{
-				result = await LocalSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
+				result = await localSelector.GetSelectedCards(list, prefs.MinSelect, prefs.MaxSelect);
 			}
 			else
 			{
@@ -880,17 +596,6 @@ public static class CardSelectCmd
 		return result;
 	}
 
-	/// <summary>
-	/// Begins card selection for discarding, targeting a specific player's hand.
-	/// If the player is the local player, this brings up the card selection screen.
-	/// If the player is a remote player, this waits for that player to select a card.
-	/// </summary>
-	/// <param name="context">The context to use when signalling player choice.</param>
-	/// <param name="player">Player whose hand to select from.</param>
-	/// <param name="prefs">CardSelectorPrefs</param>
-	/// <param name="filter">Function describing which cards can be selected. All can be selected if null.</param>
-	/// <param name="source">Model that kicked off the hand selection.</param>
-	/// <returns>The card that was chosen by the given player.</returns>
 	public static async Task<IEnumerable<CardModel>> FromHandForDiscard(PlayerChoiceContext context, Player player, CardSelectorPrefs prefs, Func<CardModel, bool>? filter, AbstractModel source)
 	{
 		prefs.ShouldGlowGold = (CardModel c) =>
@@ -906,29 +611,16 @@ public static class CardSelectCmd
 		return await FromHand(context, player, prefs, filter, source);
 	}
 
-	/// <summary>
-	/// Begins card selection for upgrading, targeting a specific player's hand.
-	/// If the player is the local player, this brings up the card selection screen.
-	/// If the player is a remote player, this waits for that player to select a card.
-	/// Good for in-combat hand upgrades like Armaments.
-	/// </summary>
-	/// <param name="context">The context to use when signalling player choice.</param>
-	/// <param name="player">Player whose hand to select from.</param>
-	/// <param name="source">Model that kicked off the selection.</param>
-	/// <returns>The card that was chosen by the given player.</returns>
 	public static async Task<CardModel?> FromHandForUpgrade(PlayerChoiceContext context, Player player, AbstractModel source)
 	{
 		if (CombatManager.Instance.IsOverOrEnding)
 		{
 			return null;
 		}
-		if (ShouldSelectLocalCard(player))
-		{
-			NPlayerHand.Instance?.CancelAllCardPlay();
-		}
 		UndoEndTurnIfNecessary(player);
 		uint? choiceId = null;
-		if (Selector == null)
+		ICardSelector selector = RunManager.Instance.CardSelectorStack.GetSelector(player);
+		if (selector == null)
 		{
 			choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
 			await context.SignalPlayerChoiceBegun(player, PlayerChoiceOptions.CancelPlayCardActions);
@@ -939,15 +631,16 @@ public static class CardSelectCmd
 		{
 			result = list.FirstOrDefault();
 		}
-		else if (Selector != null)
+		else if (selector != null)
 		{
-			result = (await Selector.GetSelectedCards(list, 1, 1)).FirstOrDefault();
+			result = (await selector.GetSelectedCards(list, 1, 1)).FirstOrDefault();
 		}
 		else if (ShouldSelectLocalCard(player))
 		{
-			if (LocalSelector != null)
+			ICardSelector localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+			if (localSelector != null)
 			{
-				result = (await LocalSelector.GetSelectedCards(list, 1, 1)).FirstOrDefault();
+				result = (await localSelector.GetSelectedCards(list, 1, 1)).FirstOrDefault();
 			}
 			else
 			{
@@ -967,13 +660,7 @@ public static class CardSelectCmd
 		return result;
 	}
 
-	/// <summary>
-	/// Get a list of canonical CardModels from the Choose a Bundle screen.
-	/// </summary>
-	/// <param name="player">Player choosing the bundle.</param>
-	/// <param name="bundles">Bundles for them to choose from.</param>
-	/// <returns>Chosen bundle.</returns>
-	public static async Task<IEnumerable<CardModel>> FromChooseABundleScreen(Player player, IReadOnlyList<IReadOnlyList<CardModel>> bundles)
+	public static async Task<IEnumerable<CardModel>> FromChooseABundleScreen(Player player, IReadOnlyList<IReadOnlyList<CardModel>> bundles, bool canSkip = false)
 	{
 		if (CombatManager.Instance.IsEnding)
 		{
@@ -992,7 +679,7 @@ public static class CardSelectCmd
 		}
 		else if (ShouldSelectLocalCard(player))
 		{
-			NChooseABundleSelectionScreen nChooseABundleSelectionScreen = NChooseABundleSelectionScreen.ShowScreen(bundles);
+			NChooseABundleSelectionScreen nChooseABundleSelectionScreen = NChooseABundleSelectionScreen.ShowScreen(bundles, canSkip);
 			readOnlyList = (await nChooseABundleSelectionScreen.CardsSelected()).FirstOrDefault() ?? Array.Empty<CardModel>();
 			RunManager.Instance.PlayerChoiceSynchronizer.SyncLocalChoice(player, choiceId, PlayerChoiceResult.FromIndex(bundles.IndexOf(readOnlyList)));
 		}
@@ -1022,22 +709,11 @@ public static class CardSelectCmd
 		Log.Info($"Player {player.NetId} chose cards [{value}]");
 	}
 
-	/// <summary>
-	/// Undoes the end of player turn if it is the player turn, and they have already ended their turn.
-	///
-	/// Typically, player choices only occur during GameActions initiated by the choosing player. Since EndTurnAction is
-	/// itself a GameAction, the player may only end their turn after all player choices they have initiated are
-	/// completed.
-	///
-	/// The problem comes when the player themselves have not initiated the player choice. If another player initiates a
-	/// choice on a player that has already ended their turn, we should un-end the choosing player's turn and force them
-	/// to end their turn again.
-	/// </summary>
 	private static void UndoEndTurnIfNecessary(Player player)
 	{
 		if (CombatManager.Instance.IsPlayerReadyToEndTurn(player) && player.Creature.CombatState != null && player.Creature.CombatState.CurrentSide == CombatSide.Player)
 		{
-			CombatManager.Instance.UndoReadyToEndTurn(player);
+			CombatManager.Instance.TryUndoReadyToEndTurn(player);
 		}
 	}
 }

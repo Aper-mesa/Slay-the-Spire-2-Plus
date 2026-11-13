@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Vfx.Utilities;
@@ -44,9 +45,9 @@ public class NSpeechBubbleVfx : Control
 		public static readonly StringName SetSpeechBubbleColor = "SetSpeechBubbleColor";
 
 		/// <summary>
-		/// Cached name for the '_ExitTree' method.
+		/// Cached name for the 'AddFadeOut' method.
 		/// </summary>
-		public new static readonly StringName _ExitTree = "_ExitTree";
+		public static readonly StringName AddFadeOut = "AddFadeOut";
 
 		/// <summary>
 		/// Cached name for the 'CreateInternal' method.
@@ -98,11 +99,6 @@ public class NSpeechBubbleVfx : Control
 		/// Cached name for the '_hsv' field.
 		/// </summary>
 		public static readonly StringName _hsv = "_hsv";
-
-		/// <summary>
-		/// Cached name for the '_tween' field.
-		/// </summary>
-		public static readonly StringName _tween = "_tween";
 
 		/// <summary>
 		/// Cached name for the '_startPos' field.
@@ -162,7 +158,7 @@ public class NSpeechBubbleVfx : Control
 
 	private const string _path = "res://scenes/vfx/vfx_speech_bubble.tscn";
 
-	private Tween? _tween;
+	private readonly OwnerFreeingTween _tween;
 
 	private const float _spawnProportionToTopOfHitbox = 0.75f;
 
@@ -188,6 +184,11 @@ public class NSpeechBubbleVfx : Control
 
 	public double SecondsToDisplay { get; private set; }
 
+	public NSpeechBubbleVfx()
+	{
+		_tween = new OwnerFreeingTween(this);
+	}
+
 	/// <summary>
 	/// Creates a speech bubble given a creature. Use this when you want creatures to talk during combat!
 	/// </summary>
@@ -199,9 +200,9 @@ public class NSpeechBubbleVfx : Control
 		}
 		NSpeechBubbleVfx nSpeechBubbleVfx = CreateInternal(text, speaker.Side switch
 		{
-			CombatSide.Player => DialogueSide.Left, 
-			CombatSide.Enemy => DialogueSide.Right, 
-			_ => throw new ArgumentOutOfRangeException(), 
+			CombatSide.Player => DialogueSide.Left,
+			CombatSide.Enemy => DialogueSide.Right,
+			_ => throw new ArgumentOutOfRangeException(),
 		}, secondsToDisplay);
 		nSpeechBubbleVfx._startPos = GetCreatureSpeechPosition(speaker);
 		nSpeechBubbleVfx._vfxColor = vfxColor;
@@ -230,6 +231,7 @@ public class NSpeechBubbleVfx : Control
 		_shadow = GetNode<Sprite2D>("%Shadow");
 		_container = GetNode<Control>("%Container");
 		_label = GetNode<MegaRichTextLabel>("%Text");
+		_label.ApplyRtlText();
 		_hsv = (ShaderMaterial)_bubble.Material;
 		SetSpeechBubbleColor();
 		GlobalPosition = _startPos;
@@ -250,6 +252,11 @@ public class NSpeechBubbleVfx : Control
 			_hsv.SetShaderParameter(_h, 0.05f);
 			_hsv.SetShaderParameter(_s, 1.3f);
 			_hsv.SetShaderParameter(_v, 0.55f);
+			break;
+		case VfxColor.Fool:
+			_hsv.SetShaderParameter(_h, 0.58f);
+			_hsv.SetShaderParameter(_s, 1.1f);
+			_hsv.SetShaderParameter(_v, 0.5f);
 			break;
 		case VfxColor.Green:
 			_hsv.SetShaderParameter(_h, 0.8f);
@@ -294,41 +301,39 @@ public class NSpeechBubbleVfx : Control
 		}
 	}
 
-	public override void _ExitTree()
+	private Task AnimateSpeechBubble()
 	{
-		_tween?.Kill();
-	}
-
-	private async Task AnimateSpeechBubble()
-	{
-		_tween = CreateTween().SetParallel();
 		float value = 60f * ((_side == DialogueSide.Left) ? (-1f) : 1f);
 		_label.Text = $"[center][fly_in offset_x={value} offset_y=40]{_text}[/fly_in][/center]";
-		_tween.TweenProperty(this, "modulate:a", 1f, 0.4).From(0f);
-		_tween.TweenProperty(_label, "visible_ratio", 1f, 0.4).From(0f);
-		_tween.TweenProperty(_bubble, "scale", new Vector2(0.75f, 0.75f), 0.5).From(new Vector2(0.25f, 0.25f)).SetEase(Tween.EaseType.Out)
-			.SetTrans(Tween.TransitionType.Expo);
-		_tween.TweenProperty(this, "rotation_degrees", 0f, 0.3).From(7f).SetEase(Tween.EaseType.Out)
-			.SetTrans(Tween.TransitionType.Sine);
-		_tween.Chain();
-		double time = Math.Max(SecondsToDisplay - 1.0, 1.0);
-		_tween.TweenInterval(time);
-		_tween.Chain();
-		await AnimOutInternal();
+		return _tween.Play((Tween tween) =>
+		{
+			tween.SetParallel();
+			tween.TweenProperty(this, "modulate:a", 1f, 0.4).From(0f);
+			tween.TweenProperty(_label, "visible_ratio", 1f, 0.4).From(0f);
+			tween.TweenProperty(_bubble, "scale", new Vector2(0.75f, 0.75f), 0.5).From(new Vector2(0.25f, 0.25f)).SetEase(Tween.EaseType.Out)
+				.SetTrans(Tween.TransitionType.Expo);
+			tween.TweenProperty(this, "rotation_degrees", 0f, 0.3).From(7f).SetEase(Tween.EaseType.Out)
+				.SetTrans(Tween.TransitionType.Sine);
+			tween.Chain();
+			double time = Math.Max(SecondsToDisplay - 1.0, 1.0);
+			tween.TweenInterval(time);
+			tween.Chain();
+			AddFadeOut(tween);
+		});
 	}
 
-	public async Task AnimOut()
+	public Task AnimOut()
 	{
-		_tween?.Kill();
-		_tween = CreateTween().SetParallel();
-		await AnimOutInternal();
+		return _tween.Play((Tween tween) =>
+		{
+			tween.SetParallel();
+			AddFadeOut(tween);
+		});
 	}
 
-	private async Task AnimOutInternal()
+	private void AddFadeOut(Tween tween)
 	{
-		_tween.TweenProperty(this, "modulate", StsColors.transparentBlack, 0.4).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Sine);
-		await _tween.AwaitFinished(this);
-		this.QueueFreeSafely();
+		tween.TweenProperty(this, "modulate", StsColors.transparentBlack, 0.4).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Sine);
 	}
 
 	private static NSpeechBubbleVfx CreateInternal(string text, DialogueSide side, double secondsToDisplay)
@@ -392,7 +397,10 @@ public class NSpeechBubbleVfx : Control
 		}, null));
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.SetSpeechBubbleColor, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.AddFadeOut, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Object, "tween", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Tween"), exported: false)
+		}, null));
 		list.Add(new MethodInfo(MethodName.CreateInternal, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.String, "text", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false),
@@ -427,9 +435,9 @@ public class NSpeechBubbleVfx : Control
 			ret = default;
 			return true;
 		}
-		if (method == MethodName._ExitTree && args.Count == 0)
+		if (method == MethodName.AddFadeOut && args.Count == 1)
 		{
-			_ExitTree();
+			AddFadeOut(VariantUtils.ConvertTo<Tween>(in args[0]));
 			ret = default;
 			return true;
 		}
@@ -480,7 +488,7 @@ public class NSpeechBubbleVfx : Control
 		{
 			return true;
 		}
-		if (method == MethodName._ExitTree)
+		if (method == MethodName.AddFadeOut)
 		{
 			return true;
 		}
@@ -532,11 +540,6 @@ public class NSpeechBubbleVfx : Control
 		if (name == PropertyName._hsv)
 		{
 			_hsv = VariantUtils.ConvertTo<ShaderMaterial>(in value);
-			return true;
-		}
-		if (name == PropertyName._tween)
-		{
-			_tween = VariantUtils.ConvertTo<Tween>(in value);
 			return true;
 		}
 		if (name == PropertyName._startPos)
@@ -611,11 +614,6 @@ public class NSpeechBubbleVfx : Control
 			value = VariantUtils.CreateFrom(in _hsv);
 			return true;
 		}
-		if (name == PropertyName._tween)
-		{
-			value = VariantUtils.CreateFrom(in _tween);
-			return true;
-		}
 		if (name == PropertyName._startPos)
 		{
 			value = VariantUtils.CreateFrom(in _startPos);
@@ -664,7 +662,6 @@ public class NSpeechBubbleVfx : Control
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._bubble, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._shadow, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._hsv, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._tween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Vector2, PropertyName._startPos, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._vfxColor, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._style, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -687,7 +684,6 @@ public class NSpeechBubbleVfx : Control
 		info.AddProperty(PropertyName._bubble, Variant.From(in _bubble));
 		info.AddProperty(PropertyName._shadow, Variant.From(in _shadow));
 		info.AddProperty(PropertyName._hsv, Variant.From(in _hsv));
-		info.AddProperty(PropertyName._tween, Variant.From(in _tween));
 		info.AddProperty(PropertyName._startPos, Variant.From(in _startPos));
 		info.AddProperty(PropertyName._vfxColor, Variant.From(in _vfxColor));
 		info.AddProperty(PropertyName._style, Variant.From(in _style));
@@ -729,33 +725,29 @@ public class NSpeechBubbleVfx : Control
 		{
 			_hsv = value7.As<ShaderMaterial>();
 		}
-		if (info.TryGetProperty(PropertyName._tween, out var value8))
+		if (info.TryGetProperty(PropertyName._startPos, out var value8))
 		{
-			_tween = value8.As<Tween>();
+			_startPos = value8.As<Vector2>();
 		}
-		if (info.TryGetProperty(PropertyName._startPos, out var value9))
+		if (info.TryGetProperty(PropertyName._vfxColor, out var value9))
 		{
-			_startPos = value9.As<Vector2>();
+			_vfxColor = value9.As<VfxColor>();
 		}
-		if (info.TryGetProperty(PropertyName._vfxColor, out var value10))
+		if (info.TryGetProperty(PropertyName._style, out var value10))
 		{
-			_vfxColor = value10.As<VfxColor>();
+			_style = value10.As<DialogueStyle>();
 		}
-		if (info.TryGetProperty(PropertyName._style, out var value11))
+		if (info.TryGetProperty(PropertyName._side, out var value11))
 		{
-			_style = value11.As<DialogueStyle>();
+			_side = value11.As<DialogueSide>();
 		}
-		if (info.TryGetProperty(PropertyName._side, out var value12))
+		if (info.TryGetProperty(PropertyName._text, out var value12))
 		{
-			_side = value12.As<DialogueSide>();
+			_text = value12.As<string>();
 		}
-		if (info.TryGetProperty(PropertyName._text, out var value13))
+		if (info.TryGetProperty(PropertyName._elapsedTime, out var value13))
 		{
-			_text = value13.As<string>();
-		}
-		if (info.TryGetProperty(PropertyName._elapsedTime, out var value14))
-		{
-			_elapsedTime = value14.As<float>();
+			_elapsedTime = value13.As<float>();
 		}
 	}
 }

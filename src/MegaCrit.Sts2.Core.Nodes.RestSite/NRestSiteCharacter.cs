@@ -216,10 +216,10 @@ public class NRestSiteCharacter : Node2D
 		_rightThoughtAnchor = GetNode<Control>("%ThoughtBubbleRight");
 		string animName = Player.RunState.CurrentActIndex switch
 		{
-			0 => "overgrowth_loop", 
-			1 => "hive_loop", 
-			2 => "glory_loop", 
-			_ => throw new InvalidOperationException("Unexpected act"), 
+			0 => "overgrowth_loop",
+			1 => "hive_loop",
+			2 => "glory_loop",
+			_ => throw new InvalidOperationException("Unexpected act"),
 		};
 		foreach (Node2D childSpineNode in GetChildSpineNodes())
 		{
@@ -298,6 +298,15 @@ public class NRestSiteCharacter : Node2D
 			scale.X = 0f - childSpineNode.Position.X;
 			childSpineNode.Position = scale;
 		}
+		foreach (Sprite2D item in GetChildren().OfType<Sprite2D>())
+		{
+			scale = item.Scale;
+			scale.X = 0f - item.Scale.X;
+			item.Scale = scale;
+			scale = item.Position;
+			scale.X = 0f - item.Position.X;
+			item.Position = scale;
+		}
 		Control controlRoot = _controlRoot;
 		scale = _controlRoot.Scale;
 		scale.X = 0f - _controlRoot.Scale.X;
@@ -373,6 +382,7 @@ public class NRestSiteCharacter : Node2D
 		_thoughtBubbleVfx = null;
 		_selectedOptionConfirmation = PreloadManager.Cache.GetScene(_multiplayerConfirmationScenePath).Instantiate<Control>(PackedScene.GenEditState.Disabled);
 		_selectedOptionConfirmation.GetNode<TextureRect>("%Icon").Texture = option.Icon;
+		_selectedOptionConfirmation.GetNode<TextureRect>("%Icon").Texture = option.Icon;
 		this.AddChildSafely(_selectedOptionConfirmation);
 		int characterIndex = _characterIndex;
 		bool flag = ((characterIndex == 0 || characterIndex == 3) ? true : false);
@@ -390,9 +400,10 @@ public class NRestSiteCharacter : Node2D
 	{
 		ScreenPunchInstance shake = new ScreenPunchInstance(15f, 0.4, 0f);
 		Vector2 originalPosition = Position;
+		CancellationToken ct = _cts.Token;
 		while (!shake.IsDone)
 		{
-			Vector2 vector = shake.Update(await this.AwaitProcessFrame(_cts.Token));
+			Vector2 vector = shake.Update(await this.AwaitProcessFrame(ct));
 			Position = originalPosition + vector;
 		}
 		Position = originalPosition;

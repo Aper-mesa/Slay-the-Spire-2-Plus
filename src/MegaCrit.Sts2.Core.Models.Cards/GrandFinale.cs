@@ -30,7 +30,7 @@ public sealed class GrandFinale : CardModel
 		if (nGrandFinaleVfx != null)
 		{
 			NCombatRoom.Instance?.CombatVfxContainer.AddChildSafely(nGrandFinaleVfx);
-			await Cmd.Wait(NGrandFinaleVfx.totalAnticipationDuration);
+			await Cmd.Wait(1.625f);
 		}
 		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).FromCard(this, cardPlay).TargetingAllOpponents(CombatState)
 			.WithHitVfxNode(NGrandFinaleImpactVfx.Create)

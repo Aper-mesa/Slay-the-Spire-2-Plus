@@ -13,6 +13,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.addons.mega_text;
 
 namespace MegaCrit.Sts2.Core.Nodes.Screens.Shops;
@@ -95,6 +96,11 @@ public abstract class NMerchantSlot : Control
 		public static readonly StringName CreateHoverTip = "CreateHoverTip";
 
 		/// <summary>
+		/// Cached name for the 'GetHoveredHitboxGlobalRect' method.
+		/// </summary>
+		public static readonly StringName GetHoveredHitboxGlobalRect = "GetHoveredHitboxGlobalRect";
+
+		/// <summary>
 		/// Cached name for the 'ClearHoverTip' method.
 		/// </summary>
 		public static readonly StringName ClearHoverTip = "ClearHoverTip";
@@ -131,6 +137,21 @@ public abstract class NMerchantSlot : Control
 	public new class PropertyName : Control.PropertyName
 	{
 		/// <summary>
+		/// Cached name for the 'HoverScale' property.
+		/// </summary>
+		public static readonly StringName HoverScale = "HoverScale";
+
+		/// <summary>
+		/// Cached name for the 'MerchantHandOffset' property.
+		/// </summary>
+		public static readonly StringName MerchantHandOffset = "MerchantHandOffset";
+
+		/// <summary>
+		/// Cached name for the 'SmallScale' property.
+		/// </summary>
+		public static readonly StringName SmallScale = "SmallScale";
+
+		/// <summary>
 		/// Cached name for the 'Hitbox' property.
 		/// </summary>
 		public static readonly StringName Hitbox = "Hitbox";
@@ -139,6 +160,11 @@ public abstract class NMerchantSlot : Control
 		/// Cached name for the 'Visual' property.
 		/// </summary>
 		public static readonly StringName Visual = "Visual";
+
+		/// <summary>
+		/// Cached name for the 'IsInitialized' property.
+		/// </summary>
+		public static readonly StringName IsInitialized = "IsInitialized";
 
 		/// <summary>
 		/// Cached name for the '_isHovered' field.
@@ -194,10 +220,6 @@ public abstract class NMerchantSlot : Control
 
 	private bool _isHovered;
 
-	private static readonly Vector2 _hoverScale = Vector2.One * 0.8f;
-
-	private static readonly Vector2 _smallScale = Vector2.One * 0.65f;
-
 	protected NClickableControl _hitbox;
 
 	protected MegaLabel _costLabel;
@@ -216,6 +238,26 @@ public abstract class NMerchantSlot : Control
 
 	private UnhoveredEventHandler backing_Unhovered;
 
+	protected virtual Vector2 HoverScale => Vector2.One * 0.8f;
+
+	/// <summary>
+	/// Offset from the slot's global position that the merchant hand points at. The standard shop needs a nudge left so
+	/// the finger lands on the item; the fake merchant's layout lines up without one.
+	/// </summary>
+	public virtual Vector2 MerchantHandOffset
+	{
+		get
+		{
+			if (!(_merchantRug is NFakeMerchantInventory))
+			{
+				return Vector2.Left * 30f;
+			}
+			return Vector2.Zero;
+		}
+	}
+
+	protected virtual Vector2 SmallScale => Vector2.One * 0.65f;
+
 	public NClickableControl Hitbox => _hitbox;
 
 	public abstract MerchantEntry Entry { get; }
@@ -223,6 +265,12 @@ public abstract class NMerchantSlot : Control
 	protected abstract CanvasItem Visual { get; }
 
 	protected Player? Player => _merchantRug?.Inventory?.Player;
+
+	/// <summary>
+	/// False for slots whose container has no entries for this inventory. Those slots are never initialized or
+	/// filled, so they have no entry to unsubscribe from on exit.
+	/// </summary>
+	protected bool IsInitialized => _merchantRug != null;
 
 	/// <inheritdoc cref="T:MegaCrit.Sts2.Core.Nodes.Screens.Shops.NMerchantSlot.HoveredEventHandler" />
 	public event HoveredEventHandler Hovered
@@ -282,7 +330,10 @@ public abstract class NMerchantSlot : Control
 
 	public override void _ExitTree()
 	{
-		Disconnect(SignalName.Unhovered, Callable.From<NMerchantSlot>(OnMerchantHandUnhovered));
+		if (IsInitialized)
+		{
+			Disconnect(SignalName.Unhovered, Callable.From<NMerchantSlot>(OnMerchantHandUnhovered));
+		}
 		_hitbox.Disconnect(Control.SignalName.MouseExited, Callable.From(OnUnfocus));
 		Disconnect(Control.SignalName.FocusExited, Callable.From(OnUnfocus));
 		_hoverTween?.Kill();
@@ -329,7 +380,8 @@ public abstract class NMerchantSlot : Control
 	{
 		_isHovered = true;
 		_hoverTween?.Kill();
-		Scale = _hoverScale;
+		_hoverTween = CreateTween();
+		_hoverTween.TweenProperty(this, "scale", HoverScale, 0.05);
 		CreateHoverTip();
 		EmitSignal(SignalName.Hovered, this);
 	}
@@ -339,7 +391,7 @@ public abstract class NMerchantSlot : Control
 		_isHovered = false;
 		_hoverTween?.Kill();
 		_hoverTween = CreateTween();
-		_hoverTween.TweenProperty(this, "scale", _smallScale, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
+		_hoverTween.TweenProperty(this, "scale", SmallScale, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
 		ClearHoverTip();
 		EmitSignal(SignalName.Unhovered, this);
 	}
@@ -347,7 +399,7 @@ public abstract class NMerchantSlot : Control
 	private async Task OnSelected()
 	{
 		ClearHoverTip();
-		await OnTryPurchase(_merchantRug?.Inventory);
+		await RunManager.Instance.MerchantSynchronizer.PurchaseLocalEntry(Entry);
 		MerchantEntry entry = Entry;
 		if (entry != null && entry.IsStocked && _isHovered)
 		{
@@ -355,15 +407,13 @@ public abstract class NMerchantSlot : Control
 		}
 	}
 
-	protected abstract Task OnTryPurchase(MerchantInventory? inventory);
-
 	/// <summary>
 	/// Used when the entry slot is purchased to ensure that the hand tries to point at it.
 	/// Particularly useful for the Merchant Robes relic since purchasing the slots happens automatically.
 	/// </summary>
 	protected void TriggerMerchantHandToPointHere()
 	{
-		_merchantRug?.MerchantHand.PointAtTarget(this, Vector2.Zero);
+		_merchantRug?.MerchantHand.PointAtTarget(this, MerchantHandOffset);
 		_merchantRug?.MerchantHand.StopPointing(2f);
 	}
 
@@ -373,6 +423,18 @@ public abstract class NMerchantSlot : Control
 
 	protected abstract void CreateHoverTip();
 
+	/// <summary>
+	/// The hitbox's global rect once the hover tween has finished. Hover tips are created as soon as the
+	/// tween starts, so aligning to the hitbox's current rect would place them against a mid-tween scale.
+	/// Assumes the slot scales from its origin (no pivot offset), so its global position is unaffected by the tween.
+	/// </summary>
+	protected Rect2 GetHoveredHitboxGlobalRect()
+	{
+		Vector2 vector = GetGlobalTransform().Scale / Scale * HoverScale;
+		Vector2 vector2 = _hitbox.Position + _hitbox.PivotOffset * (Vector2.One - _hitbox.Scale);
+		return new Rect2(GlobalPosition + vector2 * vector, _hitbox.Size * _hitbox.Scale * vector);
+	}
+
 	protected void ClearHoverTip()
 	{
 		NHoverTipSet.Remove(this);
@@ -380,7 +442,7 @@ public abstract class NMerchantSlot : Control
 
 	private void OnMerchantHandHovered(NMerchantSlot _)
 	{
-		_merchantRug?.MerchantHand.PointAtTarget(this, Vector2.Zero);
+		_merchantRug?.MerchantHand.PointAtTarget(this, MerchantHandOffset);
 	}
 
 	private void OnMerchantHandUnhovered(NMerchantSlot _)
@@ -443,7 +505,7 @@ public abstract class NMerchantSlot : Control
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(18);
+		List<MethodInfo> list = new List<MethodInfo>(19);
 		list.Add(new MethodInfo(MethodName.Initialize, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "rug", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
@@ -468,6 +530,7 @@ public abstract class NMerchantSlot : Control
 		list.Add(new MethodInfo(MethodName.TriggerMerchantHandToPointHere, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnPreview, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.CreateHoverTip, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.GetHoveredHitboxGlobalRect, new PropertyInfo(Variant.Type.Rect2, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.ClearHoverTip, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnMerchantHandHovered, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
@@ -565,6 +628,11 @@ public abstract class NMerchantSlot : Control
 			ret = default;
 			return true;
 		}
+		if (method == MethodName.GetHoveredHitboxGlobalRect && args.Count == 0)
+		{
+			ret = VariantUtils.CreateFrom<Rect2>(GetHoveredHitboxGlobalRect());
+			return true;
+		}
 		if (method == MethodName.ClearHoverTip && args.Count == 0)
 		{
 			ClearHoverTip();
@@ -656,6 +724,10 @@ public abstract class NMerchantSlot : Control
 		{
 			return true;
 		}
+		if (method == MethodName.GetHoveredHitboxGlobalRect)
+		{
+			return true;
+		}
 		if (method == MethodName.ClearHoverTip)
 		{
 			return true;
@@ -729,6 +801,25 @@ public abstract class NMerchantSlot : Control
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
+		Vector2 from;
+		if (name == PropertyName.HoverScale)
+		{
+			from = HoverScale;
+			value = VariantUtils.CreateFrom(in from);
+			return true;
+		}
+		if (name == PropertyName.MerchantHandOffset)
+		{
+			from = MerchantHandOffset;
+			value = VariantUtils.CreateFrom(in from);
+			return true;
+		}
+		if (name == PropertyName.SmallScale)
+		{
+			from = SmallScale;
+			value = VariantUtils.CreateFrom(in from);
+			return true;
+		}
 		if (name == PropertyName.Hitbox)
 		{
 			value = VariantUtils.CreateFrom<NClickableControl>(Hitbox);
@@ -737,6 +828,11 @@ public abstract class NMerchantSlot : Control
 		if (name == PropertyName.Visual)
 		{
 			value = VariantUtils.CreateFrom<CanvasItem>(Visual);
+			return true;
+		}
+		if (name == PropertyName.IsInitialized)
+		{
+			value = VariantUtils.CreateFrom<bool>(IsInitialized);
 			return true;
 		}
 		if (name == PropertyName._isHovered)
@@ -787,6 +883,9 @@ public abstract class NMerchantSlot : Control
 	{
 		List<PropertyInfo> list = new List<PropertyInfo>();
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isHovered, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Vector2, PropertyName.HoverScale, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Vector2, PropertyName.MerchantHandOffset, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Vector2, PropertyName.SmallScale, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._hitbox, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName.Hitbox, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._costLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -795,6 +894,7 @@ public abstract class NMerchantSlot : Control
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._merchantRug, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._ignoreMouseRelease, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName.Visual, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName.IsInitialized, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
 

@@ -85,6 +85,8 @@ public class CrystalSphereMinigame
 	/// </summary>
 	private List<CrystalSphereCell> HighlightedCells { get; set; } = new List<CrystalSphereCell>();
 
+	public Player Owner => _owner;
+
 	public event Action? DivinationCountChanged;
 
 	public event Action? Finished;

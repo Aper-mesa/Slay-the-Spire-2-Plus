@@ -129,6 +129,8 @@ public class NDeckHistory : VBoxContainer
 	{
 		_headerLabel = GetNode<MegaRichTextLabel>("Header");
 		_cardContainer = GetNode<Control>("%CardContainer");
+		this.ApplyRtlLayout();
+		_cardContainer.GetParent<MarginContainer>().ApplyRtlMargins();
 	}
 
 	public void LoadDeck(Player player, IEnumerable<SerializableCard> cards)

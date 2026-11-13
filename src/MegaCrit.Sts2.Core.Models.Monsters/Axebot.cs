@@ -45,9 +45,9 @@ public sealed class Axebot : MonsterModel
 
 	private int HammerUppercutDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 18, 14);
 
-	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 76, 70) + RespawnMaxHpBonus;
+	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 80, 70) + RespawnMaxHpBonus;
 
-	public override int MaxInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 86, 78) + RespawnMaxHpBonus;
+	public override int MaxInitialHp => MinInitialHp;
 
 	private int RespawnMaxHpBonus => RespawnCount * 10;
 

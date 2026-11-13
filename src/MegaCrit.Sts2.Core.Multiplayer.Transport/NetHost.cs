@@ -68,7 +68,10 @@ public abstract class NetHost
 	/// <param name="reason">THe reason to send to the client accompanying the disconnection.</param>
 	/// <param name="now">If true, the client will be forcibly and immediately disconnected. If false, the client is
 	/// disconnected at some point in the near future.</param>
-	public abstract void DisconnectClient(ulong peerId, NetError reason, bool now = false);
+	/// <param name="debugReason">Text sent to the client alongside the reason. The client displays it, so it is
+	/// readable even when the client is on a version whose error codes we do not share. Steam truncates it past 127
+	/// bytes and ENet drops it entirely.</param>
+	public abstract void DisconnectClient(ulong peerId, NetError reason, bool now = false, string? debugReason = null);
 
 	/// <summary>
 	/// Disconnecst all clients and stops listening for new connections.

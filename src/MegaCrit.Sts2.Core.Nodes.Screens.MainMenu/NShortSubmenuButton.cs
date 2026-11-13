@@ -9,13 +9,14 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.Fonts;
 using MegaCrit.Sts2.Core.Logging;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.addons.mega_text;
 
 namespace MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 
 /// <summary>
-/// The huge submenu buttons you see in the MainMenu.
+/// The smaller submenu buttons you see in the Compendium.
 /// </summary>
 [ScriptPath("res://src/Core/Nodes/Screens/MainMenu/NShortSubmenuButton.cs")]
 public class NShortSubmenuButton : NButton
@@ -102,9 +103,9 @@ public class NShortSubmenuButton : NButton
 		public static readonly StringName _bgPanel = "_bgPanel";
 
 		/// <summary>
-		/// Cached name for the '_icon' field.
+		/// Cached name for the '_portrait' field.
 		/// </summary>
-		public static readonly StringName _icon = "_icon";
+		public static readonly StringName _portrait = "_portrait";
 
 		/// <summary>
 		/// Cached name for the '_title' field.
@@ -156,7 +157,7 @@ public class NShortSubmenuButton : NButton
 
 	private Control _bgPanel;
 
-	private TextureRect _icon;
+	private NSubmenuPortrait _portrait;
 
 	private MegaLabel _title;
 
@@ -166,9 +167,9 @@ public class NShortSubmenuButton : NButton
 
 	private ShaderMaterial _hsv;
 
-	private static readonly StringName _v = new StringName("v");
-
 	private static readonly StringName _s = new StringName("s");
+
+	private static readonly StringName _v = new StringName("v");
 
 	private float _defaultV;
 
@@ -178,14 +179,15 @@ public class NShortSubmenuButton : NButton
 
 	private Tween? _tween;
 
-	public static string? GetImagePath(string key)
+	private static string GetImagePath(string key)
 	{
-		string imagePath = ImageHelper.GetImagePath("packed/main_menu/submenu_icon_" + key.ToLowerInvariant() + ".png");
-		if (ResourceLoader.Exists(imagePath))
+		string iconPath = NSubmenuPortrait.GetIconPath(key);
+		if (ResourceLoader.Exists(iconPath))
 		{
-			return imagePath;
+			return iconPath;
 		}
-		return null;
+		Log.Warn("MISSING ICON: " + iconPath);
+		return NSubmenuPortrait.GetIconPath("unknown");
 	}
 
 	public override void _Ready()
@@ -202,7 +204,7 @@ public class NShortSubmenuButton : NButton
 		base.ConnectSignals();
 		_bgPanel = GetNode<Control>("BgPanel");
 		_hsv = (ShaderMaterial)_bgPanel.Material;
-		_icon = GetNode<TextureRect>("Icon");
+		_portrait = GetNode<NSubmenuPortrait>("%SubmenuPortrait");
 		_title = GetNode<MegaLabel>("%Title");
 		_description = GetNode<MegaRichTextLabel>("%Description");
 		_defaultV = (float)_hsv.GetShaderParameter(_v);
@@ -214,11 +216,7 @@ public class NShortSubmenuButton : NButton
 	{
 		_locKeyPrefix = locKeyPrefix;
 		RefreshLabels();
-		string imagePath = GetImagePath(locKeyPrefix);
-		if (imagePath != null)
-		{
-			_icon.Texture = PreloadManager.Cache.GetCompressedTexture2D(imagePath);
-		}
+		_portrait.SetTexture(PreloadManager.Cache.GetCompressedTexture2D(GetImagePath(locKeyPrefix)));
 	}
 
 	public override void _Notification(int what)
@@ -260,17 +258,15 @@ public class NShortSubmenuButton : NButton
 	protected override void OnEnable()
 	{
 		Modulate = Colors.White;
-		GetNode<Control>("%Lock").Visible = false;
 		_hsv.SetShaderParameter(_s, 1f);
-		_icon.Modulate = Colors.White;
+		_portrait.SetUnlocked();
 	}
 
 	protected override void OnDisable()
 	{
 		Modulate = Colors.DarkGray;
-		GetNode<Control>("%Lock").Visible = true;
 		_hsv.SetShaderParameter(_s, 0f);
-		_icon.Modulate = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+		_portrait.SetLocked();
 	}
 
 	protected override void OnFocus()
@@ -511,9 +507,9 @@ public class NShortSubmenuButton : NButton
 			_bgPanel = VariantUtils.ConvertTo<Control>(in value);
 			return true;
 		}
-		if (name == PropertyName._icon)
+		if (name == PropertyName._portrait)
 		{
-			_icon = VariantUtils.ConvertTo<TextureRect>(in value);
+			_portrait = VariantUtils.ConvertTo<NSubmenuPortrait>(in value);
 			return true;
 		}
 		if (name == PropertyName._title)
@@ -568,9 +564,9 @@ public class NShortSubmenuButton : NButton
 			value = VariantUtils.CreateFrom(in _bgPanel);
 			return true;
 		}
-		if (name == PropertyName._icon)
+		if (name == PropertyName._portrait)
 		{
-			value = VariantUtils.CreateFrom(in _icon);
+			value = VariantUtils.CreateFrom(in _portrait);
 			return true;
 		}
 		if (name == PropertyName._title)
@@ -626,7 +622,7 @@ public class NShortSubmenuButton : NButton
 	{
 		List<PropertyInfo> list = new List<PropertyInfo>();
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._bgPanel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._icon, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._portrait, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._title, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._description, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.String, PropertyName._locKeyPrefix, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -644,7 +640,7 @@ public class NShortSubmenuButton : NButton
 	{
 		base.SaveGodotObjectData(info);
 		info.AddProperty(PropertyName._bgPanel, Variant.From(in _bgPanel));
-		info.AddProperty(PropertyName._icon, Variant.From(in _icon));
+		info.AddProperty(PropertyName._portrait, Variant.From(in _portrait));
 		info.AddProperty(PropertyName._title, Variant.From(in _title));
 		info.AddProperty(PropertyName._description, Variant.From(in _description));
 		info.AddProperty(PropertyName._locKeyPrefix, Variant.From(in _locKeyPrefix));
@@ -664,9 +660,9 @@ public class NShortSubmenuButton : NButton
 		{
 			_bgPanel = value.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._icon, out var value2))
+		if (info.TryGetProperty(PropertyName._portrait, out var value2))
 		{
-			_icon = value2.As<TextureRect>();
+			_portrait = value2.As<NSubmenuPortrait>();
 		}
 		if (info.TryGetProperty(PropertyName._title, out var value3))
 		{

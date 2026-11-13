@@ -77,6 +77,11 @@ public class AtlasResourceLoader : ResourceFormatLoader
 		public static readonly StringName GetFallbackPath = "GetFallbackPath";
 
 		/// <summary>
+		/// Cached name for the 'GetEpochFallbackPath' method.
+		/// </summary>
+		public static readonly StringName GetEpochFallbackPath = "GetEpochFallbackPath";
+
+		/// <summary>
 		/// Cached name for the 'GetRelicFallbackPath' method.
 		/// </summary>
 		public static readonly StringName GetRelicFallbackPath = "GetRelicFallbackPath";
@@ -269,7 +274,7 @@ public class AtlasResourceLoader : ResourceFormatLoader
 	/// Returns the fallback path for a sprite not found in the atlas.
 	/// Different atlases have different fallback conventions.
 	/// </summary>
-	private static string? GetFallbackPath(string atlasName, string spriteName)
+	internal static string? GetFallbackPath(string atlasName, string spriteName)
 	{
 		switch (atlasName)
 		{
@@ -281,11 +286,27 @@ public class AtlasResourceLoader : ResourceFormatLoader
 		case "card_atlas":
 			return GetCardFallbackPath(spriteName);
 		case "potion_atlas":
-		case "potion_outline_atlas":
 			return GetPotionFallbackPath(spriteName);
+		case "epoch_atlas":
+			return GetEpochFallbackPath(spriteName);
 		default:
 			return null;
 		}
+	}
+
+	private static string? GetEpochFallbackPath(string spriteName)
+	{
+		string text = "res://images/timeline/epoch_portraits/" + spriteName + ".png";
+		if (ResourceLoader.Exists(text))
+		{
+			return text;
+		}
+		string text2 = "res://images/timeline/epoch_portraits/placeholder/" + spriteName + ".png";
+		if (ResourceLoader.Exists(text2))
+		{
+			return text2;
+		}
+		return null;
 	}
 
 	private static string? GetRelicFallbackPath(string spriteName)
@@ -342,7 +363,7 @@ public class AtlasResourceLoader : ResourceFormatLoader
 
 	private static string? GetPotionFallbackPath(string spriteName)
 	{
-		string text = "res://images/potions/" + spriteName + ".png";
+		string text = "res://images/potions/large/" + spriteName + ".png";
 		if (ResourceLoader.Exists(text))
 		{
 			return text;
@@ -386,7 +407,7 @@ public class AtlasResourceLoader : ResourceFormatLoader
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(16);
+		List<MethodInfo> list = new List<MethodInfo>(17);
 		list.Add(new MethodInfo(MethodName._GetRecognizedExtensions, new PropertyInfo(Variant.Type.PackedStringArray, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._HandlesType, new PropertyInfo(Variant.Type.Bool, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
@@ -434,6 +455,10 @@ public class AtlasResourceLoader : ResourceFormatLoader
 		list.Add(new MethodInfo(MethodName.GetFallbackPath, new PropertyInfo(Variant.Type.String, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.String, "atlasName", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false),
+			new PropertyInfo(Variant.Type.String, "spriteName", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName.GetEpochFallbackPath, new PropertyInfo(Variant.Type.String, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
+		{
 			new PropertyInfo(Variant.Type.String, "spriteName", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.GetRelicFallbackPath, new PropertyInfo(Variant.Type.String, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
@@ -518,6 +543,11 @@ public class AtlasResourceLoader : ResourceFormatLoader
 			ret = VariantUtils.CreateFrom<string>(GetFallbackPath(VariantUtils.ConvertTo<string>(in args[0]), VariantUtils.ConvertTo<string>(in args[1])));
 			return true;
 		}
+		if (method == MethodName.GetEpochFallbackPath && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<string>(GetEpochFallbackPath(VariantUtils.ConvertTo<string>(in args[0])));
+			return true;
+		}
 		if (method == MethodName.GetRelicFallbackPath && args.Count == 1)
 		{
 			ret = VariantUtils.CreateFrom<string>(GetRelicFallbackPath(VariantUtils.ConvertTo<string>(in args[0])));
@@ -567,6 +597,11 @@ public class AtlasResourceLoader : ResourceFormatLoader
 		if (method == MethodName.GetFallbackPath && args.Count == 2)
 		{
 			ret = VariantUtils.CreateFrom<string>(GetFallbackPath(VariantUtils.ConvertTo<string>(in args[0]), VariantUtils.ConvertTo<string>(in args[1])));
+			return true;
+		}
+		if (method == MethodName.GetEpochFallbackPath && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<string>(GetEpochFallbackPath(VariantUtils.ConvertTo<string>(in args[0])));
 			return true;
 		}
 		if (method == MethodName.GetRelicFallbackPath && args.Count == 1)
@@ -643,6 +678,10 @@ public class AtlasResourceLoader : ResourceFormatLoader
 			return true;
 		}
 		if (method == MethodName.GetFallbackPath)
+		{
+			return true;
+		}
+		if (method == MethodName.GetEpochFallbackPath)
 		{
 			return true;
 		}

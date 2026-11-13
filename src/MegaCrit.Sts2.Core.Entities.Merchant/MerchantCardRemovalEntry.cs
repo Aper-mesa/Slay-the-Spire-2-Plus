@@ -1,10 +1,14 @@
+using System.Linq;
 using System.Threading.Tasks;
+using MegaCrit.Sts2.Core.CardSelection;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Ascension;
+using MegaCrit.Sts2.Core.Entities.Gold;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Hooks;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes;
-using MegaCrit.Sts2.Core.Runs;
 
 namespace MegaCrit.Sts2.Core.Entities.Merchant;
 
@@ -13,6 +17,8 @@ namespace MegaCrit.Sts2.Core.Entities.Merchant;
 /// </summary>
 public sealed class MerchantCardRemovalEntry : MerchantEntry
 {
+	private bool _isCancelable = true;
+
 	public bool Used { get; private set; }
 
 	public override bool IsStocked => !Used;
@@ -32,44 +38,48 @@ public sealed class MerchantCardRemovalEntry : MerchantEntry
 		_cost = BaseCost + PriceIncrease * _player.ExtraFields.CardShopRemovalsUsed;
 	}
 
-	public async Task<bool> OnTryPurchaseWrapper(MerchantInventory? inventory, bool ignoreCost = false, bool cancelable = true)
+	public void SetPurchaseUncancelable()
 	{
-		if (!RunManager.Instance.IsInProgress)
-		{
-			return false;
-		}
-		if (!EnoughGold && !ignoreCost)
-		{
-			InvokePurchaseFailed(PurchaseStatus.FailureGold);
-			return false;
-		}
-		var (success, goldSpent) = await OnTryPurchase(inventory, ignoreCost, cancelable);
-		if (success)
-		{
-			await Hook.AfterItemPurchased(_player.RunState, _player, this, goldSpent);
-			InvokePurchaseCompleted(this);
-		}
-		return success;
+		_isCancelable = false;
 	}
 
-	protected override async Task<(bool, int)> OnTryPurchase(MerchantInventory? inventory, bool ignoreCost)
-	{
-		return await OnTryPurchase(inventory, ignoreCost, cancelable: true);
-	}
-
-	private async Task<(bool, int)> OnTryPurchase(MerchantInventory? inventory, bool ignoreCost, bool cancelable)
+	protected override async Task<(bool, int)> OnTryPurchaseInternal(MerchantInventory? inventory, bool ignoreCost)
 	{
 		if (Used)
 		{
 			return (false, 0);
 		}
 		int goldToSpend = ((!ignoreCost) ? Cost : 0);
-		bool flag = await RunManager.Instance.OneOffSynchronizer.DoLocalMerchantCardRemoval(goldToSpend, cancelable);
-		if (flag)
+		if (!(await DoCardRemoval(_player, _isCancelable)))
+		{
+			return (false, 0);
+		}
+		if (!ignoreCost)
+		{
+			await PlayerCmd.LoseGold(goldToSpend, _player, GoldLossType.Spent);
+		}
+		SetUsed();
+		if (LocalContext.IsMe(_player))
 		{
 			NRun.Instance?.MerchantRoom?.Inventory.OnCardRemovalUsed();
 		}
-		return (flag, goldToSpend);
+		return (true, goldToSpend);
+	}
+
+	public static async Task<bool> DoCardRemoval(Player player, bool isCancelable)
+	{
+		CardSelectorPrefs prefs = new CardSelectorPrefs(CardSelectorPrefs.RemoveSelectionPrompt, 1)
+		{
+			Cancelable = isCancelable,
+			RequireManualConfirmation = true
+		};
+		CardModel card = (await CardSelectCmd.FromDeckForRemoval(player, prefs)).FirstOrDefault();
+		if (card != null)
+		{
+			await CardPileCmd.RemoveFromDeck(card);
+			player.ExtraFields.CardShopRemovalsUsed++;
+		}
+		return card != null;
 	}
 
 	protected override void ClearAfterPurchase()

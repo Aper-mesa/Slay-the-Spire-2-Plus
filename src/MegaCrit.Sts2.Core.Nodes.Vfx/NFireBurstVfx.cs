@@ -110,7 +110,7 @@ public class NFireBurstVfx : Node2D
 		nFireBurstVfx.GlobalPosition = targetFloorPosition;
 		nFireBurstVfx.ApplyTint(tint);
 		Vector2 scale = Vector2.One * scaleFactor;
-		scale.X *= (((double)GD.Randf() > 0.5) ? 1f : (-1f));
+		scale.X *= ((GD.Randf() > 0.5f) ? 1f : (-1f));
 		nFireBurstVfx.Scale = scale;
 		return nFireBurstVfx;
 	}

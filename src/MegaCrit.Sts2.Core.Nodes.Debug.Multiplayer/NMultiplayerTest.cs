@@ -11,7 +11,6 @@ using Godot.Bridge;
 using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Debug;
 using MegaCrit.Sts2.Core.DevConsole.ConsoleCommands;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
@@ -19,7 +18,6 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
-using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer;
 using MegaCrit.Sts2.Core.Multiplayer.Connection;
@@ -142,6 +140,11 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 		/// Cached name for the 'MaxAscensionChanged' method.
 		/// </summary>
 		public static readonly StringName MaxAscensionChanged = "MaxAscensionChanged";
+
+		/// <summary>
+		/// Cached name for the 'GameModeChanged' method.
+		/// </summary>
+		public static readonly StringName GameModeChanged = "GameModeChanged";
 	}
 
 	/// <summary>
@@ -226,8 +229,6 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 
 	private CancellationTokenSource _cts = new CancellationTokenSource();
 
-	private IBootstrapSettings? _settings;
-
 	private bool _ignoreReplayModelIdHash;
 
 	private bool _beginningRun;
@@ -269,11 +270,6 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 			_game = SceneHelper.Instantiate<NGame>("game");
 			_game.StartOnMainMenu = false;
 			Callable.From(AddGame).CallDeferred();
-		}
-		Type type = BootstrapSettingsUtil.Get();
-		if (type != null)
-		{
-			_settings = (IBootstrapSettings)Activator.CreateInstance(type);
 		}
 		MegaCrit.Sts2.Core.Logging.Logger.logLevelTypeMap[LogType.Network] = LogLevel.Debug;
 		MegaCrit.Sts2.Core.Logging.Logger.logLevelTypeMap[LogType.Actions] = LogLevel.VeryDebug;
@@ -354,45 +350,24 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 	private async Task BeginRunAsync(string seed, List<ActModel> acts)
 	{
 		_beginningRun = true;
-		IBootstrapSettings settings = _settings;
-		if (settings != null && settings.BootstrapInMultiplayer)
+		List<Player> players = _lobby.GeneratePlayers(seed);
+		if (Bootstrapper.Settings?.BootstrapInMultiplayer ?? false)
 		{
 			using (new NetLoadingHandle(_lobby.NetService))
 			{
-				acts[0] = _settings.Act;
-				RunState runState = RunState.CreateForNewRun(_lobby.Players.Select((StartRunLobbyPlayer p) => Player.CreateForNewRun(p.character, UnlockState.FromSerializable(p.unlockState), p.id)).ToList(), acts.Select((ActModel a) => a.ToMutable()).ToList(), _settings.Modifiers, GameMode.Standard, _lobby.Ascension, seed);
-				RunManager.Instance.SetUpNewMultiplayer(runState, _lobby, _settings.SaveRunHistory);
-				await PreloadManager.LoadRunAssets(runState.Players.Select((Player p) => p.Character));
-				await RunManager.Instance.FinalizeStartingRelics();
-				RunManager.Instance.Launch();
-				_game.RootSceneContainer.SetCurrentScene(NRun.Create(runState));
-				await RunManager.Instance.SetActInternal(0);
-				await SaveManager.Instance.SaveRun(null);
-				_lobby.CleanUp(disconnectSession: false);
-				await _settings.Setup(LocalContext.GetMe(runState));
-				switch (_settings.RoomType)
+				Bootstrapper bootstrapper = new Bootstrapper().WithActs(acts).WithPlayers(players).WithRunManagerSetup((RunState r, bool s) =>
 				{
-				case RoomType.Unassigned:
-					await RunManager.Instance.EnterAct(0);
-					break;
-				case RoomType.Treasure:
-				case RoomType.Shop:
-				case RoomType.RestSite:
-					await RunManager.Instance.EnterRoomDebug(_settings.RoomType, MapPointType.Unassigned, null, showTransition: false);
-					RunManager.Instance.ActionExecutor.Unpause();
-					break;
-				case RoomType.Event:
-					await RunManager.Instance.EnterRoomDebug(_settings.RoomType, MapPointType.Unassigned, _settings.Event, showTransition: false);
-					break;
-				default:
-					await RunManager.Instance.EnterRoomDebug(_settings.RoomType, MapPointType.Unassigned, _settings.RoomType.IsCombatRoom() ? _settings.Encounter.ToMutable() : null, showTransition: false);
-					break;
-				}
+					RunManager.Instance.SetUpNewMultiplayer(r, _lobby, s);
+				})
+					.WithSeed(seed);
+				await bootstrapper.SetupRun();
+				_lobby.CleanUp(disconnectSession: false);
+				await bootstrapper.EnterFirstRoom();
 			}
 		}
 		else
 		{
-			await _game.StartNewMultiplayerRun(_lobby, shouldSave: true, acts, Array.Empty<ModifierModel>(), seed, _lobby.Ascension);
+			await _game.StartNewMultiplayerRun(players, _lobby, shouldSave: true, acts, Array.Empty<ModifierModel>(), seed, _lobby.Ascension);
 			_lobby.CleanUp(disconnectSession: false);
 		}
 	}
@@ -405,18 +380,14 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 
 	private async Task<bool> StartHost(bool steam)
 	{
-		if (_settings?.BootstrapInMultiplayer ?? false)
-		{
-			PreloadManager.Enabled = _settings.DoPreloading;
-			_game.DebugSeedOverride = _settings.Seed;
-		}
+		NGame.Instance.InitDebugSeedFromBootstrap(isMultiplayer: true);
 		Disconnect(NetError.Quit);
 		NetHostGameService netService = new NetHostGameService(PeerVersionInfo.LocalDefault());
 		NetErrorInfo? value = ((!steam) ? netService.StartENetHost(33771, 4) : (await netService.StartSteamHost(4)));
 		if (!value.HasValue)
 		{
-			_lobby = new StartRunLobby(GameMode.Standard, netService, this, 4);
-			_lobby.AddLocalHostPlayer(new UnlockState(SaveManager.Instance.Progress), SaveManager.Instance.Progress.MaxMultiplayerAscension);
+			_lobby = new StartRunLobby(GameMode.Standard, isCustom: false, netService, this, 4);
+			_lobby.AddLocalHostPlayer(new UnlockState(SaveManager.Instance.Progress), SaveManager.Instance.Progress.MaxMultiplayerAscension, SaveManager.Instance.Progress.MaxBlitzAscension);
 			AfterMultiplayerStarted();
 			Log.Info("Successful host");
 		}
@@ -430,20 +401,16 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 
 	public async Task JoinToHost(IClientConnectionInitializer initializer)
 	{
-		if (_settings?.BootstrapInMultiplayer ?? false)
-		{
-			PreloadManager.Enabled = _settings.DoPreloading;
-			_game.DebugSeedOverride = _settings.Seed;
-		}
+		NGame.Instance.InitDebugSeedFromBootstrap(isMultiplayer: true);
 		Disconnect(NetError.Quit);
-		JoinFlow joinFlow = new JoinFlow(new NetClientGameService(PeerVersionInfo.LocalDefault()));
+		JoinFlow joinFlow = new JoinFlow(new NetClientGameService(PeerVersionInfo.LocalDefault()), initializer);
 		try
 		{
-			JoinResult joinResult = await joinFlow.Begin(initializer, GetTree());
+			JoinResult joinResult = await joinFlow.Begin(GetTree());
 			if (joinResult.sessionState == RunSessionState.InLobby)
 			{
 				Log.Info("Successfully joined lobby");
-				_lobby = new StartRunLobby(joinResult.gameMode, joinFlow.NetService, this, -1);
+				_lobby = new StartRunLobby(joinResult.gameMode, isCustom: false, joinFlow.NetService, this, -1);
 				_lobby.InitializeFromMessage(joinResult.joinResponse.Value);
 				AfterMultiplayerStarted();
 			}
@@ -527,7 +494,7 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 		Log.Info($"Loaded replay. Game version: {combatReplay.version} Commit: {combatReplay.gitCommit} Model ID hash: {combatReplay.modelIdHash}");
 		if (ValidateReplay(combatReplay))
 		{
-			int valueOrDefault = (_settings?.ReplayPlayerIndex).GetValueOrDefault();
+			int valueOrDefault = (Bootstrapper.Settings?.ReplayPlayerIndex).GetValueOrDefault();
 			TaskHelper.RunSafely(RunReplay(combatReplay, GetTree(), valueOrDefault));
 		}
 	}
@@ -661,7 +628,7 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 		_characterContainers[player.slotId].playerName.Text = PlatformUtil.GetPlayerNameRaw(_lobby.NetService.Platform, player.id);
 	}
 
-	public void PlayerChanged(StartRunLobbyPlayer player, bool isRandomCharacterResolution)
+	public void PlayerChanged(StartRunLobbyPlayer player)
 	{
 		_characterContainers[player.slotId].characterImage.Texture = player.character.IconTexture;
 		_characterContainers[player.slotId].playerName.Text = PlatformUtil.GetPlayerNameRaw(_lobby.NetService.Platform, player.id);
@@ -680,6 +647,10 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 	}
 
 	public void MaxAscensionChanged()
+	{
+	}
+
+	public void GameModeChanged()
 	{
 	}
 
@@ -705,7 +676,7 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(18);
+		List<MethodInfo> list = new List<MethodInfo>(19);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._EnterTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -736,6 +707,7 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 		list.Add(new MethodInfo(MethodName.SeedChanged, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.ModifiersChanged, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.MaxAscensionChanged, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.GameModeChanged, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		return list;
 	}
 
@@ -851,6 +823,12 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 			ret = default;
 			return true;
 		}
+		if (method == MethodName.GameModeChanged && args.Count == 0)
+		{
+			GameModeChanged();
+			ret = default;
+			return true;
+		}
 		return base.InvokeGodotClassMethod(in method, args, out ret);
 	}
 
@@ -927,6 +905,10 @@ public class NMultiplayerTest : Control, IStartRunLobbyListener
 			return true;
 		}
 		if (method == MethodName.MaxAscensionChanged)
+		{
+			return true;
+		}
+		if (method == MethodName.GameModeChanged)
 		{
 			return true;
 		}

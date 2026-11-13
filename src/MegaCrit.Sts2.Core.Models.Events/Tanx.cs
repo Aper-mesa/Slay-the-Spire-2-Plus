@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Ancients;
+using MegaCrit.Sts2.Core.Entities.Characters;
 using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.Extensions;
 using MegaCrit.Sts2.Core.Models.Characters;
@@ -19,6 +20,8 @@ public class Tanx : AncientEventModel
 	private const string _sfxCuriosity = "event:/sfx/npcs/tanx/tanx_curiosity";
 
 	private const int _triBoomerangCount = 3;
+
+	public override FoolPronounGuess FoolPronounGuess => FoolPronounGuess.Masculine;
 
 	public override Color ButtonColor => new Color(0.05f, 0.02f, 0f, 0.5f);
 
@@ -139,6 +142,7 @@ public class Tanx : AncientEventModel
 		{
 			list.Add(TriBoomerangOption);
 		}
+		list = AllowedOptions(list);
 		return list.UnstableShuffle(Rng).Take(3).ToList();
 	}
 }

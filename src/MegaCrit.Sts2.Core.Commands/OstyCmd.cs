@@ -83,7 +83,7 @@ public static class OstyCmd
 		}
 		if (osty != null)
 		{
-			NCombatRoom.Instance?.GetCreatureNode(osty)?.OstyScaleToSize(osty.MaxHp, 0.75);
+			NCombatRoom.Instance?.GetCreatureNode(osty)?.ScaleAndPositionOsty(osty.MaxHp, 0.75);
 		}
 		CombatManager.Instance.History.Summoned(combatState, (int)amount, summoner);
 		await Hook.AfterSummon(combatState, choiceContext, summoner, amount);

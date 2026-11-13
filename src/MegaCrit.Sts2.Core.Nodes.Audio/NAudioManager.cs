@@ -226,7 +226,7 @@ public class NAudioManager : Node
 	{
 		if (!TestMode.IsOn)
 		{
-			_audioNode.Call(_setMasterVolume, Mathf.Pow(volume, 2f));
+			_audioNode.Call(_setMasterVolume, volume * volume);
 		}
 	}
 
@@ -234,7 +234,7 @@ public class NAudioManager : Node
 	{
 		if (!TestMode.IsOn)
 		{
-			_audioNode.Call(_setSfxVolume, Mathf.Pow(volume, 2f));
+			_audioNode.Call(_setSfxVolume, volume * volume);
 		}
 	}
 
@@ -242,7 +242,7 @@ public class NAudioManager : Node
 	{
 		if (!TestMode.IsOn)
 		{
-			_audioNode.Call(_setAmbienceVolume, Mathf.Pow(volume, 2f));
+			_audioNode.Call(_setAmbienceVolume, volume * volume);
 		}
 	}
 
@@ -250,7 +250,7 @@ public class NAudioManager : Node
 	{
 		if (!TestMode.IsOn)
 		{
-			_audioNode.Call(_setBgmVolume, Mathf.Pow(volume, 2f));
+			_audioNode.Call(_setBgmVolume, volume * volume);
 		}
 	}
 

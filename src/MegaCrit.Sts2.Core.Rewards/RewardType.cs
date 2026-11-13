@@ -8,5 +8,6 @@ public enum RewardType
 	Potion,
 	Relic,
 	RemoveCard,
+	UpgradeCard,
 	SpecialCard
 }

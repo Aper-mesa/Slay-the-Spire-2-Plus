@@ -13,17 +13,21 @@ public enum HpLossHookPhase
 {
 	None = 0,
 	/// <summary>
+	/// Hooks that modify HP loss before damage is redirected from the player to Wuppy.
+	/// </summary>
+	BeforeWuppy = 1,
+	/// <summary>
 	/// Hooks that modify HP loss before damage is redirected from Necrobinder to Osty.
 	/// Including this will cause <see cref="M:MegaCrit.Sts2.Core.Models.AbstractModel.ModifyHpLostBeforeOsty(MegaCrit.Sts2.Core.Entities.Creatures.Creature,System.Decimal,MegaCrit.Sts2.Core.ValueProps.ValueProp,MegaCrit.Sts2.Core.Entities.Creatures.Creature,MegaCrit.Sts2.Core.Models.CardModel)" /> and
 	/// <see cref="M:MegaCrit.Sts2.Core.Models.AbstractModel.ModifyHpLostBeforeOstyLate(MegaCrit.Sts2.Core.Entities.Creatures.Creature,System.Decimal,MegaCrit.Sts2.Core.ValueProps.ValueProp,MegaCrit.Sts2.Core.Entities.Creatures.Creature,MegaCrit.Sts2.Core.Models.CardModel)" /> to be called.
 	/// </summary>
-	BeforeOsty = 1,
+	BeforeOsty = 2,
 	/// <summary>
 	/// Hooks that modify HP loss after damage is redirected from Necrobinder to Osty.
 	/// Including this will cause <see cref="M:MegaCrit.Sts2.Core.Models.AbstractModel.ModifyHpLostAfterOsty(MegaCrit.Sts2.Core.Entities.Creatures.Creature,System.Decimal,MegaCrit.Sts2.Core.ValueProps.ValueProp,MegaCrit.Sts2.Core.Entities.Creatures.Creature,MegaCrit.Sts2.Core.Models.CardModel)" /> and
 	/// <see cref="M:MegaCrit.Sts2.Core.Models.AbstractModel.ModifyHpLostAfterOstyLate(MegaCrit.Sts2.Core.Entities.Creatures.Creature,System.Decimal,MegaCrit.Sts2.Core.ValueProps.ValueProp,MegaCrit.Sts2.Core.Entities.Creatures.Creature,MegaCrit.Sts2.Core.Models.CardModel)" /> to be called.
 	/// </summary>
-	AfterOsty = 2,
+	AfterOsty = 4,
 	/// <summary>
 	/// Include all HP-loss-modification hooks. Use when there is no redirection step between phases
 	/// (e.g. damage previews).

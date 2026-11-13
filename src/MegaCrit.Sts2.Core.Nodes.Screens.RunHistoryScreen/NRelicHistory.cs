@@ -124,6 +124,8 @@ public class NRelicHistory : VBoxContainer
 	{
 		_headerLabel = GetNode<MegaRichTextLabel>("Header");
 		_relicsContainer = GetNode<Control>("%RelicsContainer");
+		this.ApplyRtlLayout();
+		_relicsContainer.GetParent<MarginContainer>().ApplyRtlMargins();
 	}
 
 	public void LoadRelics(Player player, IEnumerable<SerializableRelic> relics)

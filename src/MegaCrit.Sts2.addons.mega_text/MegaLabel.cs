@@ -33,6 +33,11 @@ public class MegaLabel : Label
 		public static readonly StringName RefreshFont = "RefreshFont";
 
 		/// <summary>
+		/// Cached name for the 'RefreshTextDirection' method.
+		/// </summary>
+		public static readonly StringName RefreshTextDirection = "RefreshTextDirection";
+
+		/// <summary>
 		/// Cached name for the '_Notification' method.
 		/// </summary>
 		public new static readonly StringName _Notification = "_Notification";
@@ -195,6 +200,7 @@ public class MegaLabel : Label
 	{
 		MegaLabelHelper.AssertThemeFontOverride(this, ThemeConstants.Label.Font);
 		RefreshFont();
+		RefreshTextDirection();
 		AdjustFontSize();
 	}
 
@@ -203,11 +209,29 @@ public class MegaLabel : Label
 		this.ApplyLocaleFontSubstitution(FontType.Regular, ThemeConstants.Label.Font);
 	}
 
+	/// <summary>
+	/// For right-to-left languages.
+	/// </summary>
+	private void RefreshTextDirection()
+	{
+		if (!Engine.IsEditorHint() && IsLayoutRtl())
+		{
+			TextDirection = TextDirection.Rtl;
+		}
+	}
+
 	public override void _Notification(int what)
 	{
-		if ((long)what == 40 && !(_lastAdjustedSize.DistanceSquaredTo(Size) < 0.0001f))
+		if ((long)what == 40)
 		{
-			AdjustFontSize();
+			if (!(_lastAdjustedSize.DistanceSquaredTo(Size) < 0.0001f))
+			{
+				AdjustFontSize();
+			}
+		}
+		else if ((long)what == 49)
+		{
+			RefreshTextDirection();
 		}
 	}
 
@@ -285,10 +309,11 @@ public class MegaLabel : Label
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(7);
+		List<MethodInfo> list = new List<MethodInfo>(8);
 		list.Add(new MethodInfo(MethodName.DisposeCachedParagraph, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal | MethodFlags.Static, null, null));
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.RefreshFont, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.RefreshTextDirection, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._Notification, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Int, "what", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
@@ -324,6 +349,12 @@ public class MegaLabel : Label
 		if (method == MethodName.RefreshFont && args.Count == 0)
 		{
 			RefreshFont();
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.RefreshTextDirection && args.Count == 0)
+		{
+			RefreshTextDirection();
 			ret = default;
 			return true;
 		}
@@ -380,6 +411,10 @@ public class MegaLabel : Label
 			return true;
 		}
 		if (method == MethodName.RefreshFont)
+		{
+			return true;
+		}
+		if (method == MethodName.RefreshTextDirection)
 		{
 			return true;
 		}

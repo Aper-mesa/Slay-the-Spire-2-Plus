@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
@@ -19,6 +18,13 @@ namespace MegaCrit.Sts2.Core.Nodes.CommonUi;
 [ScriptPath("res://src/Core/Nodes/CommonUi/NHotkeyManager.cs")]
 public class NHotkeyManager : Node
 {
+	/// <summary>
+	/// A registered binding. <see cref="P:MegaCrit.Sts2.Core.Nodes.CommonUi.NHotkeyManager.Binding.Sequence" /> is what orders it against the other bindings on
+	/// the same hotkey, highest wins. Handing the same sequence back to Push after a Remove puts the
+	/// binding back exactly where it was, whatever else registered or unregistered meanwhile.
+	/// </summary>
+	private readonly record struct Binding(long Sequence, Action Action);
+
 	/// <summary>
 	/// Cached StringNames for the methods contained in this class, for fast lookup.
 	/// </summary>
@@ -50,6 +56,10 @@ public class NHotkeyManager : Node
 	/// </summary>
 	public new class PropertyName : Node.PropertyName
 	{
+		/// <summary>
+		/// Cached name for the '_lastSequence' field.
+		/// </summary>
+		public static readonly StringName _lastSequence = "_lastSequence";
 	}
 
 	/// <summary>
@@ -59,23 +69,39 @@ public class NHotkeyManager : Node
 	{
 	}
 
-	private readonly Dictionary<StringName, List<Action>> _hotkeyPressedBindings = new Dictionary<StringName, List<Action>>();
+	private readonly Dictionary<StringName, List<Binding>> _hotkeyPressedBindings = new Dictionary<StringName, List<Binding>>();
 
-	private readonly Dictionary<StringName, List<Action>> _hotkeyReleasedBindings = new Dictionary<StringName, List<Action>>();
+	private readonly Dictionary<StringName, List<Binding>> _hotkeyReleasedBindings = new Dictionary<StringName, List<Binding>>();
 
-	private Dictionary<Node, Action> _blockingScreens = new Dictionary<Node, Action>();
+	private readonly Dictionary<Node, Action> _blockingScreens = new Dictionary<Node, Action>();
+
+	/// <summary>Last sequence handed out. Only ever increases, so a fresh binding always outranks.</summary>
+	private long _lastSequence;
+
+	/// <summary>Sequence value meaning "no remembered position, give this top priority".</summary>
+	public const long noSequence = 0L;
 
 	public static NHotkeyManager? Instance
 	{
 		get
 		{
-			if (NGame.Instance == null)
+			NHotkeyManager nHotkeyManager = InstanceForTest;
+			if (nHotkeyManager == null)
 			{
-				return null;
+				if (NGame.Instance == null)
+				{
+					return null;
+				}
+				nHotkeyManager = NGame.Instance.HotkeyManager;
 			}
-			return NGame.Instance.HotkeyManager;
+			return nHotkeyManager;
 		}
 	}
+
+	/// <summary>
+	/// Replaces the game's manager in tests, which run without an <see cref="T:MegaCrit.Sts2.Core.Nodes.NGame" />. Null in the game.
+	/// </summary>
+	internal static NHotkeyManager? InstanceForTest { get; set; }
 
 	public void ClearHotkeys()
 	{
@@ -84,52 +110,106 @@ public class NHotkeyManager : Node
 		_blockingScreens.Clear();
 	}
 
-	public void PushHotkeyPressedBinding(string hotkey, Action action)
+	/// <summary>
+	/// Registers a binding at top priority. Pass a <paramref name="sequence" /> from
+	/// <see cref="M:MegaCrit.Sts2.Core.Nodes.CommonUi.NHotkeyManager.RemoveHotkeyPressedBinding(System.String,System.Action)" /> to put a binding back at the priority it held.
+	/// </summary>
+	public void PushHotkeyPressedBinding(string hotkey, Action action, long sequence = 0L)
 	{
-		if (!_hotkeyPressedBindings.ContainsKey(hotkey))
-		{
-			_hotkeyPressedBindings.Add(hotkey, new List<Action>());
-		}
-		if (!_hotkeyPressedBindings[hotkey].Contains(action))
-		{
-			_hotkeyPressedBindings[hotkey].Add(action);
-		}
+		Insert(_hotkeyPressedBindings, hotkey, action, sequence, ref _lastSequence);
 	}
 
-	public void RemoveHotkeyPressedBinding(string hotkey, Action action)
+	/// <returns>
+	/// The sequence the binding held, or <see cref="F:MegaCrit.Sts2.Core.Nodes.CommonUi.NHotkeyManager.noSequence" /> if it was not registered. Pass it
+	/// back to <see cref="M:MegaCrit.Sts2.Core.Nodes.CommonUi.NHotkeyManager.PushHotkeyPressedBinding(System.String,System.Action,System.Int64)" /> to restore the binding at its original priority.
+	/// </returns>
+	public long RemoveHotkeyPressedBinding(string hotkey, Action action)
 	{
-		if (_hotkeyPressedBindings.TryGetValue(hotkey, out List<Action> value))
+		return Remove(_hotkeyPressedBindings, hotkey, action);
+	}
+
+	/// <summary>
+	/// Registers a binding at top priority. Pass a <paramref name="sequence" /> from
+	/// <see cref="M:MegaCrit.Sts2.Core.Nodes.CommonUi.NHotkeyManager.RemoveHotkeyReleasedBinding(System.String,System.Action)" /> to put a binding back at the priority it held.
+	/// </summary>
+	public void PushHotkeyReleasedBinding(string hotkey, Action action, long sequence = 0L)
+	{
+		Insert(_hotkeyReleasedBindings, hotkey, action, sequence, ref _lastSequence);
+	}
+
+	/// <returns>
+	/// The sequence the binding held, or <see cref="F:MegaCrit.Sts2.Core.Nodes.CommonUi.NHotkeyManager.noSequence" /> if it was not registered. Pass it
+	/// back to <see cref="M:MegaCrit.Sts2.Core.Nodes.CommonUi.NHotkeyManager.PushHotkeyReleasedBinding(System.String,System.Action,System.Int64)" /> to restore the binding at its original priority.
+	/// </returns>
+	public long RemoveHotkeyReleasedBinding(string hotkey, Action action)
+	{
+		return Remove(_hotkeyReleasedBindings, hotkey, action);
+	}
+
+	/// <summary>
+	/// The binding that currently wins <paramref name="hotkey" />, or null if nothing is registered.
+	/// </summary>
+	public Action? GetPrioritizedPressedBinding(string hotkey)
+	{
+		return GetPrioritized(_hotkeyPressedBindings, hotkey);
+	}
+
+	/// <summary>
+	/// The binding that currently wins the release of <paramref name="hotkey" />, or null if nothing
+	/// is registered.
+	/// </summary>
+	public Action? GetPrioritizedReleasedBinding(string hotkey)
+	{
+		return GetPrioritized(_hotkeyReleasedBindings, hotkey);
+	}
+
+	private static Action? GetPrioritized(Dictionary<StringName, List<Binding>> bindings, string hotkey)
+	{
+		if (!bindings.TryGetValue(hotkey, out List<Binding> value) || value.Count <= 0)
 		{
-			value.Remove(action);
-			if (_hotkeyPressedBindings[hotkey].Count == 0)
+			return null;
+		}
+		List<Binding> list = value;
+		return list[list.Count - 1].Action;
+	}
+
+	private static void Insert(Dictionary<StringName, List<Binding>> bindings, string hotkey, Action action, long sequence, ref long lastSequence)
+	{
+		if (!bindings.TryGetValue(hotkey, out List<Binding> value))
+		{
+			value = new List<Binding>();
+			bindings.Add(hotkey, value);
+		}
+		if (value.FindIndex((Binding binding) => binding.Action == action) < 0)
+		{
+			Binding item = new Binding((sequence == 0L) ? (++lastSequence) : sequence, action);
+			int num = value.Count;
+			while (num > 0 && value[num - 1].Sequence > item.Sequence)
 			{
-				_hotkeyPressedBindings.Remove(hotkey);
+				num--;
 			}
+			value.Insert(num, item);
 		}
 	}
 
-	public void PushHotkeyReleasedBinding(string hotkey, Action action)
+	private static long Remove(Dictionary<StringName, List<Binding>> bindings, string hotkey, Action action)
 	{
-		if (!_hotkeyReleasedBindings.ContainsKey(hotkey))
+		if (!bindings.TryGetValue(hotkey, out List<Binding> value))
 		{
-			_hotkeyReleasedBindings.Add(hotkey, new List<Action>());
+			return 0L;
 		}
-		if (!_hotkeyReleasedBindings[hotkey].Contains(action))
+		long result = 0L;
+		int num = value.FindIndex((Binding binding) => binding.Action == action);
+		if (num >= 0)
 		{
-			_hotkeyReleasedBindings[hotkey].Add(action);
+			result = value[num].Sequence;
+			value.RemoveAt(num);
 		}
-	}
-
-	public void RemoveHotkeyReleasedBinding(string hotkey, Action action)
-	{
-		if (_hotkeyReleasedBindings.TryGetValue(hotkey, out List<Action> value))
+		if (value.Count == 0)
 		{
-			value.Remove(action);
-			if (_hotkeyReleasedBindings[hotkey].Count == 0)
-			{
-				_hotkeyReleasedBindings.Remove(hotkey);
-			}
+			bindings.Remove(hotkey);
 		}
+		return result;
 	}
 
 	/// <summary>
@@ -146,12 +226,12 @@ public class NHotkeyManager : Node
 		string[] allInputs = MegaInput.AllInputs;
 		foreach (string hotkey in allInputs)
 		{
-			PushHotkeyPressedBinding(hotkey, action);
+			PushHotkeyPressedBinding(hotkey, action, 0L);
 		}
 		string[] allInputs2 = MegaInput.AllInputs;
 		foreach (string hotkey2 in allInputs2)
 		{
-			PushHotkeyReleasedBinding(hotkey2, action);
+			PushHotkeyReleasedBinding(hotkey2, action, 0L);
 		}
 		_blockingScreens.Add(screen, action);
 	}
@@ -186,32 +266,26 @@ public class NHotkeyManager : Node
 		}
 		Viewport viewport = GetViewport();
 		Control control = viewport?.GuiGetFocusOwner();
-		if (control != null && ((control is LineEdit lineEdit && lineEdit.IsEditing()) || (control is NMegaTextEdit nMegaTextEdit && nMegaTextEdit.IsEditing())))
+		if (control != null && ((control is LineEdit lineEdit && lineEdit.IsEditing()) || (control.GetParent() is NMegaTextEdit nMegaTextEdit && nMegaTextEdit.IsEditing())))
 		{
 			return;
 		}
-		foreach (KeyValuePair<StringName, List<Action>> hotkeyPressedBinding in _hotkeyPressedBindings)
+		foreach (KeyValuePair<StringName, List<Binding>> hotkeyPressedBinding in _hotkeyPressedBindings)
 		{
-			if (inputEvent.IsActionPressed(hotkeyPressedBinding.Key) && !inputEvent.IsEcho())
+			if (inputEvent.IsActionPressed(hotkeyPressedBinding.Key) && !inputEvent.IsEcho() && hotkeyPressedBinding.Value.Count > 0)
 			{
-				Action action = hotkeyPressedBinding.Value.LastOrDefault();
-				if (action != null)
-				{
-					Callable.From(action.Invoke).CallDeferred();
-					viewport?.SetInputAsHandled();
-				}
+				List<Binding> value = hotkeyPressedBinding.Value;
+				Callable.From(value[value.Count - 1].Action.Invoke).CallDeferred();
+				viewport?.SetInputAsHandled();
 			}
 		}
-		foreach (KeyValuePair<StringName, List<Action>> hotkeyReleasedBinding in _hotkeyReleasedBindings)
+		foreach (KeyValuePair<StringName, List<Binding>> hotkeyReleasedBinding in _hotkeyReleasedBindings)
 		{
-			if (inputEvent.IsActionReleased(hotkeyReleasedBinding.Key))
+			if (inputEvent.IsActionReleased(hotkeyReleasedBinding.Key) && hotkeyReleasedBinding.Value.Count > 0)
 			{
-				Action action2 = hotkeyReleasedBinding.Value.LastOrDefault();
-				if (action2 != null)
-				{
-					Callable.From(action2.Invoke).CallDeferred();
-					viewport?.SetInputAsHandled();
-				}
+				List<Binding> value2 = hotkeyReleasedBinding.Value;
+				Callable.From(value2[value2.Count - 1].Action.Invoke).CallDeferred();
+				viewport?.SetInputAsHandled();
 			}
 		}
 	}
@@ -297,9 +371,47 @@ public class NHotkeyManager : Node
 
 	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
+	protected override bool SetGodotClassPropertyValue(in godot_string_name name, in godot_variant value)
+	{
+		if (name == PropertyName._lastSequence)
+		{
+			_lastSequence = VariantUtils.ConvertTo<long>(in value);
+			return true;
+		}
+		return base.SetGodotClassPropertyValue(in name, in value);
+	}
+
+	/// <inheritdoc />
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
+	{
+		if (name == PropertyName._lastSequence)
+		{
+			value = VariantUtils.CreateFrom(in _lastSequence);
+			return true;
+		}
+		return base.GetGodotClassPropertyValue(in name, out value);
+	}
+
+	/// <summary>
+	/// Get the property information for all the properties declared in this class.
+	/// This method is used by Godot to register the available properties in the editor.
+	/// Do not call this method.
+	/// </summary>
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	internal static List<PropertyInfo> GetGodotPropertyList()
+	{
+		List<PropertyInfo> list = new List<PropertyInfo>();
+		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._lastSequence, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		return list;
+	}
+
+	/// <inheritdoc />
+	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void SaveGodotObjectData(GodotSerializationInfo info)
 	{
 		base.SaveGodotObjectData(info);
+		info.AddProperty(PropertyName._lastSequence, Variant.From(in _lastSequence));
 	}
 
 	/// <inheritdoc />
@@ -307,5 +419,9 @@ public class NHotkeyManager : Node
 	protected override void RestoreGodotObjectData(GodotSerializationInfo info)
 	{
 		base.RestoreGodotObjectData(info);
+		if (info.TryGetProperty(PropertyName._lastSequence, out var value))
+		{
+			_lastSequence = value.As<long>();
+		}
 	}
 }

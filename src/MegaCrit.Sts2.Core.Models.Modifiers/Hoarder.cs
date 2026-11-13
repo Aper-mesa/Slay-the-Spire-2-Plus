@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -8,8 +7,6 @@ namespace MegaCrit.Sts2.Core.Models.Modifiers;
 
 public class Hoarder : ModifierModel
 {
-	private readonly HashSet<CardModel> _cardsToSkip = new HashSet<CardModel>();
-
 	public override async Task AfterCardChangedPiles(CardModel card, PileType oldPileType, AbstractModel? clonedBy)
 	{
 		if (oldPileType != PileType.None)
@@ -17,13 +14,12 @@ public class Hoarder : ModifierModel
 			return;
 		}
 		CardPile? pile = card.Pile;
-		if (pile != null && pile.Type == PileType.Deck && clonedBy == null && !_cardsToSkip.Remove(card))
+		if (pile != null && pile.Type == PileType.Deck && clonedBy == null)
 		{
 			for (int i = 0; i < 2; i++)
 			{
-				CardModel cardModel = card.Owner.RunState.CloneCard(card);
-				_cardsToSkip.Add(cardModel);
-				CardCmd.PreviewCardPileAdd(await CardPileCmd.Add(cardModel, PileType.Deck, CardPilePosition.Bottom, this));
+				CardModel card2 = card.Owner.RunState.CloneCard(card);
+				CardCmd.PreviewCardPileAdd(await CardPileCmd.Add(card2, PileType.Deck, CardPilePosition.Bottom, this));
 			}
 		}
 	}

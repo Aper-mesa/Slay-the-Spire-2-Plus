@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using MegaCrit.Sts2.Core.Logging;
 
@@ -16,6 +17,10 @@ public class AssetCache
 	private readonly HashSet<string> _missedCacheAssets = new HashSet<string>();
 
 	private readonly HashSet<string> _failedAssets = new HashSet<string>();
+
+	private readonly HashSet<Resource> _pendingDispose = new HashSet<Resource>();
+
+	private readonly object _pendingDisposeLock = new object();
 
 	/// <summary>Gets the current count of missed cache assets (loaded outside preloading).</summary>
 	public int MissedCacheAssetCount => _missedCacheAssets.Count;
@@ -49,6 +54,7 @@ public class AssetCache
 			throw new AssetLoadException("Asset previously failed to load: " + path + ". The game installation may be corrupted.");
 		}
 		Resource resource = ResourceLoader.Load<Resource>(path, null, ResourceLoader.CacheMode.Reuse);
+		CancelPendingDispose(resource);
 		if (resource is AtlasTexture)
 		{
 			return resource;
@@ -80,11 +86,7 @@ public class AssetCache
 		{
 			if (!_missedCacheAssets.Contains(item))
 			{
-				Resource resource = RemoveAndGetResource(item);
-				if (resource != null && GodotObject.IsInstanceValid(resource))
-				{
-					Callable.From(resource.Dispose).CallDeferred();
-				}
+				DisposeAtEndOfFrame(RemoveAndGetResource(item));
 			}
 		}
 	}
@@ -102,13 +104,70 @@ public class AssetCache
 		Log.Info($"Unloading {_missedCacheAssets.Count} missed cache assets");
 		foreach (string missedCacheAsset in _missedCacheAssets)
 		{
-			Resource resource = RemoveAndGetResource(missedCacheAsset);
-			if (resource != null && GodotObject.IsInstanceValid(resource))
-			{
-				Callable.From(resource.Dispose).CallDeferred();
-			}
+			DisposeAtEndOfFrame(RemoveAndGetResource(missedCacheAsset));
 		}
 		_missedCacheAssets.Clear();
+	}
+
+	/// <summary>
+	/// Disposes an evicted resource at the end of the frame, so rendering server RIDs are not freed
+	/// while the renderer is still using them during a room transition. A load of the same path
+	/// before the frame ends cancels the disposal (see <see cref="F:MegaCrit.Sts2.Core.Assets.AssetCache._pendingDispose" />).
+	/// </summary>
+	private void DisposeAtEndOfFrame(Resource? asset)
+	{
+		if (asset != null && GodotObject.IsInstanceValid(asset))
+		{
+			lock (_pendingDisposeLock)
+			{
+				_pendingDispose.Add(asset);
+			}
+			Callable.From(() =>
+			{
+				DisposeIfStillPending(asset);
+			}).CallDeferred();
+		}
+	}
+
+	/// <summary>
+	/// Disposes a queued resource unless a reload already cancelled it. The dispose runs while the lock is held, so a
+	/// caller that re-caches the resource either cancels the disposal or waits for it, and never receives a resource
+	/// that has been dropped from <see cref="F:MegaCrit.Sts2.Core.Assets.AssetCache._pendingDispose" /> but not yet disposed.
+	/// </summary>
+	private void DisposeIfStillPending(Resource asset)
+	{
+		lock (_pendingDisposeLock)
+		{
+			if (_pendingDispose.Remove(asset) && GodotObject.IsInstanceValid(asset))
+			{
+				asset.Dispose();
+			}
+		}
+	}
+
+	internal void CancelPendingDispose(Resource asset)
+	{
+		lock (_pendingDisposeLock)
+		{
+			_pendingDispose.Remove(asset);
+		}
+	}
+
+	/// <summary>
+	/// Runs every pending end-of-frame disposal now. Tests cannot wait for a frame (PRG-7165), so
+	/// this stands in for the deferred call.
+	/// </summary>
+	internal void FlushPendingDisposesForTest()
+	{
+		List<Resource> list;
+		lock (_pendingDisposeLock)
+		{
+			list = _pendingDispose.ToList();
+		}
+		foreach (Resource item in list)
+		{
+			DisposeIfStillPending(item);
+		}
 	}
 
 	public IReadOnlySet<string> GetLoadedCacheAssets()
@@ -169,6 +228,7 @@ public class AssetCache
 
 	public void SetAsset(string path, Resource resource)
 	{
+		CancelPendingDispose(resource);
 		_cache[path] = resource;
 	}
 }

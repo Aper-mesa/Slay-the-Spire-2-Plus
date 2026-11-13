@@ -33,7 +33,8 @@ public static class MathHelper
 	/// <returns></returns>
 	public static Vector2 BezierCurve(Vector2 v0, Vector2 v1, Vector2 c0, float t)
 	{
-		return Mathf.Pow(1f - t, 2f) * v0 + 2f * (1f - t) * t * c0 + Mathf.Pow(t, 2f) * v1;
+		float num = 1f - t;
+		return num * num * v0 + 2f * num * t * c0 + t * t * v1;
 	}
 
 	public static float GetAngle(Vector2 vector)

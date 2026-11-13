@@ -63,6 +63,8 @@ internal sealed class CombatTurnState
 
 	public HashSet<Player> PlayersReadyToEndTurn { get; } = new HashSet<Player>();
 
+	public HashSet<Player> PlayersThatCannotUnEndTurn { get; } = new HashSet<Player>();
+
 	public HashSet<Player> PlayersReadyToBeginEnemyTurn { get; } = new HashSet<Player>();
 
 	public List<Player> PlayersTakingExtraTurn { get; } = new List<Player>();

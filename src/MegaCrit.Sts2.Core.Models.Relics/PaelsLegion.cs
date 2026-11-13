@@ -149,7 +149,11 @@ public sealed class PaelsLegion : RelicModel
 		{
 			return 1m;
 		}
-		return 2m;
+		if (AffectedCardPlay == null || AffectedCardPlay == cardPlay)
+		{
+			return 2m;
+		}
+		return 1m;
 	}
 
 	public override Task AfterModifyingBlockAmount(decimal modifiedAmount, CardModel? cardSource, CardPlay? cardPlay)

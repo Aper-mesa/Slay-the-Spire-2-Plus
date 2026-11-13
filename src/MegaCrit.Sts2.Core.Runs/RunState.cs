@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Entities.Ascension;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Extensions;
 using MegaCrit.Sts2.Core.Helpers;
@@ -9,8 +11,9 @@ using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Blitz;
 using MegaCrit.Sts2.Core.Models.Characters;
-using MegaCrit.Sts2.Core.Models.Singleton;
+using MegaCrit.Sts2.Core.Models.Dread;
 using MegaCrit.Sts2.Core.Odds;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs.History;
@@ -205,6 +208,11 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 	public GameMode GameMode { get; init; }
 
 	/// <summary>
+	/// See <see cref="P:MegaCrit.Sts2.Core.Runs.IRunState.IsCustomGame" />
+	/// </summary>
+	public bool IsCustomGame { get; init; }
+
+	/// <summary>
 	/// See <see cref="P:MegaCrit.Sts2.Core.Runs.IRunState.AscensionLevel" />
 	/// </summary>
 	public int AscensionLevel { get; init; }
@@ -250,14 +258,20 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 	public IReadOnlyList<BadgeModel> BadgeModels { get; private set; }
 
 	/// <summary>
+	/// Singleton models applied for the entire run.
+	/// </summary>
+	public IReadOnlyList<RunModel> RunModels { get; private set; }
+
+	/// <summary>
+	/// The currently applied dominion, if any.
+	/// Should always be null unless the GameMode is Dread.
+	/// </summary>
+	public DominionModel? Dominion { get; private set; }
+
+	/// <summary>
 	/// See <see cref="P:MegaCrit.Sts2.Core.Runs.IRunState.ExtraFields" />.
 	/// </summary>
 	public ExtraRunFields ExtraFields { get; private set; } = new ExtraRunFields();
-
-	/// <summary>
-	/// The model used to scale various things (block, power application) in multiplayer.
-	/// </summary>
-	public MultiplayerScalingModel MultiplayerScalingModel { get; private set; }
 
 	/// <summary>
 	/// Create a RunState for a brand new run.
@@ -267,13 +281,15 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 	/// <param name="acts">The mutable acts that should be in the run.</param>
 	/// <param name="modifiers">The modifiers that are applied to the run.</param>
 	/// <param name="gameMode">The game mode that we're playing in.</param>
+	/// <param name="isCustom">Nodes if this is a custom run or not</param>
 	/// <param name="ascensionLevel">The ascension level that the run should be played at.</param>
 	/// <param name="seed">The seed that the run's RNG should use.</param>
-	public static RunState CreateForNewRun(IReadOnlyList<Player> players, IReadOnlyList<ActModel> acts, IReadOnlyList<ModifierModel> modifiers, GameMode gameMode, int ascensionLevel, string seed)
+	public static RunState CreateForNewRun(IReadOnlyList<Player> players, IReadOnlyList<ActModel> acts, IReadOnlyList<ModifierModel> modifiers, GameMode gameMode, bool isCustom, int ascensionLevel, string seed)
 	{
 		RunRngSet runRngSet = new RunRngSet(seed);
 		RunOddsSet odds = new RunOddsSet(runRngSet.UnknownMapPoint);
-		RunState result = CreateShared(players, acts, modifiers, gameMode, 0, runRngSet, odds, new RelicGrabBag(refreshAllowed: true), ascensionLevel);
+		bool refreshAllowed = players.Count > 1;
+		RunState result = CreateShared(players, acts, modifiers, gameMode, isCustom, 0, runRngSet, odds, new RelicGrabBag(refreshAllowed), ascensionLevel);
 		foreach (Player player in players)
 		{
 			player.InitializeSeed(seed);
@@ -293,7 +309,7 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 		List<SerializablePlayer> players = save.Players;
 		List<Player> players2 = players.Select(Player.FromSerializable).ToList();
 		RunRngSet runRngSet = RunRngSet.FromSave(save.SerializableRng);
-		RunState runState = CreateShared(players2, save.Acts.Select(ActModel.FromSave).ToList(), save.Modifiers.Select(ModifierModel.FromSerializable).ToList(), save.GameMode, save.CurrentActIndex, runRngSet, RunOddsSet.FromSerializable(save.SerializableOdds, runRngSet.UnknownMapPoint), RelicGrabBag.FromSerializable(save.SerializableSharedRelicGrabBag), save.Ascension);
+		RunState runState = CreateShared(players2, save.Acts.Select(ActModel.FromSave).ToList(), save.Modifiers.Select(ModifierModel.FromSerializable).ToList(), save.GameMode, save.IsCustomGame, save.CurrentActIndex, runRngSet, RunOddsSet.FromSerializable(save.SerializableOdds, runRngSet.UnknownMapPoint), RelicGrabBag.FromSerializable(save.SerializableSharedRelicGrabBag), AscensionManager.ClampToMode(save.GameMode, save.Ascension));
 		runState._visitedMapCoords.AddRange(save.VisitedMapCoords);
 		runState._visitedEventIds.UnionWith(save.EventsSeen);
 		runState._mapPointHistory.AddRange(new _003C_003Ez__ReadOnlyArray<List<MapPointHistoryEntry>>(save.MapPointHistory.ToArray()));
@@ -301,14 +317,14 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 		return runState;
 	}
 
-	public static RunState CreateForTest(IReadOnlyList<Player>? players = null, IReadOnlyList<ActModel>? acts = null, IReadOnlyList<ModifierModel>? modifiers = null, GameMode gameMode = GameMode.Standard, int ascensionLevel = 0, string? seed = null)
+	public static RunState CreateForTest(IReadOnlyList<Player>? players = null, IReadOnlyList<ActModel>? acts = null, IReadOnlyList<ModifierModel>? modifiers = null, GameMode gameMode = GameMode.Standard, bool isCustomGame = false, int ascensionLevel = 0, string? seed = null)
 	{
 		if (seed == null)
 		{
 			seed = SeedHelper.GetRandomSeed();
 		}
 		RunRngSet runRngSet = new RunRngSet(seed);
-		RunState runState = CreateShared(players ?? new _003C_003Ez__ReadOnlySingleElementList<Player>(Player.CreateForNewRun<Deprived>(MegaCrit.Sts2.Core.Unlocks.UnlockState.all, 1uL)), (acts ?? ActModel.GetDefaultList()).Select((ActModel a) => a.ToMutable()).ToList(), modifiers ?? Array.Empty<ModifierModel>(), gameMode, 0, runRngSet, new RunOddsSet(runRngSet.UnknownMapPoint), new RelicGrabBag(refreshAllowed: true), ascensionLevel);
+		RunState runState = CreateShared(players ?? new _003C_003Ez__ReadOnlySingleElementList<Player>(Player.CreateForNewRun<Deprived>(MegaCrit.Sts2.Core.Unlocks.UnlockState.all, 1uL)), (acts ?? ActModel.GetDefaultList()).Select((ActModel a) => a.ToMutable()).ToList(), modifiers ?? Array.Empty<ModifierModel>(), gameMode, isCustomGame, 0, runRngSet, new RunOddsSet(runRngSet.UnknownMapPoint), new RelicGrabBag(refreshAllowed: true), ascensionLevel);
 		foreach (Player player in runState.Players)
 		{
 			player.InitializeSeed(seed);
@@ -316,9 +332,9 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 		return runState;
 	}
 
-	private static RunState CreateShared(IReadOnlyList<Player> players, IReadOnlyList<ActModel> acts, IReadOnlyList<ModifierModel> modifiers, GameMode gameMode, int currentActIndex, RunRngSet rng, RunOddsSet odds, RelicGrabBag sharedRelicGrabBag, int ascensionLevel)
+	private static RunState CreateShared(IReadOnlyList<Player> players, IReadOnlyList<ActModel> acts, IReadOnlyList<ModifierModel> modifiers, GameMode gameMode, bool isCustom, int currentActIndex, RunRngSet rng, RunOddsSet odds, RelicGrabBag sharedRelicGrabBag, int ascensionLevel)
 	{
-		RunState runState = new RunState(players, acts, modifiers, gameMode, currentActIndex, rng, odds, sharedRelicGrabBag, ascensionLevel);
+		RunState runState = new RunState(players, acts, modifiers, gameMode, isCustom, currentActIndex, rng, odds, sharedRelicGrabBag, ascensionLevel);
 		foreach (Player player in players)
 		{
 			player.RunState = runState;
@@ -327,13 +343,27 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 				runState.AddCard(card, player);
 			}
 		}
-		runState.MultiplayerScalingModel = (MultiplayerScalingModel)ModelDb.Singleton<MultiplayerScalingModel>().MutableClone();
-		runState.MultiplayerScalingModel.Initialize(runState);
+		int num = 1;
+		List<RunModel> list = new List<RunModel>(num);
+		CollectionsMarshal.SetCount(list, num);
+		Span<RunModel> span = CollectionsMarshal.AsSpan(list);
+		int index = 0;
+		span[index] = (RunModel)ModelDb.RunModel<MultiplayerScalingModel>().MutableClone();
+		List<RunModel> list2 = list;
+		if (gameMode == GameMode.Dread)
+		{
+			list2.Add((RunModel)ModelDb.RunModel<DreadRunModel>().MutableClone());
+		}
+		if (gameMode == GameMode.Blitz)
+		{
+			list2.Add((RunModel)ModelDb.RunModel<BlitzRunModel>().MutableClone());
+		}
+		runState.RunModels = list2;
 		runState.BadgeModels = ModelDb.BadgeModels.Select((BadgeModel m) => (BadgeModel)m.MutableClone()).ToList();
 		return runState;
 	}
 
-	private RunState(IReadOnlyList<Player> players, IReadOnlyList<ActModel> acts, IReadOnlyList<ModifierModel> modifiers, GameMode gameMode, int currentActIndex, RunRngSet rng, RunOddsSet odds, RelicGrabBag sharedRelicGrabBag, int ascensionLevel)
+	private RunState(IReadOnlyList<Player> players, IReadOnlyList<ActModel> acts, IReadOnlyList<ModifierModel> modifiers, GameMode gameMode, bool isCustomGame, int currentActIndex, RunRngSet rng, RunOddsSet odds, RelicGrabBag sharedRelicGrabBag, int ascensionLevel)
 	{
 		foreach (ActModel act in acts)
 		{
@@ -343,6 +373,7 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 		Acts = acts;
 		Modifiers = modifiers;
 		GameMode = gameMode;
+		IsCustomGame = isCustomGame;
 		CurrentActIndex = currentActIndex;
 		Rng = rng;
 		Odds = odds;
@@ -572,7 +603,11 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 			}
 			list.AddRange(Modifiers);
 			list.AddRange(BadgeModels);
-			list.Add(MultiplayerScalingModel);
+			list.AddRange(RunModels);
+			if (Dominion != null)
+			{
+				list.Add(Dominion);
+			}
 		}
 		foreach (AbstractModel item in list)
 		{
@@ -691,6 +726,23 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 	}
 
 	/// <summary>
+	/// Sets the dominion currently applied to the run.
+	/// This overrides any currently applied dominion. If null is passed, the current dominion is unapplied.
+	/// </summary>
+	public void SetDominion(DominionModel? dominion)
+	{
+		if (dominion != null)
+		{
+			Dominion = (DominionModel)dominion.MutableClone();
+			Dominion.RunState = this;
+		}
+		else
+		{
+			Dominion = null;
+		}
+	}
+
+	/// <summary>
 	/// Returns true if the RunState still contains a given model.
 	/// Used in hook iteration to determine whether a model was removed by a different model's hook execution.
 	/// </summary>
@@ -704,17 +756,21 @@ public class RunState : IRunState, ICardScope, IPlayerCollection
 				{
 					if (!(model is EnchantmentModel enchantmentModel))
 					{
-						if (!(model is AchievementModel))
+						if (!(model is RunModel))
 						{
-							if (!(model is BadgeModel))
+							if (!(model is DominionModel))
 							{
-								if (!(model is ModifierModel))
+								if (!(model is AchievementModel))
 								{
-									if (model is MultiplayerScalingModel)
+									if (!(model is BadgeModel))
 									{
-										return true;
+										if (model is ModifierModel)
+										{
+											return true;
+										}
+										throw new ArgumentOutOfRangeException("model", model, $"Invalid model type {model.GetType()} ({model})");
 									}
-									throw new ArgumentOutOfRangeException("model", model, $"Invalid model type {model.GetType()} ({model})");
+									return true;
 								}
 								return true;
 							}

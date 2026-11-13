@@ -15,7 +15,7 @@ public sealed class SevenStars : CardModel
 	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[2]
 	{
 		new DamageVar(7m, ValueProp.Move),
-		new RepeatVar(7)
+		new HitCountVar(7)
 	});
 
 	public SevenStars()
@@ -25,7 +25,7 @@ public sealed class SevenStars : CardModel
 
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
-		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(DynamicVars.Repeat.IntValue).FromCard(this, cardPlay)
+		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(DynamicVars.HitCount.IntValue).FromCard(this, cardPlay)
 			.TargetingAllOpponents(CombatState)
 			.WithHitFx("vfx/vfx_starry_impact", null, "slash_attack.mp3")
 			.SpawningHitVfxOnEachCreature()

@@ -12,7 +12,11 @@ public sealed class AstralPulse : CardModel
 {
 	public override int CanonicalStarCost => 3;
 
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new DamageVar(6m, ValueProp.Move));
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[2]
+	{
+		new DamageVar(6m, ValueProp.Move),
+		new HitCountVar(2)
+	});
 
 	public AstralPulse()
 		: base(0, CardType.Attack, CardRarity.Common, TargetType.AllEnemies)
@@ -22,7 +26,7 @@ public sealed class AstralPulse : CardModel
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
 		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).FromCard(this, cardPlay).TargetingAllOpponents(CombatState)
-			.WithHitCount(2)
+			.WithHitCount(DynamicVars.HitCount.IntValue)
 			.WithHitFx("vfx/vfx_starry_impact")
 			.SpawningHitVfxOnEachCreature()
 			.Execute(choiceContext);

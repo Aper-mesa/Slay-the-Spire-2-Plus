@@ -16,7 +16,7 @@ public class Defect5Epoch : EpochModel
 
 	public override EpochEra Era => EpochEra.Flourish3;
 
-	public override int EraPosition => 3;
+	public override int EraPosition => 4;
 
 	public override string StoryId => "Defect";
 

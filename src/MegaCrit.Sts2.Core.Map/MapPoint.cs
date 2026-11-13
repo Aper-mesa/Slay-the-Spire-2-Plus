@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Saves.Runs;
 
 namespace MegaCrit.Sts2.Core.Map;
 
@@ -47,6 +48,15 @@ public class MapPoint : IComparable<MapPoint>
 		coord.col = col;
 		parents = new HashSet<MapPoint>();
 		Children = new HashSet<MapPoint>();
+	}
+
+	public static MapPoint FromSerializable(SerializableMapPoint saved)
+	{
+		return new MapPoint(saved.Coord.col, saved.Coord.row)
+		{
+			PointType = saved.PointType,
+			CanBeModified = saved.CanBeModified
+		};
 	}
 
 	public void AddChildPoint(MapPoint child)

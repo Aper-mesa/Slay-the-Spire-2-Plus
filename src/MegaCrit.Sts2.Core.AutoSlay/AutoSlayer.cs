@@ -8,10 +8,14 @@ using MegaCrit.Sts2.Core.AutoSlay.Handlers;
 using MegaCrit.Sts2.Core.AutoSlay.Handlers.Rooms;
 using MegaCrit.Sts2.Core.AutoSlay.Handlers.Screens;
 using MegaCrit.Sts2.Core.AutoSlay.Helpers;
-using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.AutoSlay.Launchers;
+using MegaCrit.Sts2.Core.AutoSlay.Navigation;
+using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Debug;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization.Fonts;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Events;
@@ -19,19 +23,18 @@ using MegaCrit.Sts2.Core.Nodes.Events.Custom.CrystalSphere;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
-using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
+using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Nodes.Screens.PauseMenu;
 using MegaCrit.Sts2.Core.Nodes.TopBar;
+using MegaCrit.Sts2.Core.Nodes.Vfx;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Settings;
-using MegaCrit.Sts2.Core.Timeline;
-using MegaCrit.Sts2.Core.Timeline.Epochs;
 using MegaCrit.Sts2.addons.mega_text;
 
 namespace MegaCrit.Sts2.Core.AutoSlay;
@@ -45,17 +48,15 @@ public class AutoSlayer
 
 	private readonly Dictionary<Type, IScreenHandler> _screenHandlers;
 
-	private readonly MapScreenHandler _mapHandler;
-
 	private CancellationTokenSource? _cts;
 
 	private string? _seed;
 
 	private Rng? _random;
 
-	private Watchdog? _watchdog;
-
 	private IDisposable? _cardSelectorScope;
+
+	private IDisposable? _watchdogScope;
 
 	private static int _exitCode;
 
@@ -64,9 +65,6 @@ public class AutoSlayer
 
 	/// <summary>Static flag indicating if AutoSlay is currently running.</summary>
 	public static bool IsActive { get; private set; }
-
-	/// <summary>Gets the current watchdog instance (for WaitHelper integration).</summary>
-	public static Watchdog? CurrentWatchdog { get; private set; }
 
 	static AutoSlayer()
 	{
@@ -86,7 +84,6 @@ public class AutoSlayer
 			[RoomType.Treasure] = new TreasureRoomHandler(),
 			[RoomType.RestSite] = new RestSiteRoomHandler()
 		};
-		_mapHandler = new MapScreenHandler();
 		_screenHandlers = new Dictionary<Type, IScreenHandler>
 		{
 			[typeof(NRewardsScreen)] = new RewardsScreenHandler(),
@@ -100,12 +97,17 @@ public class AutoSlayer
 			[typeof(NChooseABundleSelectionScreen)] = new ChooseABundleScreenHandler(),
 			[typeof(NChooseARelicSelection)] = new ChooseARelicScreenHandler(),
 			[typeof(NGameOverScreen)] = new GameOverScreenHandler(),
-			[typeof(NCrystalSphereScreen)] = new CrystalSphereScreenHandler()
+			[typeof(NCrystalSphereScreen)] = new CrystalSphereScreenHandler(),
+			[typeof(NByrdEvolutionVfx)] = new ByrdEvolutionScreenHandler()
 		};
 	}
 
 	/// <summary>Starts an AutoSlay run with the given seed.</summary>
-	public void Start(string seed, string? logFile = null)
+	/// <param name="seed">The run seed, also used for AutoSlay's own decisions.</param>
+	/// <param name="mode">The raw <c>--mode</c> value, or null for a standard run. Parsed inside the run, so a
+	/// bad value fails it with the usual verdict line instead of crashing before the log is open.</param>
+	/// <param name="logFile">Where to write the AutoSlay log, or null for the Godot log only.</param>
+	public void Start(string seed, string? mode, string? logFile = null)
 	{
 		if (logFile != null)
 		{
@@ -113,9 +115,10 @@ public class AutoSlayer
 		}
 		SentryService.SetTag("autoslay", "true");
 		SentryService.SetTag("autoslay.seed", seed);
+		SentryService.SetTag("autoslay.mode", mode ?? "standard");
 		IsActive = true;
 		_cts = new CancellationTokenSource();
-		Task task = RunAsync(seed, _cts.Token);
+		Task task = RunAsync(seed, mode, _cts.Token);
 		TaskHelper.RunSafely(task);
 	}
 
@@ -141,12 +144,14 @@ public class AutoSlayer
 		return result;
 	}
 
-	private async Task RunAsync(string seed, CancellationToken ct)
+	private async Task RunAsync(string seed, string? modeArg, CancellationToken ct)
 	{
 		AutoSlayLog.RunStarted(seed);
 		try
 		{
-			await WaitHelper.WithTimeout((CancellationToken token) => PlayRunAsync(seed, token), AutoSlayConfig.runTimeout, ct);
+			AutoSlayMode mode = AutoSlayModes.Parse(modeArg);
+			AutoSlayLog.Info($"Mode: {mode}");
+			await WaitHelper.WithTimeout((CancellationToken token) => PlayRunAsync(seed, mode, token), AutoSlayConfig.runTimeout, ct);
 			AutoSlayLog.RunCompleted(seed);
 		}
 		catch (Exception ex)
@@ -158,8 +163,8 @@ public class AutoSlayer
 		finally
 		{
 			IsActive = false;
-			CurrentWatchdog = null;
-			_watchdog = null;
+			_watchdogScope?.Dispose();
+			_watchdogScope = null;
 			_cardSelectorScope?.Dispose();
 			_cardSelectorScope = null;
 			MemoryProfiler.Reset();
@@ -168,35 +173,41 @@ public class AutoSlayer
 		}
 	}
 
-	private async Task PlayRunAsync(string seed, CancellationToken ct)
+	private async Task PlayRunAsync(string seed, AutoSlayMode mode, CancellationToken ct)
 	{
 		await WaitHelper.Until(() => NGame.Instance != null, ct, AutoSlayConfig.gameInitTimeout, "Game instance not initialized");
 		_seed = seed;
 		NGame.Instance.DebugSeedOverride = seed;
 		SaveManager.Instance.PrefsSave.FastMode = FastModeType.Fast;
 		SaveManager.Instance.SetFtuesEnabled(enabled: false);
-		SaveManager.Instance.MarkFtueAsComplete("ascension_singleplayer_ftue");
-		SaveManager.Instance.ObtainEpochOverride(EpochModel.GetId<Silent1Epoch>(), EpochState.Revealed);
-		SaveManager.Instance.ObtainEpochOverride(EpochModel.GetId<Regent1Epoch>(), EpochState.Revealed);
-		SaveManager.Instance.ObtainEpochOverride(EpochModel.GetId<Defect1Epoch>(), EpochState.Revealed);
-		SaveManager.Instance.ObtainEpochOverride(EpochModel.GetId<Necrobinder1Epoch>(), EpochState.Revealed);
+		AutoSlayUnlocks.Apply(SaveManager.Instance.Progress, mode);
 		_random = new Rng(StringHelper.GetDeterministicHashCode(seed));
-		_cardSelectorScope = CardSelectCmd.UseSelector(new AutoSlayCardSelector(_random));
-		_watchdog = new Watchdog();
-		CurrentWatchdog = _watchdog;
-		_watchdog.Reset("Playing main menu");
-		await PlayMainMenuAsync(ct);
+		_cardSelectorScope = CardSelectorStack.SetTestSelector(new AutoSlayCardSelector(_random));
+		_watchdogScope = Watchdog.Use(new Watchdog(AutoSlayLog.Info, AutoSlayLog.Error));
+		Watchdog.Current?.Reset("Playing main menu");
+		await PlayMainMenuAsync(RunLaunchers.For(mode), ct);
 		await WaitHelper.Until(() => RunManager.Instance.DebugOnlyGetState() != null, ct, AutoSlayConfig.runStateTimeout, "Run state not initialized");
 		RunState runState = RunManager.Instance.DebugOnlyGetState();
+		LogRunStartedAndCheckMode(runState, mode);
+		IRoomNavigator navigator = RoomNavigators.For(mode);
 		MemoryProfiler.SetBaseline();
 		await WaitHelper.Until(() => runState.CurrentRoom != null && runState.CurrentRoom.RoomType != RoomType.Unassigned, ct, AutoSlayConfig.nodeWaitTimeout, "Room type not assigned");
-		while (runState.TotalFloor < 49)
+		int checkedActIndex = -1;
+		while (runState.TotalFloor < 60)
 		{
 			ct.ThrowIfCancellationRequested();
+			if (runState.CurrentActIndex != checkedActIndex)
+			{
+				checkedActIndex = runState.CurrentActIndex;
+				await ActEntryCheck.RunAsync(runState, mode, ct);
+			}
 			RoomType roomType = runState.CurrentRoom.RoomType;
-			_watchdog.Reset($"Entering {roomType} room (Act {runState.CurrentActIndex + 1}, Floor {runState.ActFloor})");
+			RunPosition position = RunPosition.Of(runState);
+			bool isFirstBossInDoubleBossMode = roomType == RoomType.Boss && runState.Map.SecondBossMapPoint != null && runState.CurrentMapCoord == runState.Map.BossMapPoint.coord;
+			Watchdog.Current?.Reset($"Entering {roomType} room (Act {runState.CurrentActIndex + 1}, Floor {runState.ActFloor})");
 			AutoSlayLog.EnterRoom(roomType, runState.CurrentActIndex, runState.ActFloor);
-			MemoryProfiler.LogSnapshot($"pre-room:{roomType}:Act{runState.CurrentActIndex + 1}:F{runState.ActFloor}");
+			string roomLabel = $"{roomType}:Act{runState.CurrentActIndex + 1}:F{runState.ActFloor}";
+			MemoryProfiler.LogSnapshot("pre-room:" + roomLabel);
 			await HandleRoomAsync(roomType, ct);
 			if ((uint)(roomType - 1) > 2u)
 			{
@@ -204,22 +215,21 @@ public class AutoSlayer
 			}
 			else
 			{
-				await WaitForRewardsScreenAsync(ct);
+				await WaitForRewardsScreenAsync(runState, position, ct);
 			}
 			await DrainOverlayScreensAsync(ct);
 			if (roomType == RoomType.RestSite)
 			{
-				await ClickRestSiteProceedIfNeeded(ct);
+				await ClickRestSiteProceedIfNeeded(runState, position, ct);
 			}
 			if (roomType == RoomType.Event)
 			{
-				await ClickEventProceedIfNeeded(ct);
+				await ClickEventProceedIfNeeded(runState, position, ct);
 			}
-			MemoryProfiler.LogSnapshot($"post-room:{roomType}:Act{runState.CurrentActIndex + 1}:F{runState.ActFloor}");
-			bool flag = roomType == RoomType.Boss && runState.Map.SecondBossMapPoint != null && runState.CurrentMapCoord == runState.Map.BossMapPoint.coord;
-			if (roomType == RoomType.Boss && !flag)
+			MemoryProfiler.LogSnapshot("post-room:" + roomLabel);
+			if (roomType == RoomType.Boss && !isFirstBossInDoubleBossMode)
 			{
-				_watchdog.Reset("Waiting for act transition after boss");
+				Watchdog.Current?.Reset("Waiting for act transition after boss");
 				RoomType postBossRoomType = RoomType.Boss;
 				await WaitHelper.Until(() =>
 				{
@@ -232,25 +242,28 @@ public class AutoSlayer
 					return postBossRoomType != RoomType.Boss;
 				}, ct, TimeSpan.FromSeconds(10L), "Act transition did not start after boss");
 				AutoSlayLog.Info($"Post-boss transition: room type is now {postBossRoomType}");
-				if (postBossRoomType == RoomType.Event && runState.CurrentActIndex >= runState.Acts.Count - 1)
+				bool flag = position.ActIndex >= runState.Acts.Count - 1;
+				if ((postBossRoomType == RoomType.Event) & flag)
 				{
-					_watchdog.Reset($"Entering {postBossRoomType} room (Act {runState.CurrentActIndex + 1}, Floor {runState.ActFloor})");
+					Watchdog.Current?.Reset($"Entering {postBossRoomType} room (Act {runState.CurrentActIndex + 1}, Floor {runState.ActFloor})");
 					AutoSlayLog.EnterRoom(postBossRoomType, runState.CurrentActIndex, runState.ActFloor);
 					await HandleRoomAsync(postBossRoomType, ct);
 					await WaitForGameOverScreenAsync(ct);
 					await DrainOverlayScreensAsync(ct);
-					_watchdog.Reset("Waiting for main menu after victory");
+					Watchdog.Current?.Reset("Waiting for main menu after victory");
 					await WaitForMainMenuAsync(ct);
 					AutoSlayLog.Action("Victory! Run completed and returned to main menu");
+					LogRunSummary(runState, "victory");
 					return;
 				}
-				await WaitHelper.Until(() => runState.VisitedMapCoords.Count == 0, ct, TimeSpan.FromSeconds(5L), "Act transition did not complete (VisitedMapCoords not cleared)");
+				await navigator.WaitForNextActAsync(runState, ct);
 				MemoryProfiler.LogSnapshot($"act-transition:Act{runState.CurrentActIndex + 1}");
 			}
-			_watchdog.Reset("Navigating map");
-			await _mapHandler.HandleAsync(_random, ct);
+			Watchdog.Current?.Reset("Moving to the next room");
+			await navigator.AdvanceAsync(runState, position, _random, ct);
 		}
 		AutoSlayLog.Action("Run completed (max floor reached). Abandoning");
+		LogRunSummary(runState, "max floor reached");
 		await AbandonRunAsync(ct);
 	}
 
@@ -341,7 +354,7 @@ public class AutoSlayer
 				}
 				break;
 			}
-			_watchdog.Reset("Handling screen: " + screenType.Name);
+			Watchdog.Current?.Reset("Handling screen: " + screenType.Name);
 			int screenCountBefore = instance.ScreenCount;
 			await WaitHelper.WithTimeout((CancellationToken token) => handler.HandleAsync(_random, token), handler.Timeout, ct);
 			if (currentOverlay is NRewardsScreen && (NMapScreen.Instance?.IsOpen ?? false))
@@ -372,18 +385,21 @@ public class AutoSlayer
 		}
 	}
 
-	private async Task ClickRestSiteProceedIfNeeded(CancellationToken ct)
+	private async Task ClickRestSiteProceedIfNeeded(RunState runState, RunPosition position, CancellationToken ct)
 	{
-		Node root = ((SceneTree)Engine.GetMainLoop()).Root;
-		NProceedButton nodeOrNull = root.GetNodeOrNull<NProceedButton>("/root/Game/RootSceneContainer/Run/RoomContainer/RestSiteRoom/ProceedButton");
-		if (nodeOrNull != null && nodeOrNull.IsEnabled)
+		if (!RunPosition.HasLeft(runState, position))
 		{
-			AutoSlayLog.Action("Clicking rest site proceed button");
-			await UiHelper.Click(nodeOrNull);
+			Node root = ((SceneTree)Engine.GetMainLoop()).Root;
+			NProceedButton nodeOrNull = root.GetNodeOrNull<NProceedButton>("/root/Game/RootSceneContainer/Run/RoomContainer/RestSiteRoom/ProceedButton");
+			if (nodeOrNull != null && nodeOrNull.IsEnabled)
+			{
+				AutoSlayLog.Action("Clicking rest site proceed button");
+				await UiHelper.Click(nodeOrNull);
+			}
 		}
 	}
 
-	private async Task ClickEventProceedIfNeeded(CancellationToken ct)
+	private async Task ClickEventProceedIfNeeded(RunState runState, RunPosition position, CancellationToken ct)
 	{
 		Node root = ((SceneTree)Engine.GetMainLoop()).Root;
 		Node eventRoom = root.GetNodeOrNull("/root/Game/RootSceneContainer/Run/RoomContainer/EventRoom");
@@ -395,8 +411,7 @@ public class AutoSlayer
 		NEventOptionButton proceedOption = null;
 		await WaitHelper.Until(() =>
 		{
-			NMapScreen? instance = NMapScreen.Instance;
-			if (instance != null && instance.IsOpen)
+			if (RunPosition.HasLeft(runState, position))
 			{
 				return true;
 			}
@@ -409,7 +424,7 @@ public class AutoSlayer
 				return true;
 			}
 			return false;
-		}, ct, TimeSpan.FromSeconds(5L), "Event proceed option or map did not appear");
+		}, ct, TimeSpan.FromSeconds(5L), "Event proceed option did not appear and the run did not leave the event");
 		if (proceedOption != null)
 		{
 			AutoSlayLog.Action("Clicking event proceed option");
@@ -417,14 +432,14 @@ public class AutoSlayer
 		}
 		else
 		{
-			AutoSlayLog.Info("Map already open, no proceed needed");
+			AutoSlayLog.Info("Run already left the event, no proceed needed");
 		}
 	}
 
-	private async Task WaitForRewardsScreenAsync(CancellationToken ct)
+	private async Task WaitForRewardsScreenAsync(RunState runState, RunPosition position, CancellationToken ct)
 	{
 		AutoSlayLog.Action("Waiting for rewards screen");
-		await WaitHelper.Until(() => NOverlayStack.Instance?.Peek() is NRewardsScreen || (NMapScreen.Instance?.IsOpen ?? false), ct, TimeSpan.FromSeconds(10L), "Rewards screen did not appear after combat");
+		await WaitHelper.Until(() => NOverlayStack.Instance?.Peek() is NRewardsScreen || RunPosition.HasLeft(runState, position), ct, TimeSpan.FromSeconds(10L), "Rewards screen did not appear after combat");
 	}
 
 	private async Task WaitForGameOverScreenAsync(CancellationToken ct)
@@ -441,11 +456,11 @@ public class AutoSlayer
 		AutoSlayLog.Action("Main menu appeared");
 	}
 
-	private async Task PlayMainMenuAsync(CancellationToken ct)
+	private async Task PlayMainMenuAsync(IRunLauncher launcher, CancellationToken ct)
 	{
 		AutoSlayLog.Action("Playing main menu");
 		Node root = ((SceneTree)Engine.GetMainLoop()).Root;
-		Control mainMenu = await WaitHelper.ForNode<Control>(root, "/root/Game/RootSceneContainer/MainMenu", ct, TimeSpan.FromSeconds(30L));
+		NMainMenu mainMenu = await WaitHelper.ForNode<NMainMenu>(root, "/root/Game/RootSceneContainer/MainMenu", ct, TimeSpan.FromSeconds(30L));
 		NButton node = mainMenu.GetNode<NButton>("MainMenuTextButtons/AbandonRunButton");
 		if (node.Visible)
 		{
@@ -458,49 +473,26 @@ public class AutoSlayer
 			await UiHelper.Click(node3);
 			await WaitHelper.Until(() => NModalContainer.Instance.OpenModal == null, ct, AutoSlayConfig.nodeWaitTimeout, "Abandon run confirmation popup did not close");
 		}
-		NButton node4 = mainMenu.GetNode<NButton>("MainMenuTextButtons/SingleplayerButton");
-		AutoSlayLog.Action("Clicking singleplayer");
-		await UiHelper.Click(node4);
-		Control charSelectScreen = mainMenu.GetNodeOrNull<Control>("Submenus/CharacterSelectScreen");
-		NButton standardButton = mainMenu.GetNodeOrNull<NButton>("Submenus/SingleplayerSubmenu/StandardButton");
-		await WaitHelper.Until(() =>
+		await launcher.LaunchAsync(mainMenu, _random, _seed, ct);
+	}
+
+	/// <summary>
+	/// Logs what the run actually started as, read from the run state rather than from what was clicked, and fails
+	/// the run if the game did not start the requested mode.
+	/// </summary>
+	private static void LogRunStartedAndCheckMode(RunState runState, AutoSlayMode mode)
+	{
+		Player player = runState.Players[0];
+		AutoSlayLog.Info($"Run started: mode={runState.GameMode}, character={player.Character.Id}, ascension={runState.AscensionLevel}, seed={runState.Rng.StringSeed}, acts=[{string.Join(", ", runState.Acts.Select((ActModel a) => a.Id))}], rotatingCharacter={player.ExtraFields.IsPlayingRotatingCharacter}");
+		if (runState.GameMode != mode.ToGameMode())
 		{
-			charSelectScreen = mainMenu.GetNodeOrNull<Control>("Submenus/CharacterSelectScreen");
-			standardButton = mainMenu.GetNodeOrNull<NButton>("Submenus/SingleplayerSubmenu/StandardButton");
-			bool flag = charSelectScreen?.Visible ?? false;
-			bool flag2 = standardButton?.Visible ?? false;
-			return flag | flag2;
-		}, ct, AutoSlayConfig.nodeWaitTimeout, "Neither CharacterSelectScreen nor SingleplayerSubmenu became visible");
-		if (standardButton?.Visible ?? false)
-		{
-			Control control = charSelectScreen;
-			if (control == null || !control.Visible)
-			{
-				AutoSlayLog.Action("Clicking standard run");
-				await UiHelper.Click(standardButton);
-				await WaitHelper.Until(() => mainMenu.GetNodeOrNull<Control>("Submenus/CharacterSelectScreen")?.Visible ?? false, ct, AutoSlayConfig.nodeWaitTimeout, "CharacterSelectScreen did not become visible");
-				charSelectScreen = mainMenu.GetNode<Control>("Submenus/CharacterSelectScreen");
-				goto IL_05e6;
-			}
+			throw new InvalidOperationException($"Asked for a {mode} run, but the game started a {runState.GameMode} run");
 		}
-		AutoSlayLog.Action("Skipping submenu (first run)");
-		goto IL_05e6;
-		IL_05e6:
-		Node node5 = charSelectScreen.GetNode("CharSelectButtons/ButtonContainer");
-		List<NCharacterSelectButton> list = UiHelper.FindAll<NCharacterSelectButton>(node5);
-		foreach (NCharacterSelectButton item in list)
-		{
-			item.UnlockIfPossible();
-		}
-		List<NCharacterSelectButton> items = list.Where((NCharacterSelectButton b) => !b.IsLocked).ToList();
-		NCharacterSelectButton nCharacterSelectButton = _random.NextItem(items);
-		AutoSlayLog.Action($"Selecting character: {nCharacterSelectButton.Character.Id}");
-		nCharacterSelectButton.Select();
-		await Task.Delay(100, ct);
-		NButton button = await WaitHelper.ForNode<NButton>(mainMenu, "Submenus/CharacterSelectScreen/ConfirmButton", ct);
-		NGame.Instance.DebugSeedOverride = _seed;
-		AutoSlayLog.Action("Confirming character");
-		await UiHelper.Click(button);
+	}
+
+	private static void LogRunSummary(RunState runState, string outcome)
+	{
+		AutoSlayLog.Info($"Run summary: outcome={outcome}, mode={runState.GameMode}, character={runState.Players[0].Character.Id}, act={runState.CurrentActIndex + 1}/{runState.Acts.Count}, floor={runState.TotalFloor}");
 	}
 
 	private async Task AbandonRunAsync(CancellationToken ct)

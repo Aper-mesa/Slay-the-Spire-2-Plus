@@ -53,6 +53,7 @@ public static class RunHistoryUtilities
 			PlatformType = platformType,
 			Players = list,
 			GameMode = GetGameMode(run),
+			IsCustomGame = run.IsCustomGame,
 			Win = victory,
 			KilledByEncounter = killedByEncounter,
 			KilledByEvent = killedByEvent,

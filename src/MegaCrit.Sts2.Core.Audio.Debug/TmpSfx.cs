@@ -9,10 +9,12 @@ public static class TmpSfx
 
 	public static readonly IReadOnlyList<string> assetPaths = new List<string>
 	{
-		"doom_apply.mp3", "blunt_attack.mp3", "character_unlock.mp3", "character_unlock_charge.mp3", "card_deal.mp3", "card_exhaust.mp3", "card_select.mp3", "card_smith.mp3", "dagger_throw.mp3", "deny.mp3",
-		"doll_room_amb.mp3", "gain_potion.mp3", "heavy_attack.mp3", "map_ping.mp3", "map_open.mp3", "SOTE_Logo_Echoing_ShortTail.mp3", "sts_sfx_shovel_v1.mp3", "relic_get.mp3", "SOTE_SFX_SleepBlanket_v1.mp3", "sleep.tres",
-		"slash_attack.mp3", "enemy_turn.mp3", "player_turn.mp3", "victory.mp3"
-	}.Concat(BattleStart).Concat(PotionSlosh).Select(GetPath)
+		"doom_apply.mp3", "blunt_attack.mp3", "character_unlock.mp3", "character_unlock_charge.mp3", "card_deal.mp3", "card_exhaust.mp3", "card_select.mp3", "card_smith.mp3", "fool/cho_0.wav", "dagger_throw.mp3",
+		"deny.mp3", "doll_room_amb.mp3", "gain_potion.mp3", "heavy_attack.mp3", "map_ping.mp3", "map_open.mp3", "SOTE_Logo_Echoing_ShortTail.mp3", "sts_sfx_shovel_v1.mp3", "relic_get.mp3", "SOTE_SFX_SleepBlanket_v1.mp3",
+		"sleep.tres", "slash_attack.mp3", "enemy_turn.mp3", "player_turn.mp3", "victory.mp3"
+	}.Concat(BattleStart).Concat(PotionSlosh).Concat(Wah)
+		.Concat(Ki)
+		.Select(GetPath)
 		.ToList();
 
 	public const string gainPotion = "gain_potion.mp3";
@@ -73,9 +75,21 @@ public static class TmpSfx
 
 	public const string hiss = "hiss.mp3";
 
+	public const string chainBreak = "chain_break.wav";
+
+	public const string chainBreakWindup = "chain_break_windup.wav";
+
+	public const string chainForge = "chain_get.wav";
+
+	public const string cho = "fool/cho_0.wav";
+
 	public static IEnumerable<string> BattleStart => new _003C_003Ez__ReadOnlyArray<string>(new string[2] { "battle_start_1.mp3", "battle_start_2.mp3" });
 
 	public static IEnumerable<string> PotionSlosh => new _003C_003Ez__ReadOnlyArray<string>(new string[3] { "potion_slosh_1.mp3", "potion_slosh_2.mp3", "potion_slosh_3.mp3" });
+
+	public static IEnumerable<string> Wah => new _003C_003Ez__ReadOnlyArray<string>(new string[2] { "fool/wah_0.wav", "fool/wah_1.wav" });
+
+	public static IEnumerable<string> Ki => new _003C_003Ez__ReadOnlyArray<string>(new string[7] { "fool/ki_0.wav", "fool/ki_0.wav", "fool/ki_0.wav", "fool/ki_1.wav", "fool/ki_2.wav", "fool/ki_2.wav", "fool/ki_2.wav" });
 
 	public static string GetPath(string sfx)
 	{

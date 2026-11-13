@@ -71,9 +71,9 @@ public class NCardTrailVfx : Node2D
 		public static readonly StringName _updateSprites = "_updateSprites";
 
 		/// <summary>
-		/// Cached name for the '_tween' field.
+		/// Cached name for the '_introTween' field.
 		/// </summary>
-		public static readonly StringName _tween = "_tween";
+		public static readonly StringName _introTween = "_introTween";
 	}
 
 	/// <summary>
@@ -89,7 +89,14 @@ public class NCardTrailVfx : Node2D
 
 	private bool _updateSprites = true;
 
-	private Tween? _tween;
+	private Tween? _introTween;
+
+	private readonly OwnerFreeingTween _fadeOut;
+
+	public NCardTrailVfx()
+	{
+		_fadeOut = new OwnerFreeingTween(this);
+	}
 
 	public static NCardTrailVfx? Create(Control card, string characterTrailPath)
 	{
@@ -110,11 +117,11 @@ public class NCardTrailVfx : Node2D
 		}
 		_sprites = GetNode<Node2D>("Sprites");
 		_sprites.Modulate = StsColors.transparentWhite;
-		_tween = CreateTween().SetParallel();
-		_tween.TweenProperty(_sprites, "scale", Vector2.One * 0.5f, 0.5).SetEase(Tween.EaseType.In).SetTrans(Tween.TransitionType.Cubic)
+		_introTween = CreateTween().SetParallel();
+		_introTween.TweenProperty(_sprites, "scale", Vector2.One * 0.5f, 0.5).SetEase(Tween.EaseType.In).SetTrans(Tween.TransitionType.Cubic)
 			.SetDelay(0.25);
-		_tween.TweenProperty(_nodeToFollow, "modulate:a", 0.75f, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
-		_tween.TweenProperty(_sprites, "modulate:a", 1f, 1.0).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
+		_introTween.TweenProperty(_nodeToFollow, "modulate:a", 0.75f, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
+		_introTween.TweenProperty(_sprites, "modulate:a", 1f, 1.0).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
 	}
 
 	public override void _Process(double delta)
@@ -126,14 +133,15 @@ public class NCardTrailVfx : Node2D
 		}
 	}
 
-	public async Task FadeOut()
+	public Task FadeOut()
 	{
 		_updateSprites = false;
-		_tween = CreateTween().SetParallel();
-		_tween.TweenProperty(this, "modulate:a", 0f, 0.5);
-		StopParticles(_tween);
-		await _tween.AwaitFinished(this);
-		this.QueueFreeSafely();
+		return _fadeOut.Play((Tween tween) =>
+		{
+			tween.SetParallel();
+			tween.TweenProperty(this, "modulate:a", 0f, 0.5);
+			StopParticles(tween);
+		});
 	}
 
 	/// <summary>
@@ -152,7 +160,7 @@ public class NCardTrailVfx : Node2D
 
 	public override void _ExitTree()
 	{
-		_tween?.Kill();
+		_introTween?.Kill();
 	}
 
 	/// <summary>
@@ -276,9 +284,9 @@ public class NCardTrailVfx : Node2D
 			_updateSprites = VariantUtils.ConvertTo<bool>(in value);
 			return true;
 		}
-		if (name == PropertyName._tween)
+		if (name == PropertyName._introTween)
 		{
-			_tween = VariantUtils.ConvertTo<Tween>(in value);
+			_introTween = VariantUtils.ConvertTo<Tween>(in value);
 			return true;
 		}
 		return base.SetGodotClassPropertyValue(in name, in value);
@@ -303,9 +311,9 @@ public class NCardTrailVfx : Node2D
 			value = VariantUtils.CreateFrom(in _updateSprites);
 			return true;
 		}
-		if (name == PropertyName._tween)
+		if (name == PropertyName._introTween)
 		{
-			value = VariantUtils.CreateFrom(in _tween);
+			value = VariantUtils.CreateFrom(in _introTween);
 			return true;
 		}
 		return base.GetGodotClassPropertyValue(in name, out value);
@@ -323,7 +331,7 @@ public class NCardTrailVfx : Node2D
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._nodeToFollow, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._sprites, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._updateSprites, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._tween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._introTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
 
@@ -335,7 +343,7 @@ public class NCardTrailVfx : Node2D
 		info.AddProperty(PropertyName._nodeToFollow, Variant.From(in _nodeToFollow));
 		info.AddProperty(PropertyName._sprites, Variant.From(in _sprites));
 		info.AddProperty(PropertyName._updateSprites, Variant.From(in _updateSprites));
-		info.AddProperty(PropertyName._tween, Variant.From(in _tween));
+		info.AddProperty(PropertyName._introTween, Variant.From(in _introTween));
 	}
 
 	/// <inheritdoc />
@@ -355,9 +363,9 @@ public class NCardTrailVfx : Node2D
 		{
 			_updateSprites = value3.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._tween, out var value4))
+		if (info.TryGetProperty(PropertyName._introTween, out var value4))
 		{
-			_tween = value4.As<Tween>();
+			_introTween = value4.As<Tween>();
 		}
 	}
 }

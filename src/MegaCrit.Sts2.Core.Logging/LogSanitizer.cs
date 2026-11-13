@@ -1,6 +1,7 @@
 using System;
 using System.CodeDom.Compiler;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Text.RegularExpressions.Generated;
 
@@ -10,17 +11,6 @@ public static class LogSanitizer
 {
 	private static readonly string _homeReplacement = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "%USERPROFILE%" : "~");
 
-	/// <remarks>
-	/// Pattern:<br />
-	/// <code>\\b76561\\d{12}\\b</code><br />
-	/// Explanation:<br />
-	/// <code>
-	/// ○ Match if at a word boundary.<br />
-	/// ○ Match the string "76561".<br />
-	/// ○ Match a Unicode digit exactly 12 times.<br />
-	/// ○ Match if at a word boundary.<br />
-	/// </code>
-	/// </remarks>
 	[GeneratedCode("System.Text.RegularExpressions.Generator", "9.0.12.31616")]
 	private static Regex SteamIdRegex()
 	{
@@ -41,6 +31,13 @@ public static class LogSanitizer
 		}
 		text = SteamIdRegex().Replace(text, ReplaceSteamId);
 		return text;
+	}
+
+	public static byte[] AnonymizeSteamIds(byte[] bytes)
+	{
+		string input = Encoding.Latin1.GetString(bytes);
+		input = SteamIdRegex().Replace(input, (Match m) => IdAnonymizer.Anonymize(ulong.Parse(m.Value)).ToString());
+		return Encoding.Latin1.GetBytes(input);
 	}
 
 	public static string ReplaceSteamId(Match m)

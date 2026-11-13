@@ -36,6 +36,8 @@ public static class MetricUtilities
 
 	private const int _runLengthThreshold = 5;
 
+	private const int _blitzRunLengthThreshold = 3;
+
 	private static readonly System.Net.Http.HttpClient _httpClient = new System.Net.Http.HttpClient
 	{
 		Timeout = TimeSpan.FromSeconds(15L)
@@ -45,6 +47,7 @@ public static class MetricUtilities
 	/// Uploads run history to the metrics server.
 	/// DO NOT UPLOAD WHEN:
 	/// - Abandon
+	/// - A debug console command was used in the run
 	/// - Not a release build
 	/// - The run ended before floor 5 (these are invalid runs)
 	/// For multiplayer runs, each individual player uploads their individual metrics.
@@ -62,7 +65,7 @@ public static class MetricUtilities
 		}
 	}
 
-	private static bool ShouldUploadMetrics()
+	private static bool ShouldUploadMetrics(bool isRunMetrics)
 	{
 		if (ReleaseInfoManager.Instance.ReleaseInfo == null)
 		{
@@ -71,17 +74,22 @@ public static class MetricUtilities
 		}
 		if (!SaveManager.Instance.PrefsSave.UploadData)
 		{
-			Log.Info("Skipping metrics upload, user has upload data unset in settings");
+			Log.Info("Skipping metrics upload, user has upload data unset in settings.");
 			return false;
 		}
-		if (SaveManager.Instance.SettingsSave.FullConsole)
+		if (!isRunMetrics && SaveManager.Instance.SettingsSave.FullConsole)
 		{
-			Log.Info("Skipping metrics upload, user has enabled full console");
+			Log.Info("Skipping metrics upload, user has enabled full console and this isn't run metrics.");
 			return false;
 		}
 		if (OS.HasFeature("editor"))
 		{
-			Log.Info("Skipping metrics upload since we're in the editor.");
+			Log.Info("Skipping metrics upload, game is running from editor.");
+			return false;
+		}
+		if (!isRunMetrics && ModManager.IsRunningModded())
+		{
+			Log.Info("Skipping metrics upload since we're running modded and this isn't run metrics.");
 			return false;
 		}
 		return true;
@@ -89,111 +97,142 @@ public static class MetricUtilities
 
 	private static void UploadRunMetricsInternal(SerializableRun run, bool isVictory, ulong localPlayerId)
 	{
-		if (!ShouldUploadMetrics())
+		if (!ShouldUploadMetrics(isRunMetrics: true))
 		{
 			return;
 		}
 		if (RunManager.Instance.IsAbandoned)
 		{
 			Log.Info("Skipping metrics upload, run was abandoned.");
+			return;
 		}
-		else if (SaveManager.Instance.Progress.NumberOfRuns <= 1)
+		if (SaveManager.Instance.Progress.NumberOfRuns <= 1)
 		{
 			Log.Info("Skipping metrics upload, this is our first run ever.");
+			return;
 		}
-		else if (ModManager.IsRunningModded())
+		if (ModManager.IsRunningModded())
 		{
-			Log.Info("Skipping metrics upload, we're running modded.");
+			Log.Info("Basegame is skipping metrics upload. Calling mod metrics hooks instead.");
 			ModManager.CallMetricsHooks(run, isVictory, localPlayerId);
+			return;
 		}
-		else
+		if (run.IsCustomGame)
 		{
-			if (run.GameMode != GameMode.Standard)
+			Log.Info("Skipping metrics upload, this is a custom game.");
+			return;
+		}
+		if (run.ExtraFields.UsedDebugCommand)
+		{
+			Log.Info("Skipping metrics upload, a debug command was used in this run.");
+			return;
+		}
+		if (run.GameMode != GameMode.Standard && run.GameMode != GameMode.Dread && run.GameMode != GameMode.Blitz)
+		{
+			Log.Info($"Skipping metrics upload, game mode is: {run.GameMode}");
+			return;
+		}
+		List<MapPointHistoryEntry> list = run.MapPointHistory.SelectMany((List<MapPointHistoryEntry> logs) => logs).ToList();
+		if (run.GameMode == GameMode.Blitz)
+		{
+			if (list.Count < 3)
 			{
 				return;
-			}
-			List<MapPointHistoryEntry> list = run.MapPointHistory.SelectMany((List<MapPointHistoryEntry> logs) => logs).ToList();
-			if (list.Count < 5)
-			{
-				return;
-			}
-			LocManager.Instance.StartOverridingLanguageAsEnglish();
-			try
-			{
-				ModelId killedByEncounter = ModelId.none;
-				MapPointHistoryEntry mapPointHistoryEntry = run.MapPointHistory.LastOrDefault()?.LastOrDefault();
-				if (!isVictory && mapPointHistoryEntry != null && mapPointHistoryEntry.Rooms.Last().RoomType.IsCombatRoom())
-				{
-					killedByEncounter = mapPointHistoryEntry.Rooms.Last().ModelId;
-				}
-				SerializablePlayer localPlayer = run.Players.First((SerializablePlayer p) => p.NetId == localPlayerId);
-				List<EncounterMetric> encounters = (from e in list
-					where e.Rooms.Last().RoomType.IsCombatRoom()
-					select new EncounterMetric(e.Rooms.Last().ModelId.Entry, int.Min(e.GetEntry(localPlayerId).DamageTaken, localPlayer.MaxHp), e.Rooms.Last().TurnsTaken + 1)).ToList();
-				List<CardChoiceMetric> cardChoices = (from e in list
-					where e.GetEntry(localPlayerId).CardChoices.Count > 0
-					select new CardChoiceMetric(e.GetEntry(localPlayerId).CardChoices)).ToList();
-				List<AncientMetric> ancientChoices = (from e in list
-					where e.MapPointType == MapPointType.Ancient
-					where e.GetEntry(localPlayerId).AncientChoices.Count > 0
-					select new AncientMetric(e, e.GetEntry(localPlayerId))).ToList();
-				List<ActWinMetric> list2 = new List<ActWinMetric>();
-				List<EventChoiceMetric> list3 = new List<EventChoiceMetric>();
-				for (int num = 0; num < run.MapPointHistory.Count; num++)
-				{
-					List<MapPointHistoryEntry> list4 = run.MapPointHistory[num];
-					foreach (MapPointHistoryEntry item in list4)
-					{
-						if (item.Rooms.First().RoomType == RoomType.Event && item.GetEntry(localPlayerId).EventChoices.Count != 0 && item.MapPointType != MapPointType.Ancient)
-						{
-							list3.Add(new EventChoiceMetric(item, localPlayerId, run.Acts[num]));
-						}
-					}
-					bool win = (num < run.MapPointHistory.Count - 1) | isVictory;
-					list2.Add(new ActWinMetric(run.Acts[num].Id.Entry, win));
-				}
-				ProgressState progress = SaveManager.Instance.Progress;
-				RunMetrics run2 = new RunMetrics
-				{
-					Ascension = run.Ascension,
-					TotalPlaytime = progress.TotalPlaytime,
-					TotalWinRate = (float)progress.Wins / (float)progress.NumberOfRuns,
-					NumReloads = run.NumReloads,
-					BuildId = (ReleaseInfoManager.Instance.ReleaseInfo?.Version ?? "NON-RELEASE-VERSION"),
-					BuildType = PlatformUtil.GetPlatformBranch().ToName(),
-					PlayerId = progress.UniqueId,
-					Character = localPlayer.CharacterId,
-					NumPlayers = run.Players.Count,
-					Team = ((run.Players.Count > 1) ? run.Players.Select((SerializablePlayer p) => p.CharacterId).ToList() : new List<ModelId>()),
-					Win = isVictory,
-					FloorReached = list.Count,
-					KilledByEncounter = killedByEncounter,
-					Deck = localPlayer.Deck.Select((SerializableCard c) => c.Id),
-					Relics = localPlayer.Relics.Select((SerializableRelic r) => r.Id),
-					RunPlaytime = ((run.WinTime > 0) ? run.WinTime : run.RunTime),
-					Encounters = encounters,
-					CardChoices = cardChoices,
-					EventChoices = list3,
-					AncientChoices = ancientChoices,
-					ActWins = list2,
-					CampfireUpgrades = (from c in list.Where((MapPointHistoryEntry e) => e.MapPointType == MapPointType.RestSite).SelectMany((MapPointHistoryEntry e) => e.GetEntry(localPlayerId).UpgradedCards)
-						select c.Entry).ToList(),
-					RelicBuys = (from r in list.SelectMany((MapPointHistoryEntry e) => e.GetEntry(localPlayerId).BoughtRelics)
-						select r.Entry).ToList(),
-					PotionBuys = (from p in list.SelectMany((MapPointHistoryEntry e) => e.GetEntry(localPlayerId).BoughtPotions)
-						select p.Entry).ToList(),
-					ColorlessBuys = (from c in list.SelectMany((MapPointHistoryEntry e) => e.GetEntry(localPlayerId).BoughtColorless)
-						select c.Entry).ToList(),
-					PotionDiscards = (from p in list.SelectMany((MapPointHistoryEntry e) => e.GetEntry(localPlayerId).PotionDiscarded)
-						select p.Entry).ToList()
-				};
-				UploadRunMetrics(run2);
-			}
-			finally
-			{
-				LocManager.Instance.StopOverridingLanguageAsEnglish();
 			}
 		}
+		else if (list.Count < 5)
+		{
+			return;
+		}
+		LocManager.Instance.StartOverridingLanguageAsEnglish();
+		try
+		{
+			ModelId killedByEncounter = ModelId.none;
+			MapPointHistoryEntry mapPointHistoryEntry = run.MapPointHistory.LastOrDefault()?.LastOrDefault();
+			if (!isVictory && mapPointHistoryEntry != null && mapPointHistoryEntry.Rooms.Last().RoomType.IsCombatRoom())
+			{
+				killedByEncounter = mapPointHistoryEntry.Rooms.Last().ModelId;
+			}
+			SerializablePlayer localPlayer = run.Players.First((SerializablePlayer p) => p.NetId == localPlayerId);
+			List<EncounterMetric> encounters = (from e in list
+				where e.Rooms.Last().RoomType.IsCombatRoom()
+				select new EncounterMetric(e.Rooms.Last().ModelId.Entry, int.Min(e.GetEntry(localPlayerId).DamageTaken, localPlayer.MaxHp), e.Rooms.Last().TurnsTaken + 1)).ToList();
+			List<CardChoiceMetric> cardChoices = (from e in list
+				where e.GetEntry(localPlayerId).CardChoices.Count > 0
+				select new CardChoiceMetric(e.GetEntry(localPlayerId).CardChoices)).ToList();
+			List<AncientMetric> ancientChoices = (from e in list
+				where e.MapPointType == MapPointType.Ancient
+				where e.GetEntry(localPlayerId).AncientChoices.Count > 0
+				select new AncientMetric(e, e.GetEntry(localPlayerId))).ToList();
+			List<ActWinMetric> list2 = new List<ActWinMetric>();
+			List<EventChoiceMetric> list3 = new List<EventChoiceMetric>();
+			for (int num = 0; num < run.MapPointHistory.Count; num++)
+			{
+				List<MapPointHistoryEntry> list4 = run.MapPointHistory[num];
+				foreach (MapPointHistoryEntry item in list4)
+				{
+					if (item.Rooms.First().RoomType == RoomType.Event && item.GetEntry(localPlayerId).EventChoices.Count != 0 && item.MapPointType != MapPointType.Ancient)
+					{
+						list3.Add(new EventChoiceMetric(item, localPlayerId, run.Acts[num]));
+					}
+				}
+				bool win = (num < run.MapPointHistory.Count - 1) | isVictory;
+				list2.Add(new ActWinMetric(run.Acts[num].Id.Entry, win));
+			}
+			ProgressState progress = SaveManager.Instance.Progress;
+			RunMetrics run2 = new RunMetrics
+			{
+				Ascension = run.Ascension,
+				TotalPlaytime = progress.TotalPlaytime,
+				TotalWinRate = (float)progress.Wins / (float)progress.NumberOfRuns,
+				NumReloads = run.NumReloads,
+				BuildId = (ReleaseInfoManager.Instance.ReleaseInfo?.Version ?? "NON-RELEASE-VERSION"),
+				BuildType = PlatformUtil.GetPlatformBranch().ToName(),
+				PlayerId = progress.UniqueId,
+				GameMode = GetGameModeString(run.GameMode),
+				Character = localPlayer.CharacterId,
+				NumPlayers = run.Players.Count,
+				Team = ((run.Players.Count > 1) ? run.Players.Select((SerializablePlayer p) => p.CharacterId).ToList() : new List<ModelId>()),
+				Win = isVictory,
+				FloorReached = list.Count,
+				KilledByEncounter = killedByEncounter,
+				Deck = localPlayer.Deck.Select((SerializableCard c) => c.Id),
+				Relics = localPlayer.Relics.Select((SerializableRelic r) => r.Id),
+				RunPlaytime = ((run.WinTime > 0) ? run.WinTime : run.RunTime),
+				Encounters = encounters,
+				CardChoices = cardChoices,
+				EventChoices = list3,
+				AncientChoices = ancientChoices,
+				ActWins = list2,
+				CampfireUpgrades = (from c in list.Where((MapPointHistoryEntry e) => e.MapPointType == MapPointType.RestSite).SelectMany((MapPointHistoryEntry e) => e.GetEntry(localPlayerId).UpgradedCards)
+					select c.Entry).ToList(),
+				RelicBuys = (from r in list.SelectMany((MapPointHistoryEntry e) => e.GetEntry(localPlayerId).BoughtRelics)
+					select r.Entry).ToList(),
+				PotionBuys = (from p in list.SelectMany((MapPointHistoryEntry e) => e.GetEntry(localPlayerId).BoughtPotions)
+					select p.Entry).ToList(),
+				ColorlessBuys = (from c in list.SelectMany((MapPointHistoryEntry e) => e.GetEntry(localPlayerId).BoughtColorless)
+					select c.Entry).ToList(),
+				PotionDiscards = (from p in list.SelectMany((MapPointHistoryEntry e) => e.GetEntry(localPlayerId).PotionDiscarded)
+					select p.Entry).ToList()
+			};
+			UploadRunMetrics(run2);
+		}
+		finally
+		{
+			LocManager.Instance.StopOverridingLanguageAsEnglish();
+		}
+	}
+
+	private static string GetGameModeString(GameMode gameMode)
+	{
+		return gameMode switch
+		{
+			GameMode.Blitz => "BLITZ",
+			GameMode.Daily => "DAILY",
+			GameMode.Dread => "DREAD",
+			GameMode.Standard => "STANDARD",
+			_ => "UNKNOWN",
+		};
 	}
 
 	private static void UploadRunMetrics(RunMetrics run)
@@ -205,7 +244,7 @@ public static class MetricUtilities
 
 	public static void UploadAchievementMetric(Achievement achievement)
 	{
-		if (ShouldUploadMetrics())
+		if (ShouldUploadMetrics(isRunMetrics: false))
 		{
 			AchievementMetric value = new AchievementMetric
 			{
@@ -223,7 +262,7 @@ public static class MetricUtilities
 
 	public static void UploadEpochMetric(string epochId)
 	{
-		if (ShouldUploadMetrics())
+		if (ShouldUploadMetrics(isRunMetrics: false))
 		{
 			EpochMetric value = new EpochMetric
 			{
@@ -247,7 +286,7 @@ public static class MetricUtilities
 	/// </summary>
 	public static void UploadSettingsMetric()
 	{
-		if (ShouldUploadMetrics())
+		if (ShouldUploadMetrics(isRunMetrics: false))
 		{
 			long num = (long)OS.GetMemoryInfo()["physical"];
 			SettingsDataMetric value = new SettingsDataMetric

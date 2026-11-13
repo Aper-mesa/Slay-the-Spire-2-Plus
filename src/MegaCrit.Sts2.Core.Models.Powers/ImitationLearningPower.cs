@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Platform;
 using MegaCrit.Sts2.Core.Runs;
@@ -88,7 +89,10 @@ public sealed class ImitationLearningPower : PowerModel
 			CardModel clone = internalData.cardsAndClones[num].Clone;
 			internalData.cardsAndClones.RemoveAt(num);
 			Flash();
-			await PowerCmd.Decrement(this);
+			if (Hook.ShouldPlay(CombatState, clone, out AbstractModel _, AutoPlayType.Default))
+			{
+				await PowerCmd.Decrement(this);
+			}
 			await CardCmd.AutoPlay(choiceContext, clone, null);
 		}
 	}

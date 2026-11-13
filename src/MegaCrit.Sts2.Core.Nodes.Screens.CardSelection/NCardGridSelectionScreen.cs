@@ -29,7 +29,7 @@ namespace MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 /// Base class for all grid-based card selection screens.
 /// </summary>
 [ScriptPath("res://src/Core/Nodes/Screens/CardSelection/NCardGridSelectionScreen.cs")]
-public abstract class NCardGridSelectionScreen : Control, IOverlayScreen, IScreenContext, ICardSelector
+public abstract class NCardGridSelectionScreen : Control, IOverlayScreen, IScreenContext, ICardSelectionScreen
 {
 	/// <summary>
 	/// Cached StringNames for the methods contained in this class, for fast lookup.
@@ -253,7 +253,12 @@ public abstract class NCardGridSelectionScreen : Control, IOverlayScreen, IScree
 	{
 		if (!NControllerManager.Instance.IsUsingDirectionalNavigation)
 		{
-			NGame.Instance.GetInspectCardScreen().Open(_cards.ToList(), _cards.IndexOf(card), _grid.IsShowingUpgrades);
+			IReadOnlyList<CardModel> sortedCards = _grid.SortedCards;
+			int num = sortedCards.IndexOf(card);
+			if (num >= 0)
+			{
+				NGame.Instance.GetInspectCardScreen().Open(sortedCards.ToList(), num, _grid.IsShowingUpgrades);
+			}
 		}
 	}
 

@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
+using MegaCrit.Sts2.Core.Models.Dread;
+using MegaCrit.Sts2.Core.Models.Dread.Dominions;
 using MegaCrit.Sts2.Core.Models.Monsters;
 using MegaCrit.Sts2.Core.Rooms;
 
@@ -22,5 +24,10 @@ public sealed class TestSubjectBoss : EncounterModel
 	protected override IReadOnlyList<(MonsterModel, string?)> GenerateMonsters()
 	{
 		return new _003C_003Ez__ReadOnlySingleElementList<(MonsterModel, string)>((ModelDb.Monster<TestSubject>().ToMutable(), null));
+	}
+
+	public override DominionModel GetDominion()
+	{
+		return ModelDb.Dominion<TestSubjectDominion>();
 	}
 }

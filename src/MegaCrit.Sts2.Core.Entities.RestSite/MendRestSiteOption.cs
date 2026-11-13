@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,11 +27,16 @@ using MegaCrit.Sts2.Core.TestSupport;
 
 namespace MegaCrit.Sts2.Core.Entities.RestSite;
 
+/// <summary>
+/// Multiplayer-only Rest Site option which allows healing a teammate.
+/// </summary>
 public sealed class MendRestSiteOption : RestSiteOption
 {
 	private const string _hasTargetKey = "HasTarget";
 
 	private const string _playerNameKey = "Name";
+
+	private const string _extraTextKey = "ExtraText";
 
 	private readonly HealVar _healVar = new HealVar(0m);
 
@@ -48,6 +54,15 @@ public sealed class MendRestSiteOption : RestSiteOption
 				_description.Add("HasTarget", variable: false);
 				_description.Add("Name", "");
 				_description.Add(_healVar);
+			}
+			IReadOnlyList<LocString> source = Hook.ModifyExtraRestSiteMendText(Owner.RunState, Owner, Array.Empty<LocString>());
+			if (source.Any())
+			{
+				_description.Add("ExtraText", "\n" + string.Join("\n", source.Select((LocString s) => s.GetFormattedText())));
+			}
+			else
+			{
+				_description.Add("ExtraText", string.Empty);
 			}
 			return _description;
 		}
@@ -71,7 +86,7 @@ public sealed class MendRestSiteOption : RestSiteOption
 		{
 			NRestSiteRoom.Instance.AnimateDescriptionDown();
 			NRestSiteButton buttonForOption = NRestSiteRoom.Instance.GetButtonForOption(this);
-			Vector2 startPosition = buttonForOption.GlobalPosition + buttonForOption.Size / 2f;
+			Vector2 startPosition = buttonForOption.GlobalPosition + buttonForOption.Size * 0.5f;
 			bool usingController = NControllerManager.Instance.IsUsingDirectionalNavigation;
 			NTargetManager targetManager = NTargetManager.Instance;
 			targetManager.StartTargeting(TargetType.AnyPlayer, startPosition, usingController ? TargetMode.Controller : TargetMode.ClickMouseToTarget, ShouldCancelTargeting, AllowHoveringNode);
@@ -156,7 +171,6 @@ public sealed class MendRestSiteOption : RestSiteOption
 			Description.Add("HasTarget", variable: true);
 			Description.Add("Name", PlatformUtil.GetPlayerName(RunManager.Instance.NetService.Platform, player.NetId));
 			_healVar.BaseValue = HealRestSiteOption.GetBaseHealAmount(player.Creature);
-			_healVar.PreviewValue = GetHealAmount(player);
 			NRestSiteRoom.Instance?.GetButtonForOption(this)?.RefreshTextState();
 		}
 	}

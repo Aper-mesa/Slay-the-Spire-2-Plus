@@ -43,7 +43,7 @@ public sealed class ThisOrThat : EventModel
 
 	private async Task Ornate()
 	{
-		RelicModel relic = RelicFactory.PullNextRelicFromFront(Owner).ToMutable();
+		RelicModel relic = RelicFactory.PullNextRelicFromFront(Owner, Rng).ToMutable();
 		await RelicCmd.Obtain(relic, Owner);
 		await CardPileCmd.AddCurseToDeck<Clumsy>(Owner);
 		SetEventFinished(L10NLookup("THIS_OR_THAT.pages.ORNATE.description"));

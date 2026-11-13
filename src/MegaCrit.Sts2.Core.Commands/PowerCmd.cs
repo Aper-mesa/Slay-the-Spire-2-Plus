@@ -145,7 +145,7 @@ public static class PowerCmd
 			{
 				await Cmd.CustomScaledWait(0.1f, 0.25f);
 			}
-			if (target.Side == CombatSide.Player && power.Type == PowerType.Debuff)
+			if (target.Side == CombatSide.Player && combatState.CurrentSide == CombatSide.Enemy && power.Type == PowerType.Debuff)
 			{
 				power.SkipNextDurationTick = true;
 			}
@@ -170,10 +170,10 @@ public static class PowerCmd
 	{
 		return basePower.InstanceType switch
 		{
-			PowerInstanceType.Instanced => null, 
-			PowerInstanceType.InstancedPerApplier => target.GetPowerInstances(basePower.Id).FirstOrDefault((PowerModel p) => p.Applier == applier), 
-			PowerInstanceType.None => target.GetPower(basePower.Id), 
-			_ => throw new ArgumentOutOfRangeException("InstanceType"), 
+			PowerInstanceType.Instanced => null,
+			PowerInstanceType.InstancedPerApplier => target.GetPowerInstances(basePower.Id).FirstOrDefault((PowerModel p) => p.Applier == applier),
+			PowerInstanceType.None => target.GetPower(basePower.Id),
+			_ => throw new ArgumentOutOfRangeException("InstanceType"),
 		};
 	}
 

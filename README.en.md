@@ -4,14 +4,14 @@
 
 **Decompiled Slay the Spire 2 source — plus a set of Plus changes that make co-op and characters better**
 
-![Game](https://img.shields.io/badge/game-v0.111.0-8B5CF6?style=flat-square)
+![Game](https://img.shields.io/badge/game-v0.113.0%20beta-8B5CF6?style=flat-square)
 ![Engine](https://img.shields.io/badge/Godot-4.5.1-478CBF?style=flat-square&logo=godotengine&logoColor=white)
 ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=flat-square&logo=dotnet&logoColor=white)
 ![Language](https://img.shields.io/badge/C%23-14-239120?style=flat-square&logo=csharp&logoColor=white)
 ![Decompiler](https://img.shields.io/badge/ILSpy-11.1.0-6B7280?style=flat-square)
 ![Build](https://img.shields.io/badge/build-0%20errors-22C55E?style=flat-square)
 
-<sub>**3,537** source files · **6,641** classes · **223** namespaces · **~491,700** lines</sub>
+<sub>Official baseline: **3,887** C# source files · **7,241** class records · **56** GDScripts</sub>
 
 [中文](README.md) · **English**
 
@@ -37,6 +37,7 @@
 - [Target](#target)
 - [Repository map](#repository-map)
 - [Build](#build)
+- [Official 0.113.0 update](#official-01130-update)
 - [Plus changes](#plus-changes)
   - [Shared saves](#shared-saves)
   - [Multiplayer build fingerprint](#multiplayer-build-fingerprint)
@@ -56,29 +57,29 @@ A **source tree that actually compiles**:
 - 56 GDScript files (`gdscript_tree/`) recovered from **GDSC v101** bytecode, keeping their original project paths;
 - A set of **Plus changes** layered on top: shared saves, a multiplayer build fingerprint, card / relic transfer, and the STS1 Defect, Silent, Ironclad and Watcher ported as separate characters.
 
-The original decompiled baseline builds after **15 small fixes**, with the same type count as the original assembly. Plus changes add further types.
+The complete official **0.113.0** C# and GDScript changes are merged while retaining the Plus features. The Release build passes; in-game and multiplayer behavior still require manual verification.
 
 ## Target
 
 | Item | Value |
 | --- | --- |
-| Game version | `v0.111.0` (`release_info.json`, commit `41cef1ea`) |
+| Game version | `v0.113.0`, `public-beta` (`release_info.json`, commit `16ac0fe3`) |
 | Engine | **Godot 4.5.1 + .NET 9** |
 | Original assembly | `data_sts2_windows_x86_64/sts2.dll` |
-| Size | 9,757,184 bytes |
-| SHA-256 | `0861bfa1df347538d932f22d580e75420f08082792eb914e53b4882764acdbe9` |
+| Size | 10,646,528 bytes |
+| SHA-256 | `a6cc282c52b96ad2e01d5692b1144b33aa8e3ba4e969582f648ecb13b2f751d7` |
 | Format | PE32+ / x86_64 / IL-only / not ReadyToRun / not strong-named |
 
 ## Repository map
 
 | Path | Contents |
 | --- | --- |
-| `src/` | ILSpy-decompiled C# project: 223 namespaces, 3,537 files, ~491,700 lines |
+| `src/` | ILSpy C# project: 3,887 official baseline C# files, plus the Plus sources |
 | `src/ClassicDefectArt/` | 23 STS1 card images, embedded into the DLL for the classic Defect |
 | `src/ClassicPowerIcons/` | 6 STS1 power icons (48 / 128), embedded into the DLL |
 | `gdscript_tree/` | 56 GDScript files recovered from GDSC v101 bytecode, original project paths |
-| `types.txt` | Class inventory (6,641 classes) |
-| `original_source_paths.txt` | Original C# source paths recorded in the PCK (3,441 entries, paths only) |
+| `types.txt` | Official class inventory (7,241 records, including compiler-generated entries) |
+| `original_source_paths.txt` | Original C# source paths recorded in the PCK (3,782 entries, paths only) |
 
 **Not included**: PCK, original game DLL, tool binaries, local save data. The only game assets in the repository are the classic Defect images listed above.
 
@@ -98,9 +99,11 @@ dotnet build src/sts2.csproj -c Release
 
 > 🔖 **Back up the original DLL first.**
 
+**This DLL requires the official `public-beta` v0.113.0 PCK and dependency libraries.** The stable branch is v0.111.0 in this update. Select `public-beta` under Steam Properties → Game Versions & Betas and finish updating first.
+
 ### Decompilation fixes
 
-The decompiled tree needed 15 small fixes to compile:
+The initial v0.111.0 reconstruction fixes are recorded below; applicable fixes are retained during the upgrade:
 
 | Count | Issue | Fix |
 | :---: | --- | --- |
@@ -108,7 +111,17 @@ The decompiled tree needed 15 small fixes to compile:
 | 5 | `Container` ambiguity (`System.ComponentModel.Container` vs `Godot.Container`) | `using Container = Godot.Container;` |
 | 2 | `base._002Ector();` artifacts | Removed |
 
-Original decompiled baseline: **0 errors**, 6,641 types (excluding later Plus additions).
+v0.113.0 also needs `Container` aliases in `NTopBar` and `NBlitzTopBarMap`. Build with the plain `Microsoft.NET.Sdk` without rerunning Godot source generators. All six JSON resolver `global::` explicit-interface method names match the new official DLL.
+
+## Official 0.113.0 update
+
+Download: [v0.113.0 Plus](https://github.com/Aper-mesa/Slay-the-Spire-2-Plus/releases/tag/v0.113.0-plus.20261113) (`sts2.dll` only, GitHub Latest).
+
+- Adds the sixth official character, **The Fool**, and the **Blitz** and **Dread** modes, together with five events, Byrdpip evolution, balance changes and official fixes. [Official announcement](https://steamcommunity.com/games/2868840/announcements/detail/1849192144184507)
+- Three-way merge from clean official v0.111.0: 360 added, 731 changed and 10 removed C# files; 3 of 56 GDScripts updated. Official class and original-source-path inventories are refreshed.
+- Preserves shared saves, build fingerprints, transfers, Save & Load and all four classic characters. Integrates mode-specific short titles, Watcher backgrounds/icons, death sources and the renamed extra-turn power. Official character unlock requirements count the six official characters.
+- Keeps official network message ordering and appends Plus messages. Reload disposes old event/shop handlers and is blocked during room transitions. Transfers into a full hand display the card in its actual destination.
+- Release build, source coverage and static metadata checks pass. No game or automated smoke tests were run. Manually verify The Fool, Blitz/Dread, old-save migration, PlusSL and multiplayer transfers.
 
 ## Plus changes
 

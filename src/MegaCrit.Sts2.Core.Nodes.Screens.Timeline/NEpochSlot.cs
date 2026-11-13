@@ -88,11 +88,6 @@ public class NEpochSlot : NButton
 		/// Cached name for the 'UpdateShaderV' method.
 		/// </summary>
 		public static readonly StringName UpdateShaderV = "UpdateShaderV";
-
-		/// <summary>
-		/// Cached name for the 'UpdateBlurLod' method.
-		/// </summary>
-		public static readonly StringName UpdateBlurLod = "UpdateBlurLod";
 	}
 
 	/// <summary>
@@ -151,16 +146,6 @@ public class NEpochSlot : NButton
 		public static readonly StringName _outline = "_outline";
 
 		/// <summary>
-		/// Cached name for the '_blur' field.
-		/// </summary>
-		public static readonly StringName _blur = "_blur";
-
-		/// <summary>
-		/// Cached name for the '_blurShader' field.
-		/// </summary>
-		public static readonly StringName _blurShader = "_blurShader";
-
-		/// <summary>
 		/// Cached name for the '_selectionReticle' field.
 		/// </summary>
 		public static readonly StringName _selectionReticle = "_selectionReticle";
@@ -174,11 +159,6 @@ public class NEpochSlot : NButton
 		/// Cached name for the '_highlightVfx' field.
 		/// </summary>
 		public static readonly StringName _highlightVfx = "_highlightVfx";
-
-		/// <summary>
-		/// Cached name for the '_subViewportContainer' field.
-		/// </summary>
-		public static readonly StringName _subViewportContainer = "_subViewportContainer";
 
 		/// <summary>
 		/// Cached name for the '_subViewport' field.
@@ -233,7 +213,9 @@ public class NEpochSlot : NButton
 	{
 	}
 
-	private static readonly StringName _lod = new StringName("lod");
+	private static readonly StringName _blurUvRegion = new StringName("uv_region");
+
+	private static readonly StringName _blurRadiusScale = new StringName("radius_scale");
 
 	private static readonly StringName _v = new StringName("v");
 
@@ -257,17 +239,11 @@ public class NEpochSlot : NButton
 
 	private TextureRect _outline;
 
-	private Control _blur;
-
-	private ShaderMaterial _blurShader;
-
 	private NSelectionReticle _selectionReticle;
 
 	private NEpochOffscreenVfx? _offscreenVfx;
 
 	private Control? _highlightVfx;
-
-	private SubViewportContainer _subViewportContainer;
 
 	private SubViewport _subViewport;
 
@@ -322,9 +298,7 @@ public class NEpochSlot : NButton
 		_hsv = (ShaderMaterial)_portrait.GetMaterial();
 		_blurPortrait = GetNode<TextureRect>("%BlurPortrait");
 		_outline = GetNode<TextureRect>("%Outline");
-		_subViewportContainer = GetNode<SubViewportContainer>("%SubViewportContainer");
 		_subViewport = GetNode<SubViewport>("%SubViewport");
-		_blurShader = (ShaderMaterial)GetNode<Control>("%Blur").GetMaterial();
 		_selectionReticle = GetNode<NSelectionReticle>("%SelectionReticle");
 		if (!NGame.IsReleaseGame())
 		{
@@ -418,7 +392,7 @@ public class NEpochSlot : NButton
 		}
 		else
 		{
-			_hoverTween.TweenMethod(Callable.From<float>(UpdateShaderS), _hsv.GetShaderParameter(_s), 0.25f, 0.05);
+			_hoverTween.TweenMethod(Callable.From<float>(UpdateShaderS), _hsv.GetShaderParameter(_s), 0f, 0.05);
 			_hoverTween.TweenMethod(Callable.From<float>(UpdateShaderV), _hsv.GetShaderParameter(_v), 1.2f, 0.05);
 			LocString unlockInfo3 = model.UnlockInfo;
 			unlockInfo3.Add("IsRevealed", variable: false);
@@ -463,7 +437,7 @@ public class NEpochSlot : NButton
 		}
 		else
 		{
-			_hoverTween.TweenMethod(Callable.From<float>(UpdateShaderS), _hsv.GetShaderParameter(_s), 0.25f, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
+			_hoverTween.TweenMethod(Callable.From<float>(UpdateShaderS), _hsv.GetShaderParameter(_s), 0f, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
 			_hoverTween.TweenMethod(Callable.From<float>(UpdateShaderV), _hsv.GetShaderParameter(_v), 1.1f, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
 		}
 		NHoverTipSet.Remove(this);
@@ -504,7 +478,7 @@ public class NEpochSlot : NButton
 		_spawnTween.TweenProperty(_outline, "position", Vector2.Zero, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Back)
 			.From(new Vector2(0f, 64f));
 		_spawnTween.TweenProperty(_slotImage, "self_modulate:a", 1f, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
-		if (await _spawnTween.AwaitFinished(this))
+		if (await _spawnTween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			HasSpawned = true;
 			if (State == EpochSlotState.Obtained)
@@ -576,11 +550,12 @@ public class NEpochSlot : NButton
 		}
 		else if (State == EpochSlotState.NotObtained)
 		{
-			_blurShader.SetShaderParameter(_lod, 2f);
-			UpdateShaderS(0.25f);
+			UpdateShaderS(0f);
 			UpdateShaderV(1f);
 			_blurPortrait.Texture = model.Portrait;
-			_subViewportContainer.Visible = true;
+			_blurPortrait.SetInstanceShaderParameter(_blurUvRegion, ImageHelper.GetAtlasUvRegion(_blurPortrait.Texture));
+			_blurPortrait.SetInstanceShaderParameter(_blurRadiusScale, 1f);
+			_subViewport.RenderTargetUpdateMode = SubViewport.UpdateMode.Once;
 			_portrait.Texture = _subViewport.GetTexture();
 		}
 		MouseDefaultCursorShape = (CursorShape)((State == EpochSlotState.Complete) ? 16 : 0);
@@ -596,11 +571,6 @@ public class NEpochSlot : NButton
 		_hsv.SetShaderParameter(_v, value);
 	}
 
-	private void UpdateBlurLod(float value)
-	{
-		_blurShader.SetShaderParameter(_lod, value);
-	}
-
 	/// <summary>
 	/// Get the method information for all the methods declared in this class.
 	/// This method is used by Godot to register the available methods in the editor.
@@ -609,7 +579,7 @@ public class NEpochSlot : NButton
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(13);
+		List<MethodInfo> list = new List<MethodInfo>(12);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnRelease, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.RevealEpoch, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -631,10 +601,6 @@ public class NEpochSlot : NButton
 			new PropertyInfo(Variant.Type.Float, "value", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.UpdateShaderV, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
-		{
-			new PropertyInfo(Variant.Type.Float, "value", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
-		}, null));
-		list.Add(new MethodInfo(MethodName.UpdateBlurLod, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Float, "value", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
@@ -717,12 +683,6 @@ public class NEpochSlot : NButton
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.UpdateBlurLod && args.Count == 1)
-		{
-			UpdateBlurLod(VariantUtils.ConvertTo<float>(in args[0]));
-			ret = default;
-			return true;
-		}
 		return base.InvokeGodotClassMethod(in method, args, out ret);
 	}
 
@@ -778,10 +738,6 @@ public class NEpochSlot : NButton
 		{
 			return true;
 		}
-		if (method == MethodName.UpdateBlurLod)
-		{
-			return true;
-		}
 		return base.HasGodotClassMethod(in method);
 	}
 
@@ -829,16 +785,6 @@ public class NEpochSlot : NButton
 			_outline = VariantUtils.ConvertTo<TextureRect>(in value);
 			return true;
 		}
-		if (name == PropertyName._blur)
-		{
-			_blur = VariantUtils.ConvertTo<Control>(in value);
-			return true;
-		}
-		if (name == PropertyName._blurShader)
-		{
-			_blurShader = VariantUtils.ConvertTo<ShaderMaterial>(in value);
-			return true;
-		}
 		if (name == PropertyName._selectionReticle)
 		{
 			_selectionReticle = VariantUtils.ConvertTo<NSelectionReticle>(in value);
@@ -852,11 +798,6 @@ public class NEpochSlot : NButton
 		if (name == PropertyName._highlightVfx)
 		{
 			_highlightVfx = VariantUtils.ConvertTo<Control>(in value);
-			return true;
-		}
-		if (name == PropertyName._subViewportContainer)
-		{
-			_subViewportContainer = VariantUtils.ConvertTo<SubViewportContainer>(in value);
 			return true;
 		}
 		if (name == PropertyName._subViewport)
@@ -964,16 +905,6 @@ public class NEpochSlot : NButton
 			value = VariantUtils.CreateFrom(in _outline);
 			return true;
 		}
-		if (name == PropertyName._blur)
-		{
-			value = VariantUtils.CreateFrom(in _blur);
-			return true;
-		}
-		if (name == PropertyName._blurShader)
-		{
-			value = VariantUtils.CreateFrom(in _blurShader);
-			return true;
-		}
 		if (name == PropertyName._selectionReticle)
 		{
 			value = VariantUtils.CreateFrom(in _selectionReticle);
@@ -987,11 +918,6 @@ public class NEpochSlot : NButton
 		if (name == PropertyName._highlightVfx)
 		{
 			value = VariantUtils.CreateFrom(in _highlightVfx);
-			return true;
-		}
-		if (name == PropertyName._subViewportContainer)
-		{
-			value = VariantUtils.CreateFrom(in _subViewportContainer);
 			return true;
 		}
 		if (name == PropertyName._subViewport)
@@ -1059,12 +985,9 @@ public class NEpochSlot : NButton
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._hsv, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._blurPortrait, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._outline, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._blur, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._blurShader, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._selectionReticle, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._offscreenVfx, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._highlightVfx, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._subViewportContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._subViewport, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isGlowPulsing, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isComplete, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -1092,12 +1015,9 @@ public class NEpochSlot : NButton
 		info.AddProperty(PropertyName._hsv, Variant.From(in _hsv));
 		info.AddProperty(PropertyName._blurPortrait, Variant.From(in _blurPortrait));
 		info.AddProperty(PropertyName._outline, Variant.From(in _outline));
-		info.AddProperty(PropertyName._blur, Variant.From(in _blur));
-		info.AddProperty(PropertyName._blurShader, Variant.From(in _blurShader));
 		info.AddProperty(PropertyName._selectionReticle, Variant.From(in _selectionReticle));
 		info.AddProperty(PropertyName._offscreenVfx, Variant.From(in _offscreenVfx));
 		info.AddProperty(PropertyName._highlightVfx, Variant.From(in _highlightVfx));
-		info.AddProperty(PropertyName._subViewportContainer, Variant.From(in _subViewportContainer));
 		info.AddProperty(PropertyName._subViewport, Variant.From(in _subViewport));
 		info.AddProperty(PropertyName._isGlowPulsing, Variant.From(in _isGlowPulsing));
 		info.AddProperty(PropertyName._isComplete, Variant.From(in _isComplete));
@@ -1146,65 +1066,53 @@ public class NEpochSlot : NButton
 		{
 			_outline = value8.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._blur, out var value9))
+		if (info.TryGetProperty(PropertyName._selectionReticle, out var value9))
 		{
-			_blur = value9.As<Control>();
+			_selectionReticle = value9.As<NSelectionReticle>();
 		}
-		if (info.TryGetProperty(PropertyName._blurShader, out var value10))
+		if (info.TryGetProperty(PropertyName._offscreenVfx, out var value10))
 		{
-			_blurShader = value10.As<ShaderMaterial>();
+			_offscreenVfx = value10.As<NEpochOffscreenVfx>();
 		}
-		if (info.TryGetProperty(PropertyName._selectionReticle, out var value11))
+		if (info.TryGetProperty(PropertyName._highlightVfx, out var value11))
 		{
-			_selectionReticle = value11.As<NSelectionReticle>();
+			_highlightVfx = value11.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._offscreenVfx, out var value12))
+		if (info.TryGetProperty(PropertyName._subViewport, out var value12))
 		{
-			_offscreenVfx = value12.As<NEpochOffscreenVfx>();
+			_subViewport = value12.As<SubViewport>();
 		}
-		if (info.TryGetProperty(PropertyName._highlightVfx, out var value13))
+		if (info.TryGetProperty(PropertyName._isGlowPulsing, out var value13))
 		{
-			_highlightVfx = value13.As<Control>();
+			_isGlowPulsing = value13.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._subViewportContainer, out var value14))
+		if (info.TryGetProperty(PropertyName._isComplete, out var value14))
 		{
-			_subViewportContainer = value14.As<SubViewportContainer>();
+			_isComplete = value14.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._subViewport, out var value15))
+		if (info.TryGetProperty(PropertyName._isHovered, out var value15))
 		{
-			_subViewport = value15.As<SubViewport>();
+			_isHovered = value15.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._isGlowPulsing, out var value16))
+		if (info.TryGetProperty(PropertyName._era, out var value16))
 		{
-			_isGlowPulsing = value16.As<bool>();
+			_era = value16.As<EpochEra>();
 		}
-		if (info.TryGetProperty(PropertyName._isComplete, out var value17))
+		if (info.TryGetProperty(PropertyName.eraPosition, out var value17))
 		{
-			_isComplete = value17.As<bool>();
+			eraPosition = value17.As<int>();
 		}
-		if (info.TryGetProperty(PropertyName._isHovered, out var value18))
+		if (info.TryGetProperty(PropertyName._glowTween, out var value18))
 		{
-			_isHovered = value18.As<bool>();
+			_glowTween = value18.As<Tween>();
 		}
-		if (info.TryGetProperty(PropertyName._era, out var value19))
+		if (info.TryGetProperty(PropertyName._spawnTween, out var value19))
 		{
-			_era = value19.As<EpochEra>();
+			_spawnTween = value19.As<Tween>();
 		}
-		if (info.TryGetProperty(PropertyName.eraPosition, out var value20))
+		if (info.TryGetProperty(PropertyName._hoverTween, out var value20))
 		{
-			eraPosition = value20.As<int>();
-		}
-		if (info.TryGetProperty(PropertyName._glowTween, out var value21))
-		{
-			_glowTween = value21.As<Tween>();
-		}
-		if (info.TryGetProperty(PropertyName._spawnTween, out var value22))
-		{
-			_spawnTween = value22.As<Tween>();
-		}
-		if (info.TryGetProperty(PropertyName._hoverTween, out var value23))
-		{
-			_hoverTween = value23.As<Tween>();
+			_hoverTween = value20.As<Tween>();
 		}
 	}
 }

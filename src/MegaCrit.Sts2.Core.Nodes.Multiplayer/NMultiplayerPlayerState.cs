@@ -189,6 +189,11 @@ public class NMultiplayerPlayerState : Control
 		public static readonly StringName _characterIcon = "_characterIcon";
 
 		/// <summary>
+		/// Cached name for the '_characterOutline' field.
+		/// </summary>
+		public static readonly StringName _characterOutline = "_characterOutline";
+
+		/// <summary>
 		/// Cached name for the '_nameplateLabel' field.
 		/// </summary>
 		public static readonly StringName _nameplateLabel = "_nameplateLabel";
@@ -329,6 +334,8 @@ public class NMultiplayerPlayerState : Control
 
 	private TextureRect _characterIcon;
 
+	private TextureRect _characterOutline;
+
 	private MegaLabel _nameplateLabel;
 
 	private HBoxContainer _topContainer;
@@ -393,6 +400,7 @@ public class NMultiplayerPlayerState : Control
 		_nameplateLabel = GetNode<MegaLabel>("%NameplateLabel");
 		_healthBar = GetNode<NHealthBar>("%HealthBar");
 		_characterIcon = GetNode<TextureRect>("%CharacterIcon");
+		_characterOutline = GetNode<TextureRect>("%CharacterOutline");
 		_turnEndIndicator = GetNode<TextureRect>("%TurnEndIndicator");
 		_disconnectedIndicator = GetNode<TextureRect>("%DisconnectedIndicator");
 		_networkProblemIndicator = GetNode<NMultiplayerNetworkProblemIndicator>("%NetworkProblemIndicator");
@@ -411,6 +419,7 @@ public class NMultiplayerPlayerState : Control
 		_cardCount = _cardContainer.GetNode<MegaLabel>("CardCount");
 		_selectionReticle.Visible = true;
 		_characterIcon.Texture = Player.Character.IconTexture;
+		_characterOutline.Texture = Player.Character.IconOutlineTexture;
 		_nameplateLabel.SetTextAutoSize(PlatformUtil.GetPlayerNameRaw(RunManager.Instance.NetService.Platform, Player.NetId));
 		_healthBar.SetCreature(Player.Creature);
 		_networkProblemIndicator.Initialize(Player.NetId);
@@ -441,10 +450,10 @@ public class NMultiplayerPlayerState : Control
 		CombatManager.Instance.TurnStarted += OnTurnStarted;
 		CombatManager.Instance.CombatSetUp += OnCombatSetUp;
 		CombatManager.Instance.CombatEnded += OnCombatEnded;
-		RunManager.Instance.FlavorSynchronizer.OnEndTurnPingReceived += OnPlayerEndTurnPing;
+		RunManager.Instance.FlavorSynchronizer.EndTurnPingReceived += OnPlayerEndTurnPing;
 		RunManager.Instance.InputSynchronizer.ScreenChanged += OnPlayerScreenChanged;
 		RunManager.Instance.MapSelectionSynchronizer.PlayerVoteChanged += OnPlayerVoteChanged;
-		RunManager.Instance.MapSelectionSynchronizer.PlayerVoteCancelled += RefreshPlayerReadyIndicator;
+		RunManager.Instance.MapSelectionSynchronizer.PlayerVoteCancelled += OnPlayerVoteCancelled;
 		RunManager.Instance.MapSelectionSynchronizer.PlayerVotesCleared += OnPlayerVotesCleared;
 		if (RunManager.Instance.RunLobby != null)
 		{
@@ -480,10 +489,10 @@ public class NMultiplayerPlayerState : Control
 		CombatManager.Instance.TurnStarted -= OnTurnStarted;
 		CombatManager.Instance.CombatSetUp -= OnCombatSetUp;
 		CombatManager.Instance.CombatEnded -= OnCombatEnded;
-		RunManager.Instance.FlavorSynchronizer.OnEndTurnPingReceived -= OnPlayerEndTurnPing;
+		RunManager.Instance.FlavorSynchronizer.EndTurnPingReceived -= OnPlayerEndTurnPing;
 		RunManager.Instance.InputSynchronizer.ScreenChanged -= OnPlayerScreenChanged;
 		RunManager.Instance.MapSelectionSynchronizer.PlayerVoteChanged -= OnPlayerVoteChanged;
-		RunManager.Instance.MapSelectionSynchronizer.PlayerVoteCancelled -= RefreshPlayerReadyIndicator;
+		RunManager.Instance.MapSelectionSynchronizer.PlayerVoteCancelled -= OnPlayerVoteCancelled;
 		RunManager.Instance.MapSelectionSynchronizer.PlayerVotesCleared -= OnPlayerVotesCleared;
 		if (RunManager.Instance.RunLobby != null)
 		{
@@ -830,6 +839,11 @@ public class NMultiplayerPlayerState : Control
 	}
 
 	private void OnPlayerVoteChanged(Player player, MapVote? _, MapVote? __)
+	{
+		RefreshPlayerReadyIndicator(player);
+	}
+
+	private void OnPlayerVoteCancelled(Player player, MapVote? _)
 	{
 		RefreshPlayerReadyIndicator(player);
 	}
@@ -1376,6 +1390,11 @@ public class NMultiplayerPlayerState : Control
 			_characterIcon = VariantUtils.ConvertTo<TextureRect>(in value);
 			return true;
 		}
+		if (name == PropertyName._characterOutline)
+		{
+			_characterOutline = VariantUtils.ConvertTo<TextureRect>(in value);
+			return true;
+		}
 		if (name == PropertyName._nameplateLabel)
 		{
 			_nameplateLabel = VariantUtils.ConvertTo<MegaLabel>(in value);
@@ -1513,6 +1532,11 @@ public class NMultiplayerPlayerState : Control
 			value = VariantUtils.CreateFrom(in _characterIcon);
 			return true;
 		}
+		if (name == PropertyName._characterOutline)
+		{
+			value = VariantUtils.CreateFrom(in _characterOutline);
+			return true;
+		}
 		if (name == PropertyName._nameplateLabel)
 		{
 			value = VariantUtils.CreateFrom(in _nameplateLabel);
@@ -1642,6 +1666,7 @@ public class NMultiplayerPlayerState : Control
 		List<PropertyInfo> list = new List<PropertyInfo>();
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._healthBar, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._characterIcon, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._characterOutline, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._nameplateLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._topContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._turnEndIndicator, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -1677,6 +1702,7 @@ public class NMultiplayerPlayerState : Control
 		info.AddProperty(PropertyName.Hitbox, Variant.From<NButton>(Hitbox));
 		info.AddProperty(PropertyName._healthBar, Variant.From(in _healthBar));
 		info.AddProperty(PropertyName._characterIcon, Variant.From(in _characterIcon));
+		info.AddProperty(PropertyName._characterOutline, Variant.From(in _characterOutline));
 		info.AddProperty(PropertyName._nameplateLabel, Variant.From(in _nameplateLabel));
 		info.AddProperty(PropertyName._topContainer, Variant.From(in _topContainer));
 		info.AddProperty(PropertyName._turnEndIndicator, Variant.From(in _turnEndIndicator));
@@ -1719,97 +1745,101 @@ public class NMultiplayerPlayerState : Control
 		{
 			_characterIcon = value3.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._nameplateLabel, out var value4))
+		if (info.TryGetProperty(PropertyName._characterOutline, out var value4))
 		{
-			_nameplateLabel = value4.As<MegaLabel>();
+			_characterOutline = value4.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._topContainer, out var value5))
+		if (info.TryGetProperty(PropertyName._nameplateLabel, out var value5))
 		{
-			_topContainer = value5.As<HBoxContainer>();
+			_nameplateLabel = value5.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._turnEndIndicator, out var value6))
+		if (info.TryGetProperty(PropertyName._topContainer, out var value6))
 		{
-			_turnEndIndicator = value6.As<TextureRect>();
+			_topContainer = value6.As<HBoxContainer>();
 		}
-		if (info.TryGetProperty(PropertyName._disconnectedIndicator, out var value7))
+		if (info.TryGetProperty(PropertyName._turnEndIndicator, out var value7))
 		{
-			_disconnectedIndicator = value7.As<TextureRect>();
+			_turnEndIndicator = value7.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._networkProblemIndicator, out var value8))
+		if (info.TryGetProperty(PropertyName._disconnectedIndicator, out var value8))
 		{
-			_networkProblemIndicator = value8.As<NMultiplayerNetworkProblemIndicator>();
+			_disconnectedIndicator = value8.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._selectionReticle, out var value9))
+		if (info.TryGetProperty(PropertyName._networkProblemIndicator, out var value9))
 		{
-			_selectionReticle = value9.As<NSelectionReticle>();
+			_networkProblemIndicator = value9.As<NMultiplayerNetworkProblemIndicator>();
 		}
-		if (info.TryGetProperty(PropertyName._locationIcon, out var value10))
+		if (info.TryGetProperty(PropertyName._selectionReticle, out var value10))
 		{
-			_locationIcon = value10.As<TextureRect>();
+			_selectionReticle = value10.As<NSelectionReticle>();
 		}
-		if (info.TryGetProperty(PropertyName._locationContainer, out var value11))
+		if (info.TryGetProperty(PropertyName._locationIcon, out var value11))
 		{
-			_locationContainer = value11.As<Control>();
+			_locationIcon = value11.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._energyContainer, out var value12))
+		if (info.TryGetProperty(PropertyName._locationContainer, out var value12))
 		{
-			_energyContainer = value12.As<Control>();
+			_locationContainer = value12.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._energyImage, out var value13))
+		if (info.TryGetProperty(PropertyName._energyContainer, out var value13))
 		{
-			_energyImage = value13.As<TextureRect>();
+			_energyContainer = value13.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._energyCount, out var value14))
+		if (info.TryGetProperty(PropertyName._energyImage, out var value14))
 		{
-			_energyCount = value14.As<MegaLabel>();
+			_energyImage = value14.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._starContainer, out var value15))
+		if (info.TryGetProperty(PropertyName._energyCount, out var value15))
 		{
-			_starContainer = value15.As<Control>();
+			_energyCount = value15.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._starCount, out var value16))
+		if (info.TryGetProperty(PropertyName._starContainer, out var value16))
 		{
-			_starCount = value16.As<MegaLabel>();
+			_starContainer = value16.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._cardContainer, out var value17))
+		if (info.TryGetProperty(PropertyName._starCount, out var value17))
 		{
-			_cardContainer = value17.As<Control>();
+			_starCount = value17.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._cardImage, out var value18))
+		if (info.TryGetProperty(PropertyName._cardContainer, out var value18))
 		{
-			_cardImage = value18.As<NTinyCard>();
+			_cardContainer = value18.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._cardCount, out var value19))
+		if (info.TryGetProperty(PropertyName._cardImage, out var value19))
 		{
-			_cardCount = value19.As<MegaLabel>();
+			_cardImage = value19.As<NTinyCard>();
 		}
-		if (info.TryGetProperty(PropertyName._locationIconTween, out var value20))
+		if (info.TryGetProperty(PropertyName._cardCount, out var value20))
 		{
-			_locationIconTween = value20.As<Tween>();
+			_cardCount = value20.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._isMouseOver, out var value21))
+		if (info.TryGetProperty(PropertyName._locationIconTween, out var value21))
 		{
-			_isMouseOver = value21.As<bool>();
+			_locationIconTween = value21.As<Tween>();
 		}
-		if (info.TryGetProperty(PropertyName._isCreatureHovered, out var value22))
+		if (info.TryGetProperty(PropertyName._isMouseOver, out var value22))
 		{
-			_isCreatureHovered = value22.As<bool>();
+			_isMouseOver = value22.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._isHighlighted, out var value23))
+		if (info.TryGetProperty(PropertyName._isCreatureHovered, out var value23))
 		{
-			_isHighlighted = value23.As<bool>();
+			_isCreatureHovered = value23.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._focusedWhileTargeting, out var value24))
+		if (info.TryGetProperty(PropertyName._isHighlighted, out var value24))
 		{
-			_focusedWhileTargeting = value24.As<bool>();
+			_isHighlighted = value24.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._nextTweenTime, out var value25))
+		if (info.TryGetProperty(PropertyName._focusedWhileTargeting, out var value25))
 		{
-			_nextTweenTime = value25.As<ulong>();
+			_focusedWhileTargeting = value25.As<bool>();
 		}
-		if (info.TryGetProperty(PropertyName._currentLocationIcon, out var value26))
+		if (info.TryGetProperty(PropertyName._nextTweenTime, out var value26))
 		{
-			_currentLocationIcon = value26.As<Texture2D>();
+			_nextTweenTime = value26.As<ulong>();
+		}
+		if (info.TryGetProperty(PropertyName._currentLocationIcon, out var value27))
+		{
+			_currentLocationIcon = value27.As<Texture2D>();
 		}
 	}
 }

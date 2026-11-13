@@ -36,6 +36,22 @@ public class Ps4Config : ControllerConfig
 			Controller.dPadRight
 		},
 		{
+			"Alt_Up",
+			Controller.rStickUp
+		},
+		{
+			"Alt_Down",
+			Controller.rStickDown
+		},
+		{
+			"Alt_Left",
+			Controller.rStickLeft
+		},
+		{
+			"Alt_Right",
+			Controller.rStickRight
+		},
+		{
 			"Select",
 			Controller.faceButtonSouth
 		},

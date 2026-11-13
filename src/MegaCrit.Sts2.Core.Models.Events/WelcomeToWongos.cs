@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Gold;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Relics;
@@ -10,8 +11,10 @@ using MegaCrit.Sts2.Core.Factories;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.Relics;
+using MegaCrit.Sts2.Core.Nodes.Audio;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
+using MegaCrit.Sts2.Core.TestSupport;
 
 namespace MegaCrit.Sts2.Core.Models.Events;
 
@@ -36,6 +39,14 @@ public sealed class WelcomeToWongos : EventModel
 	private const string _totalWongoBadgeAmountKey = "TotalWongoBadgeAmount";
 
 	private const string _randomRelicKey = "RandomRelic";
+
+	private const string _wongWelcomeSfx = "event:/sfx/npcs/events/event_vo_wongos_welcome";
+
+	private const string _wongoLeaveSfx = "event:/sfx/npcs/events/event_vo_wongos_leave";
+
+	private const string _wongoBuySfx = "event:/sfx/npcs/events/event_vo_wongos_buy";
+
+	private const string _wongoBgm = "event:/music/event_wongos";
 
 	private RelicModel? _featuredItem;
 
@@ -132,6 +143,7 @@ public sealed class WelcomeToWongos : EventModel
 
 	private async Task BuyBargainBin()
 	{
+		SfxCmd.Play("event:/sfx/npcs/events/event_vo_wongos_buy");
 		await PlayerCmd.LoseGold(DynamicVars["BargainBinCost"].BaseValue, Owner, GoldLossType.Spent);
 		RelicModel relic = RelicFactory.PullNextRelicFromFront(Owner, RelicRarity.Common, (RelicModel r) => r.IsAllowedInShops).ToMutable();
 		await RelicCmd.Obtain(relic, Owner);
@@ -140,6 +152,7 @@ public sealed class WelcomeToWongos : EventModel
 
 	private async Task BuyMysteryBox()
 	{
+		SfxCmd.Play("event:/sfx/npcs/events/event_vo_wongos_buy");
 		await PlayerCmd.LoseGold(DynamicVars["MysteryBoxCost"].BaseValue, Owner, GoldLossType.Spent);
 		await RelicCmd.Obtain<WongosMysteryTicket>(Owner);
 		SetEventFinished(await CheckObtainWongoBadge(8));
@@ -147,6 +160,7 @@ public sealed class WelcomeToWongos : EventModel
 
 	private async Task BuyFeaturedItem()
 	{
+		SfxCmd.Play("event:/sfx/npcs/events/event_vo_wongos_buy");
 		await PlayerCmd.LoseGold(DynamicVars["FeaturedItemCost"].BaseValue, Owner, GoldLossType.Spent);
 		await RelicCmd.Obtain(FeaturedItem.ToMutable(), Owner);
 		SetEventFinished(await CheckObtainWongoBadge(16));
@@ -162,6 +176,23 @@ public sealed class WelcomeToWongos : EventModel
 			CardCmd.Preview(cardModel);
 			await Cmd.CustomScaledWait(0.5f, 1.2f);
 		}
+		SfxCmd.Play("event:/sfx/npcs/events/event_vo_wongos_leave");
 		SetEventFinished(L10NLookup("WELCOME_TO_WONGOS.pages.LEAVE.description"));
+	}
+
+	public override void OnRoomEnter()
+	{
+		base.OnRoomEnter();
+		if (LocalContext.IsMe(Owner) && TestMode.IsOff)
+		{
+			NRunMusicController.Instance?.PlayCustomMusic("event:/music/event_wongos");
+		}
+		SfxCmd.Play("event:/sfx/npcs/events/event_vo_wongos_welcome");
+	}
+
+	protected override void OnEventFinished()
+	{
+		base.OnEventFinished();
+		NRunMusicController.Instance?.StopCustomMusic();
 	}
 }

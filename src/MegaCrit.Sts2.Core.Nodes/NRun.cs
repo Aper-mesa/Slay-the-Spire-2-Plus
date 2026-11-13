@@ -4,6 +4,7 @@ using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.Entities.Save;
 using MegaCrit.Sts2.Core.Multiplayer.Game.PeerInput;
 using MegaCrit.Sts2.Core.Nodes.Audio;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -15,113 +16,51 @@ using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 using MegaCrit.Sts2.Core.Plus;
 using MegaCrit.Sts2.Core.Runs;
-using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.addons.mega_text;
 
 namespace MegaCrit.Sts2.Core.Nodes;
 
-/// <summary>
-/// The root Node which contains reference to all other game system Nodes in a given run.
-/// For example: Run.Node.TopBar.Settings can get you access to the TopBarSettingsButton node.
-/// </summary>
 [ScriptPath("res://src/Core/Nodes/NRun.cs")]
 public class NRun : Control
 {
-	/// <summary>
-	/// Cached StringNames for the methods contained in this class, for fast lookup.
-	/// </summary>
 	public new class MethodName : Control.MethodName
 	{
-		/// <summary>
-		/// Cached name for the '_Ready' method.
-		/// </summary>
 		public new static readonly StringName _Ready = "_Ready";
 
-		/// <summary>
-		/// Cached name for the '_Process' method.
-		/// </summary>
 		public new static readonly StringName _Process = "_Process";
 
-		/// <summary>
-		/// Cached name for the '_Notification' method.
-		/// </summary>
 		public new static readonly StringName _Notification = "_Notification";
 
-		/// <summary>
-		/// Cached name for the 'SetCurrentRoom' method.
-		/// </summary>
 		public static readonly StringName SetCurrentRoom = "SetCurrentRoom";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the properties and fields contained in this class, for fast lookup.
-	/// </summary>
 	public new class PropertyName : Control.PropertyName
 	{
-		/// <summary>
-		/// Cached name for the 'CombatRoom' property.
-		/// </summary>
 		public static readonly StringName CombatRoom = "CombatRoom";
 
-		/// <summary>
-		/// Cached name for the 'TreasureRoom' property.
-		/// </summary>
 		public static readonly StringName TreasureRoom = "TreasureRoom";
 
-		/// <summary>
-		/// Cached name for the 'EventRoom' property.
-		/// </summary>
 		public static readonly StringName EventRoom = "EventRoom";
 
-		/// <summary>
-		/// Cached name for the 'RestSiteRoom' property.
-		/// </summary>
 		public static readonly StringName RestSiteRoom = "RestSiteRoom";
 
-		/// <summary>
-		/// Cached name for the 'MapRoom' property.
-		/// </summary>
 		public static readonly StringName MapRoom = "MapRoom";
 
-		/// <summary>
-		/// Cached name for the 'MerchantRoom' property.
-		/// </summary>
 		public static readonly StringName MerchantRoom = "MerchantRoom";
 
-		/// <summary>
-		/// Cached name for the 'GlobalUi' property.
-		/// </summary>
 		public static readonly StringName GlobalUi = "GlobalUi";
 
-		/// <summary>
-		/// Cached name for the 'RunMusicController' property.
-		/// </summary>
 		public static readonly StringName RunMusicController = "RunMusicController";
 
-		/// <summary>
-		/// Cached name for the '_cardScene' field.
-		/// </summary>
 		public static readonly StringName _cardScene = "_cardScene";
 
-		/// <summary>
-		/// Cached name for the '_roomContainer' field.
-		/// </summary>
 		public static readonly StringName _roomContainer = "_roomContainer";
 
-		/// <summary>
-		/// Cached name for the '_testButton' field.
-		/// </summary>
 		public static readonly StringName _testButton = "_testButton";
 
-		/// <summary>
-		/// Cached name for the '_seedLabel' field.
-		/// </summary>
 		public static readonly StringName _seedLabel = "_seedLabel";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the signals contained in this class, for fast lookup.
-	/// </summary>
 	public new class SignalName : Control.SignalName
 	{
 	}
@@ -220,18 +159,13 @@ public class NRun : Control
 		}
 	}
 
-	public void ShowGameOverScreen(SerializableRun serializableRun)
+	public void ShowGameOverScreen(PostRunProgressUpdateResult result)
 	{
 		NCapstoneContainer.Instance.Close();
 		NMapScreen.Instance.Close();
-		NOverlayStack.Instance.Push(NGameOverScreen.Create(_state, serializableRun));
+		NOverlayStack.Instance.Push(NGameOverScreen.Create(_state, result));
 	}
 
-	/// <summary>
-	/// Get the method information for all the methods declared in this class.
-	/// This method is used by Godot to register the available methods in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
@@ -252,7 +186,6 @@ public class NRun : Control
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool InvokeGodotClassMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
 	{
@@ -283,7 +216,6 @@ public class NRun : Control
 		return base.InvokeGodotClassMethod(in method, args, out ret);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
@@ -306,7 +238,6 @@ public class NRun : Control
 		return base.HasGodotClassMethod(in method);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool SetGodotClassPropertyValue(in godot_string_name name, in godot_variant value)
 	{
@@ -343,7 +274,6 @@ public class NRun : Control
 		return base.SetGodotClassPropertyValue(in name, in value);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
@@ -410,11 +340,6 @@ public class NRun : Control
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
-	/// <summary>
-	/// Get the property information for all the properties declared in this class.
-	/// This method is used by Godot to register the available properties in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<PropertyInfo> GetGodotPropertyList()
 	{
@@ -434,7 +359,6 @@ public class NRun : Control
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void SaveGodotObjectData(GodotSerializationInfo info)
 	{
@@ -447,7 +371,6 @@ public class NRun : Control
 		info.AddProperty(PropertyName._seedLabel, Variant.From(in _seedLabel));
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void RestoreGodotObjectData(GodotSerializationInfo info)
 	{

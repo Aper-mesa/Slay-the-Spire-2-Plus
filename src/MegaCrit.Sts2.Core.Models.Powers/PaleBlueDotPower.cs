@@ -69,4 +69,14 @@ public sealed class PaleBlueDotPower : PowerModel
 		InvokeDisplayAmountChanged();
 		return Task.CompletedTask;
 	}
+
+	public override Task AfterSideTurnStart(CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState)
+	{
+		if (!participants.Contains(Owner))
+		{
+			return Task.CompletedTask;
+		}
+		InvokeDisplayAmountChanged();
+		return Task.CompletedTask;
+	}
 }

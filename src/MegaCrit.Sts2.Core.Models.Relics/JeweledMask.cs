@@ -31,7 +31,7 @@ public sealed class JeweledMask : RelicModel
 			}
 			CardModel cardModel = player.RunState.Rng.CombatCardSelection.NextItem(list);
 			Flash();
-			cardModel.SetToFreeThisTurn();
+			cardModel.SetToFreeThisCombat();
 			await CardPileCmd.Add(cardModel, PileType.Hand);
 		}
 	}

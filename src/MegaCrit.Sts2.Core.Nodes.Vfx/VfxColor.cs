@@ -16,5 +16,6 @@ public enum VfxColor
 	Gold,
 	Orange,
 	Swamp,
-	DarkGray
+	DarkGray,
+	Fool
 }

@@ -11,6 +11,7 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Vfx.Utilities;
@@ -98,9 +99,9 @@ public class NThoughtBubbleVfx : Control
 		public static readonly StringName _texture = "_texture";
 
 		/// <summary>
-		/// Cached name for the '_tween' field.
+		/// Cached name for the '_fadeInTween' field.
 		/// </summary>
-		public static readonly StringName _tween = "_tween";
+		public static readonly StringName _fadeInTween = "_fadeInTween";
 	}
 
 	/// <summary>
@@ -138,11 +139,18 @@ public class NThoughtBubbleVfx : Control
 
 	private double? _secondsToDisplay;
 
-	private Tween? _tween;
+	private Tween? _fadeInTween;
+
+	private readonly OwnerFreeingTween _fadeOut;
 
 	private CancellationTokenSource? _cts;
 
 	public static IEnumerable<string> AssetPaths => new _003C_003Ez__ReadOnlySingleElementList<string>("res://scenes/vfx/vfx_thought_bubble.tscn");
+
+	public NThoughtBubbleVfx()
+	{
+		_fadeOut = new OwnerFreeingTween(this);
+	}
 
 	/// <summary>
 	/// Creates a thought bubble given a creature. Use this when you want creatures to think out loud during combat!
@@ -155,9 +163,9 @@ public class NThoughtBubbleVfx : Control
 		}
 		NThoughtBubbleVfx nThoughtBubbleVfx = CreateInternal(text, null, speaker.Side switch
 		{
-			CombatSide.Player => DialogueSide.Left, 
-			CombatSide.Enemy => DialogueSide.Right, 
-			_ => throw new ArgumentOutOfRangeException(), 
+			CombatSide.Player => DialogueSide.Left,
+			CombatSide.Enemy => DialogueSide.Right,
+			_ => throw new ArgumentOutOfRangeException(),
 		}, secondsToDisplay);
 		nThoughtBubbleVfx._startPos = GetCreatureSpeechPosition(speaker);
 		return nThoughtBubbleVfx;
@@ -192,6 +200,7 @@ public class NThoughtBubbleVfx : Control
 		_contents = GetNode<Node2D>("%Contents");
 		_container = GetNode<Control>("%Container");
 		_label = GetNode<MegaRichTextLabel>("%Text");
+		_label.ApplyRtlText();
 		_textureRect = GetNode<TextureRect>("%Image");
 		_tail = GetNode<Node2D>("%Tail");
 		if (_startPos.HasValue)
@@ -208,7 +217,7 @@ public class NThoughtBubbleVfx : Control
 
 	private async Task AnimateThoughtBubble()
 	{
-		_tween = CreateTween().SetParallel();
+		_fadeInTween = CreateTween().SetParallel();
 		float value = 30f * ((_side == DialogueSide.Left) ? (-1f) : 1f);
 		if (_text != null)
 		{
@@ -222,10 +231,10 @@ public class NThoughtBubbleVfx : Control
 		_textureRect.Visible = _texture != null;
 		Scale = Vector2.One * 0.75f;
 		Modulate = StsColors.transparentWhite;
-		_tween.TweenProperty(_label, "visible_ratio", 1f, 0.4).From(0f);
-		_tween.TweenProperty(_textureRect, "modulate:a", 1f, 0.4).From(0f);
-		_tween.TweenProperty(this, "modulate:a", 1f, 0.25).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
-		_tween.TweenProperty(this, "scale", Vector2.One, 0.25).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Back);
+		_fadeInTween.TweenProperty(_label, "visible_ratio", 1f, 0.4).From(0f);
+		_fadeInTween.TweenProperty(_textureRect, "modulate:a", 1f, 0.4).From(0f);
+		_fadeInTween.TweenProperty(this, "modulate:a", 1f, 0.25).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
+		_fadeInTween.TweenProperty(this, "scale", Vector2.One, 0.25).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Back);
 		if (_secondsToDisplay.HasValue)
 		{
 			double num = Math.Max(_secondsToDisplay.Value, 1.0);
@@ -237,7 +246,7 @@ public class NThoughtBubbleVfx : Control
 
 	public override void _ExitTree()
 	{
-		_tween?.Kill();
+		_fadeInTween?.Kill();
 		_cts?.Cancel();
 	}
 
@@ -245,11 +254,11 @@ public class NThoughtBubbleVfx : Control
 	{
 		if (GodotObject.IsInstanceValid(this))
 		{
-			_tween?.Kill();
-			_tween = CreateTween();
-			_tween.TweenProperty(this, "modulate:a", 0f, 0.4).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Sine);
-			await _tween.AwaitFinished(this);
-			this.QueueFreeSafely();
+			_fadeInTween?.Kill();
+			await _fadeOut.Play((Tween tween) =>
+			{
+				tween.TweenProperty(this, "modulate:a", 0f, 0.4).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Sine);
+			});
 		}
 	}
 
@@ -413,9 +422,9 @@ public class NThoughtBubbleVfx : Control
 			_texture = VariantUtils.ConvertTo<Texture2D>(in value);
 			return true;
 		}
-		if (name == PropertyName._tween)
+		if (name == PropertyName._fadeInTween)
 		{
-			_tween = VariantUtils.ConvertTo<Tween>(in value);
+			_fadeInTween = VariantUtils.ConvertTo<Tween>(in value);
 			return true;
 		}
 		return base.SetGodotClassPropertyValue(in name, in value);
@@ -470,9 +479,9 @@ public class NThoughtBubbleVfx : Control
 			value = VariantUtils.CreateFrom(in _texture);
 			return true;
 		}
-		if (name == PropertyName._tween)
+		if (name == PropertyName._fadeInTween)
 		{
-			value = VariantUtils.CreateFrom(in _tween);
+			value = VariantUtils.CreateFrom(in _fadeInTween);
 			return true;
 		}
 		return base.GetGodotClassPropertyValue(in name, out value);
@@ -496,7 +505,7 @@ public class NThoughtBubbleVfx : Control
 		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._side, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.String, PropertyName._text, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._texture, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._tween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._fadeInTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
 
@@ -514,7 +523,7 @@ public class NThoughtBubbleVfx : Control
 		info.AddProperty(PropertyName._side, Variant.From(in _side));
 		info.AddProperty(PropertyName._text, Variant.From(in _text));
 		info.AddProperty(PropertyName._texture, Variant.From(in _texture));
-		info.AddProperty(PropertyName._tween, Variant.From(in _tween));
+		info.AddProperty(PropertyName._fadeInTween, Variant.From(in _fadeInTween));
 	}
 
 	/// <inheritdoc />
@@ -558,9 +567,9 @@ public class NThoughtBubbleVfx : Control
 		{
 			_texture = value9.As<Texture2D>();
 		}
-		if (info.TryGetProperty(PropertyName._tween, out var value10))
+		if (info.TryGetProperty(PropertyName._fadeInTween, out var value10))
 		{
-			_tween = value10.As<Tween>();
+			_fadeInTween = value10.As<Tween>();
 		}
 	}
 }

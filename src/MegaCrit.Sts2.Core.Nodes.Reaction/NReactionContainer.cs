@@ -104,7 +104,7 @@ public class NReactionContainer : Control
 	{
 		NReaction nReaction = NReaction.Create(tex);
 		this.AddChildSafely(nReaction);
-		nReaction.GlobalPosition = position - nReaction.Size / 2f;
+		nReaction.GlobalPosition = position - nReaction.Size * 0.5f;
 		nReaction.BeginAnim();
 		_synchronizer?.SendLocalReaction(nReaction.Type, position);
 	}
@@ -113,7 +113,7 @@ public class NReactionContainer : Control
 	{
 		NReaction nReaction = NReaction.Create(type);
 		this.AddChildSafely(nReaction);
-		nReaction.GlobalPosition = position - nReaction.Size / 2f;
+		nReaction.GlobalPosition = position - nReaction.Size * 0.5f;
 		nReaction.BeginAnim();
 	}
 

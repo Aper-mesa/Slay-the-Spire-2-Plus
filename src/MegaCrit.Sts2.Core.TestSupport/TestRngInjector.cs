@@ -7,7 +7,7 @@ namespace MegaCrit.Sts2.Core.TestSupport;
 
 public static class TestRngInjector
 {
-	private static RelicModel? _relicOverride;
+	private static readonly List<RelicModel> _relicOverrides = new List<RelicModel>();
 
 	private static RelicRarity? _relicRarityOverride;
 
@@ -15,16 +15,21 @@ public static class TestRngInjector
 
 	private static List<CardModel>? _combatCardGenerationOverride;
 
-	public static void SetRelicOverride<T>() where T : RelicModel
+	public static void AddRelicOverride<T>() where T : RelicModel
 	{
-		_relicOverride = ModelDb.Relic<T>();
+		_relicOverrides.Add(ModelDb.Relic<T>());
 	}
 
 	public static RelicModel? ConsumeRelicOverride()
 	{
-		RelicModel relicOverride = _relicOverride;
-		_relicOverride = null;
-		return relicOverride;
+		if (_relicOverrides.Count > 0)
+		{
+			List<RelicModel> relicOverrides = _relicOverrides;
+			RelicModel result = relicOverrides[relicOverrides.Count - 1];
+			_relicOverrides.RemoveAt(_relicOverrides.Count - 1);
+			return result;
+		}
+		return null;
 	}
 
 	public static void SetRelicRarityOverride(RelicRarity relicRarity)
@@ -75,7 +80,7 @@ public static class TestRngInjector
 
 	public static void Cleanup()
 	{
-		_relicOverride = null;
+		_relicOverrides.Clear();
 		_relicRarityOverride = null;
 		_initialShuffleOverride = null;
 		_combatCardGenerationOverride = null;

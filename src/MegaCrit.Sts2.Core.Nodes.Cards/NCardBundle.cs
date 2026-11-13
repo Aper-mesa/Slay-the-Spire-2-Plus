@@ -167,7 +167,7 @@ public class NCardBundle : Control
 			_cardHolder = GetNode<Control>("%Cards");
 			_cardHolder.AddChildSafely(nCard);
 			nCard.UpdateVisuals(PileType.None, CardPreviewMode.Normal);
-			nCard.Position += new Vector2(-1f, 1f) * 45f * ((float)i - (float)Bundle.Count / 2f);
+			nCard.Position += new Vector2(-1f, 1f) * 45f * ((float)i - (float)Bundle.Count * 0.5f);
 			float num = 0.5f + (float)i / (float)(Bundle.Count - 1) * 0.5f;
 			nCard.Modulate = new Color(num, num, num);
 			_cardNodes.Add(nCard);
@@ -198,7 +198,7 @@ public class NCardBundle : Control
 			_cardHolder.AddChildSafely(nCard);
 			nCard.GlobalPosition = globalPosition;
 			nCard.UpdateVisuals(PileType.None, CardPreviewMode.Normal);
-			_cardTween.TweenProperty(nCard, "position", new Vector2(-1f, 1f) * 45f * ((float)i - (float)_cardNodes.Count / 2f), 0.4000000059604645).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
+			_cardTween.TweenProperty(nCard, "position", new Vector2(-1f, 1f) * 45f * ((float)i - (float)_cardNodes.Count * 0.5f), 0.4000000059604645).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
 			float num = 0.5f + (float)i / (float)(_cardNodes.Count - 1) * 0.5f;
 			_cardTween.TweenProperty(nCard, "modulate", new Color(num, num, num), 0.4000000059604645);
 		}

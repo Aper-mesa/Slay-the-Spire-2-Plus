@@ -39,21 +39,21 @@ public static class INetMessageSubtypes
 
 	private static readonly Type _t12 = typeof(HookActionEnqueuedMessage);
 
-	private static readonly Type _t13 = typeof(MerchantCardRemovalMessage);
+	private static readonly Type _t13 = typeof(PlayerChoiceMessage);
 
-	private static readonly Type _t14 = typeof(PlayerChoiceMessage);
+	private static readonly Type _t14 = typeof(RequestEnqueueActionMessage);
 
-	private static readonly Type _t15 = typeof(RequestEnqueueActionMessage);
+	private static readonly Type _t15 = typeof(RequestEnqueueHookActionMessage);
 
-	private static readonly Type _t16 = typeof(RequestEnqueueHookActionMessage);
+	private static readonly Type _t16 = typeof(RequestResumeActionAfterPlayerChoiceMessage);
 
-	private static readonly Type _t17 = typeof(RequestResumeActionAfterPlayerChoiceMessage);
+	private static readonly Type _t17 = typeof(ResumeActionAfterPlayerChoiceMessage);
 
-	private static readonly Type _t18 = typeof(ResumeActionAfterPlayerChoiceMessage);
+	private static readonly Type _t18 = typeof(RunAbandonedMessage);
 
-	private static readonly Type _t19 = typeof(RunAbandonedMessage);
+	private static readonly Type _t19 = typeof(GoldLostMessage);
 
-	private static readonly Type _t20 = typeof(GoldLostMessage);
+	private static readonly Type _t20 = typeof(MerchantEntryPurchasedMessage);
 
 	private static readonly Type _t21 = typeof(OptionIndexChosenMessage);
 
@@ -101,45 +101,47 @@ public static class INetMessageSubtypes
 
 	private static readonly Type _t43 = typeof(LobbyBeginRunMessage);
 
-	private static readonly Type _t44 = typeof(LobbyModifiersChangedMessage);
+	private static readonly Type _t44 = typeof(LobbyGameModeChangedMessage);
 
-	private static readonly Type _t45 = typeof(LobbyPlayerChangedCharacterMessage);
+	private static readonly Type _t45 = typeof(LobbyModifiersChangedMessage);
 
-	private static readonly Type _t46 = typeof(LobbyPlayerSetReadyMessage);
+	private static readonly Type _t46 = typeof(LobbyPlayerChangedCharacterMessage);
 
-	private static readonly Type _t47 = typeof(LobbySeedChangedMessage);
+	private static readonly Type _t47 = typeof(LobbyPlayerSetReadyMessage);
 
-	private static readonly Type _t48 = typeof(PlayerJoinedMessage);
+	private static readonly Type _t48 = typeof(LobbySeedChangedMessage);
 
-	private static readonly Type _t49 = typeof(PlayerLeftMessage);
+	private static readonly Type _t49 = typeof(PlayerJoinedMessage);
 
-	private static readonly Type _t50 = typeof(PlayerReconnectedMessage);
+	private static readonly Type _t50 = typeof(PlayerLeftMessage);
 
-	private static readonly Type _t51 = typeof(PlayerRejoinedMessage);
+	private static readonly Type _t51 = typeof(PlayerReconnectedMessage);
 
-	private static readonly Type _t52 = typeof(PlusSlInitiateMessage);
+	private static readonly Type _t52 = typeof(PlayerRejoinedMessage);
 
-	private static readonly Type _t53 = typeof(PlusSlInitiateResponseMessage);
+	private static readonly Type _t53 = typeof(PlusSlInitiateMessage);
 
-	private static readonly Type _t54 = typeof(PlusSlExecuteMessage);
+	private static readonly Type _t54 = typeof(PlusSlInitiateResponseMessage);
 
-	private static readonly Type _t55 = typeof(PlusSlCancelMessage);
+	private static readonly Type _t55 = typeof(PlusSlExecuteMessage);
 
-	private static readonly Type _t56 = typeof(PlusSlSetupReadyMessage);
+	private static readonly Type _t56 = typeof(PlusSlCancelMessage);
 
-	private static readonly Type _t57 = typeof(PlusSlRunBeginMessage);
+	private static readonly Type _t57 = typeof(PlusSlSetupReadyMessage);
 
-	private static readonly Type[] _subtypes = new Type[58]
+	private static readonly Type _t58 = typeof(PlusSlRunBeginMessage);
+
+	private static readonly Type[] _subtypes = new Type[59]
 	{
 		_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9,
 		_t10, _t11, _t12, _t13, _t14, _t15, _t16, _t17, _t18, _t19,
 		_t20, _t21, _t22, _t23, _t24, _t25, _t26, _t27, _t28, _t29,
 		_t30, _t31, _t32, _t33, _t34, _t35, _t36, _t37, _t38, _t39,
 		_t40, _t41, _t42, _t43, _t44, _t45, _t46, _t47, _t48, _t49,
-		_t50, _t51, _t52, _t53, _t54, _t55, _t56, _t57
+		_t50, _t51, _t52, _t53, _t54, _t55, _t56, _t57, _t58
 	};
 
-	public static int Count => 58;
+	public static int Count => 59;
 
 	public static IReadOnlyList<Type> All => _subtypes;
 

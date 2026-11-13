@@ -77,6 +77,11 @@ public class NDropdown : NClickableControl
 	public new class PropertyName : NClickableControl.PropertyName
 	{
 		/// <summary>
+		/// Cached name for the 'IsOpen' property.
+		/// </summary>
+		public static readonly StringName IsOpen = "IsOpen";
+
+		/// <summary>
 		/// Cached name for the '_dropdownContainer' field.
 		/// </summary>
 		public static readonly StringName _dropdownContainer = "_dropdownContainer";
@@ -132,6 +137,8 @@ public class NDropdown : NClickableControl
 	private bool _isHovered;
 
 	private bool _isOpen;
+
+	protected bool IsOpen => _isOpen;
 
 	public override void _Ready()
 	{
@@ -420,6 +427,11 @@ public class NDropdown : NClickableControl
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
+		if (name == PropertyName.IsOpen)
+		{
+			value = VariantUtils.CreateFrom<bool>(IsOpen);
+			return true;
+		}
 		if (name == PropertyName._dropdownContainer)
 		{
 			value = VariantUtils.CreateFrom(in _dropdownContainer);
@@ -474,6 +486,7 @@ public class NDropdown : NClickableControl
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._currentOptionHighlight, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isHovered, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isOpen, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName.IsOpen, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
 

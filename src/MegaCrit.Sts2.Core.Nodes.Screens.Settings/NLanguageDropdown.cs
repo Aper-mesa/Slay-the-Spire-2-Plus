@@ -28,6 +28,11 @@ public class NLanguageDropdown : NSettingsDropdown
 		public new static readonly StringName _Ready = "_Ready";
 
 		/// <summary>
+		/// Cached name for the 'OnRelease' method.
+		/// </summary>
+		public new static readonly StringName OnRelease = "OnRelease";
+
+		/// <summary>
 		/// Cached name for the 'PopulateOptions' method.
 		/// </summary>
 		public static readonly StringName PopulateOptions = "PopulateOptions";
@@ -112,15 +117,27 @@ public class NLanguageDropdown : NSettingsDropdown
 		_currentOptionLabel.SetTextAutoSize(GetLanguageNameForCode(CurrentLanguage));
 	}
 
-	private void PopulateOptions()
+	protected override void OnRelease()
+	{
+		if (!IsOpen)
+		{
+			PopulateOptions(Input.IsKeyPressed(Key.Ctrl) || Input.IsKeyPressed(Key.Alt));
+		}
+		base.OnRelease();
+	}
+
+	private void PopulateOptions(bool includeHidden = false)
 	{
 		ClearDropdownItems();
 		foreach (string language in LocManager.Languages)
 		{
-			NLanguageDropdownItem nLanguageDropdownItem = _dropdownItemScene.Instantiate<NLanguageDropdownItem>(PackedScene.GenEditState.Disabled);
-			_dropdownItems.AddChildSafely(nLanguageDropdownItem);
-			nLanguageDropdownItem.Connect(NDropdownItem.SignalName.Selected, Callable.From<NDropdownItem>(OnDropdownItemSelected));
-			nLanguageDropdownItem.Init(language);
+			if (includeHidden || !(language != CurrentLanguage) || !LocManager.IsHiddenLanguage(language))
+			{
+				NLanguageDropdownItem nLanguageDropdownItem = _dropdownItemScene.Instantiate<NLanguageDropdownItem>(PackedScene.GenEditState.Disabled);
+				_dropdownItems.AddChildSafely(nLanguageDropdownItem);
+				nLanguageDropdownItem.Connect(NDropdownItem.SignalName.Selected, Callable.From<NDropdownItem>(OnDropdownItemSelected));
+				nLanguageDropdownItem.Init(language);
+			}
 		}
 		_dropdownItems.GetParent<NDropdownContainer>().RefreshLayout();
 	}
@@ -156,9 +173,13 @@ public class NLanguageDropdown : NSettingsDropdown
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(4);
+		List<MethodInfo> list = new List<MethodInfo>(5);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName.PopulateOptions, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.OnRelease, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.PopulateOptions, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Bool, "includeHidden", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
 		list.Add(new MethodInfo(MethodName.OnDropdownItemSelected, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "nDropdownItem", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
@@ -180,9 +201,15 @@ public class NLanguageDropdown : NSettingsDropdown
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.PopulateOptions && args.Count == 0)
+		if (method == MethodName.OnRelease && args.Count == 0)
 		{
-			PopulateOptions();
+			OnRelease();
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.PopulateOptions && args.Count == 1)
+		{
+			PopulateOptions(VariantUtils.ConvertTo<bool>(in args[0]));
 			ret = default;
 			return true;
 		}
@@ -217,6 +244,10 @@ public class NLanguageDropdown : NSettingsDropdown
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
 		if (method == MethodName._Ready)
+		{
+			return true;
+		}
+		if (method == MethodName.OnRelease)
 		{
 			return true;
 		}

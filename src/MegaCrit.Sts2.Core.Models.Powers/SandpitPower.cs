@@ -118,7 +118,7 @@ public sealed class SandpitPower : PowerModel
 			}
 			if (allAffectedCreature2.IsPlayer || allAffectedCreature2.Monster is Osty)
 			{
-				await CreatureCmd.Kill(allAffectedCreature2, force: true);
+				await CreatureCmd.Kill(allAffectedCreature2, null, force: true);
 			}
 		}
 	}

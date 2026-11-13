@@ -44,6 +44,10 @@ public enum PlayerTurnPhase
 	/// Examples:
 	/// - <see cref="T:MegaCrit.Sts2.Core.Models.Cards.IAmInvincible" />
 	/// - <see cref="T:MegaCrit.Sts2.Core.Models.Powers.StampedePower" />
+	///
+	/// CombatManager waits for every player's AutoPostPlay hooks to complete before moving them to <see cref="F:MegaCrit.Sts2.Core.Combat.PlayerTurnPhase.End" />,
+	/// so cards auto-played here resolve before end-of-turn effects such as Ethereal exhausts and the hand flush.
+	/// Players report that order as a bug when an effect exhausts one of these cards. Closed as designed in PRG-7029.
 	/// </summary>
 	AutoPostPlay,
 	/// <summary>

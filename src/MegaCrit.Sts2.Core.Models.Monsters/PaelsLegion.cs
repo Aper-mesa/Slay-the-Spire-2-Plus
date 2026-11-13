@@ -20,7 +20,7 @@ public sealed class PaelsLegion : MonsterModel
 
 	public override int MaxInitialHp => 9999;
 
-	public override bool IsHealthBarVisible => false;
+	public override bool IsInteractable => false;
 
 	public override void SetupSkins(MegaSprite spine, MegaSkeleton skeleton)
 	{

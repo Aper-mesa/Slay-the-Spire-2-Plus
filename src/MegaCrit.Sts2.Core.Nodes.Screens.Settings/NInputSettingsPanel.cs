@@ -320,6 +320,11 @@ public class NInputSettingsPanel : NSettingsPanel
 		StringName[] allControllerInputs = Controller.AllControllerInputs;
 		foreach (StringName stringName in allControllerInputs)
 		{
+			if (inputEvent.IsActionPressed(stringName))
+			{
+				GetViewport()?.SetInputAsHandled();
+				break;
+			}
 			if (inputEvent.IsActionReleased(stringName))
 			{
 				if (NInputManager.remappableControllerInputs.Contains(_listeningEntry.InputName) && NControllerManager.Instance.ShouldAllowControllerRebinding)

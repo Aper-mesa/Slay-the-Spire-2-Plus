@@ -314,6 +314,7 @@ public static class ClassicWatcherLocale
         LocManager.RegisterRuntimeStrings("zhs", "characters", new Dictionary<string, string>
         {
             ["CLASSIC_WATCHER.title"] = "观者（经典）",
+            ["CLASSIC_WATCHER.shortTitle"] = "观者（经典）",
             ["CLASSIC_WATCHER.titleObject"] = "观者（经典）",
             ["CLASSIC_WATCHER.description"] = "一位为评估高塔而来的盲眼苦行者。\n在平静与愤怒间转换姿态，凭真言步入神格。",
             ["CLASSIC_WATCHER.unlockText"] = "进行一局游戏以解锁。",
@@ -636,6 +637,7 @@ public static class ClassicWatcherLocale
         LocManager.RegisterRuntimeStrings("eng", "characters", new Dictionary<string, string>
         {
             ["CLASSIC_WATCHER.title"] = "Watcher (Classic)",
+            ["CLASSIC_WATCHER.shortTitle"] = "Watcher (Classic)",
             ["CLASSIC_WATCHER.titleObject"] = "Watcher (Classic)",
             ["CLASSIC_WATCHER.description"] = "A blind ascetic who has come to evaluate the Spire.\nChange Stances and gather Mantra to reach Divinity.",
             ["CLASSIC_WATCHER.unlockText"] = "Play a run to unlock.",

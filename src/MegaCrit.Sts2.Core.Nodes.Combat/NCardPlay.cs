@@ -48,6 +48,16 @@ public abstract class NCardPlay : Node
 		public static readonly StringName Start = "Start";
 
 		/// <summary>
+		/// Cached name for the '_EnterTree' method.
+		/// </summary>
+		public new static readonly StringName _EnterTree = "_EnterTree";
+
+		/// <summary>
+		/// Cached name for the '_ExitTree' method.
+		/// </summary>
+		public new static readonly StringName _ExitTree = "_ExitTree";
+
+		/// <summary>
 		/// Cached name for the 'CancelPlayCard' method.
 		/// </summary>
 		public static readonly StringName CancelPlayCard = "CancelPlayCard";
@@ -190,6 +200,24 @@ public abstract class NCardPlay : Node
 
 	public abstract void Start();
 
+	public override void _EnterTree()
+	{
+		if (NControllerManager.Instance != null)
+		{
+			NControllerManager.Instance.Connect(NControllerManager.SignalName.MouseDetected, Callable.From(CancelPlayCard));
+			NControllerManager.Instance.Connect(NControllerManager.SignalName.ControllerDetected, Callable.From(CancelPlayCard));
+		}
+	}
+
+	public override void _ExitTree()
+	{
+		if (NControllerManager.Instance != null)
+		{
+			NControllerManager.Instance.Disconnect(NControllerManager.SignalName.MouseDetected, Callable.From(CancelPlayCard));
+			NControllerManager.Instance.Disconnect(NControllerManager.SignalName.ControllerDetected, Callable.From(CancelPlayCard));
+		}
+	}
+
 	protected void TryPlayCard(Creature? target)
 	{
 		if (Card == null)
@@ -249,7 +277,7 @@ public abstract class NCardPlay : Node
 			if (flag4 && Holder.IsInsideTree())
 			{
 				Vector2 size = GetViewport().GetVisibleRect().Size;
-				Holder.SetTargetPosition(new Vector2(size.X / 2f, size.Y - Holder.Size.Y));
+				Holder.SetTargetPosition(new Vector2(size.X * 0.5f, size.Y - Holder.Size.Y));
 			}
 			Cleanup(isFinished: true);
 			ActiveScreenContext.Instance.FocusOnDefaultControl();
@@ -298,7 +326,7 @@ public abstract class NCardPlay : Node
 	protected void CenterCard()
 	{
 		Vector2 size = _viewport.GetVisibleRect().Size;
-		Holder.SetTargetPosition(new Vector2(size.X / 2f, size.Y - Holder.Hitbox.Size.Y * 0.75f / 2f));
+		Holder.SetTargetPosition(new Vector2(size.X * 0.5f, size.Y - Holder.Hitbox.Size.Y * 0.75f * 0.5f));
 		Holder.SetTargetScale(Vector2.One * 0.75f);
 	}
 
@@ -398,9 +426,11 @@ public abstract class NCardPlay : Node
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(14);
+		List<MethodInfo> list = new List<MethodInfo>(16);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.Start, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName._EnterTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.CancelPlayCard, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnCancelPlayCard, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.Cleanup, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
@@ -438,6 +468,18 @@ public abstract class NCardPlay : Node
 		if (method == MethodName.Start && args.Count == 0)
 		{
 			Start();
+			ret = default;
+			return true;
+		}
+		if (method == MethodName._EnterTree && args.Count == 0)
+		{
+			_EnterTree();
+			ret = default;
+			return true;
+		}
+		if (method == MethodName._ExitTree && args.Count == 0)
+		{
+			_ExitTree();
 			ret = default;
 			return true;
 		}
@@ -525,6 +567,14 @@ public abstract class NCardPlay : Node
 			return true;
 		}
 		if (method == MethodName.Start)
+		{
+			return true;
+		}
+		if (method == MethodName._EnterTree)
+		{
+			return true;
+		}
+		if (method == MethodName._ExitTree)
 		{
 			return true;
 		}

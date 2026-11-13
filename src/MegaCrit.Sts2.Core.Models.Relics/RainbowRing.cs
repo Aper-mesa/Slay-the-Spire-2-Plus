@@ -114,9 +114,9 @@ public sealed class RainbowRing : RelicModel
 			if (AttacksPlayedThisTurn > 0 && SkillsPlayedThisTurn > 0 && PowersPlayedThisTurn > 0)
 			{
 				Flash();
+				ActivationCountThisTurn++;
 				await PowerCmd.Apply<StrengthPower>(choiceContext, Owner.Creature, DynamicVars.Strength.BaseValue, Owner.Creature, null);
 				await PowerCmd.Apply<DexterityPower>(choiceContext, Owner.Creature, DynamicVars.Dexterity.BaseValue, Owner.Creature, null);
-				ActivationCountThisTurn++;
 			}
 		}
 	}

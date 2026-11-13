@@ -24,6 +24,8 @@ public sealed class HandOfGreed : CardModel
 
 	public override bool CanBeGeneratedInCombat => false;
 
+	public override bool IsAllowedInBlitz => false;
+
 	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[2]
 	{
 		new DamageVar(20m, ValueProp.Move),

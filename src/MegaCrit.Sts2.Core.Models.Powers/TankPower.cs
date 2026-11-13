@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -38,6 +39,21 @@ public sealed class TankPower : PowerModel
 			{
 				await PowerCmd.Apply<GuardedPower>(new ThrowingPlayerChoiceContext(), item, Amount, Owner, null);
 			}
+		}
+	}
+
+	public override async Task AfterRemoved(Creature oldOwner)
+	{
+		if (oldOwner.CombatState == null)
+		{
+			return;
+		}
+		List<GuardedPower> list = (from g in oldOwner.CombatState.GetTeammatesOf(oldOwner).SelectMany((Creature t) => t.GetPowerInstances<GuardedPower>())
+			where g.Applier == oldOwner
+			select g).ToList();
+		foreach (GuardedPower item in list)
+		{
+			await PowerCmd.Remove(item);
 		}
 	}
 

@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Combat.History.Entries;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -15,29 +12,29 @@ namespace MegaCrit.Sts2.Core.Models.Cards;
 
 public sealed class MementoMori : CardModel
 {
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[3]
-	{
-		new CalculationBaseVar(9m),
-		new ExtraDamageVar(4m),
-		new CalculatedDamageVar(ValueProp.Move).WithMultiplier((CardModel card, Creature? _) => CombatManager.Instance.History.Entries.OfType<CardDiscardedEntry>().Count((CardDiscardedEntry e) => e.HappenedThisTurn(card.CombatState) && e.Actor == card.Owner.Creature))
-	});
+	public override IEnumerable<CardKeyword> CanonicalKeywords => new _003C_003Ez__ReadOnlySingleElementList<CardKeyword>(CardKeyword.Sly);
+
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new DamageVar(19m, ValueProp.Move));
 
 	public MementoMori()
-		: base(1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy)
+		: base(3, CardType.Attack, CardRarity.Uncommon, TargetType.RandomEnemy)
 	{
 	}
 
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
-		ArgumentNullException.ThrowIfNull(cardPlay.Target, "cardPlay.Target");
-		await DamageCmd.Attack(DynamicVars.CalculatedDamage).FromCard(this, cardPlay).Targeting(cardPlay.Target)
-			.WithHitFx("vfx/vfx_attack_slash")
-			.Execute(choiceContext);
+		IReadOnlyList<Creature> hittableEnemies = CombatState.HittableEnemies;
+		if (hittableEnemies.Count != 0)
+		{
+			Creature target = hittableEnemies.MinBy((Creature c) => c.CurrentHp);
+			await DamageCmd.Attack(DynamicVars.Damage.IntValue).FromCard(this, cardPlay).Targeting(target)
+				.WithHitFx("vfx/vfx_attack_slash")
+				.Execute(choiceContext);
+		}
 	}
 
 	protected override void OnUpgrade()
 	{
-		DynamicVars.CalculationBase.UpgradeValueBy(2m);
-		DynamicVars.ExtraDamage.UpgradeValueBy(1m);
+		DynamicVars.Damage.UpgradeValueBy(4m);
 	}
 }

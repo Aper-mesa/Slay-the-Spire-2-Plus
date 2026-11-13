@@ -12,128 +12,84 @@ public static class TweenHelper
 	}
 
 	/// <summary>
-	/// Awaits the tween's <see cref="F:Godot.Tween.SignalName.Finished" /> signal, automatically cancelling when the
-	/// owning node exits the tree. Unlike <c>ToSignal(tween, Tween.SignalName.Finished)</c>, this will not
-	/// hang when the tween is killed (e.g. because the node exited the tree and bound tweens stop processing).
+	/// Awaits the tween's <see cref="F:Godot.Tween.SignalName.Finished" /> signal, returning early when the tween can no longer
+	/// finish or when <paramref name="owner" /> leaves the tree. Unlike <c>ToSignal(tween, Tween.SignalName.Finished)</c>,
+	/// this will not hang when the tween stops without finishing.
 	/// </summary>
 	/// <remarks>
-	/// <c>Tween.Kill()</c> does not emit the <c>finished</c> signal (see <c>scene/animation/tween.cpp</c>).
-	/// <c>ToSignal</c> connects via <c>CONNECT_ONE_SHOT</c>, but one-shot cleanup only runs during signal
-	/// emission (<c>object.cpp</c>). Since the signal is never emitted, the <c>SignalAwaiterCallable</c>
-	/// remains in the tween's signal map, holding a strong GC handle that pins the <c>SignalAwaiter</c> and
-	/// the async state machine. The state machine in turn holds the tween reference, forming a reference cycle
-	/// across the managed/native boundary that persists for the lifetime of the process.
-	/// This method sidesteps that by cancelling via the node's <c>TreeExiting</c> signal, which fires before
-	/// the node is freed.
+	/// The engine emits <c>finished</c> from one place only, at the end of <c>Tween::step</c>
+	/// (<c>scene/animation/tween.cpp</c>). Four things stop a tween before that point and emit nothing:
+	/// <c>Tween.Kill()</c>, the bound node being freed, the "started with no Tweeners" guard, and the infinite-loop
+	/// guard (debug builds only, it is inside <c>DEBUG_ENABLED</c>). All four leave <c>valid == false</c>. Either
+	/// <c>kill()</c> sets it, or the <c>clear()</c> that <c>SceneTree::process_tweens</c> runs when <c>step</c>
+	/// returns false sets it. Polling <see cref="M:Godot.Tween.IsValid" /> once a frame therefore detects all four, one frame
+	/// late, as long as the engine still steps the tween. It does not step a tween whose bound node cannot process,
+	/// or a tween that pauses with a paused tree (<c>Tween::can_process</c>), so a node freed while the tree is
+	/// paused is not cleared until the tree resumes. <paramref name="owner" />'s <c>TreeExiting</c> covers that, since
+	/// freeing a node removes it from the tree first. Do NOT add <see cref="M:Godot.Tween.IsRunning" /> to that poll.
+	/// <c>stop()</c> and <c>pause()</c> clear it on a tween that can still resume, and it stays true after the bound
+	/// node is freed.
+	///
+	/// A tween that finishes normally never satisfies that poll. The step that finishes a tween emits
+	/// <c>Finished</c> while <c>step</c> still returns true, so <c>clear()</c> runs on a later step, and
+	/// <c>IsValid()</c> is still true when the signal arrives. The signal completes the await and removes the poll at
+	/// once. This holds for idle tweens, which <c>SceneTree::process</c> steps after it emits <c>process_frame</c>,
+	/// and for physics tweens, which <c>SceneTree::physics_process</c> steps.
+	///
+	/// A tween that stops part way through returns <see cref="F:MegaCrit.Sts2.Core.Nodes.GodotExtensions.TweenOutcome.Killed" />, not
+	/// <see cref="F:MegaCrit.Sts2.Core.Nodes.GodotExtensions.TweenOutcome.Finished" />. Of the four stops above,
+	/// <c>Kill()</c> is the one game code does on purpose: callers kill a tween part way through to start a
+	/// different animation. The caller that was waiting on the old animation must stop, not continue while the new one
+	/// runs. A tween started with no Tweeners is an engine error; fix that where the tween is created.
+	///
+	/// The <c>IsValid</c> poll does not detect one case: a bound node that leaves the tree but is not freed. The tween
+	/// then waits, still valid, until the node returns. <paramref name="owner" />'s <c>TreeExiting</c> covers that
+	/// case, so the owner must be the node the tween is bound to.
+	///
+	/// Awaiting the signal directly through <c>ToSignal</c> also leaks: the engine removes a one-shot connection only
+	/// when it emits the signal (<c>object.cpp</c>), so the awaiter, its async state machine and the tween stay
+	/// reachable from the tween's signal map for the rest of the process.
 	/// </remarks>
+	/// <param name="tween">The tween to await.</param>
+	/// <param name="owner">
+	/// The node the tween is bound to, which is the node whose <c>CreateTween()</c> made it.
+	/// </param>
+	/// <param name="ct">
+	/// An optional second stop condition. A cancelled token returns <see cref="F:MegaCrit.Sts2.Core.Nodes.GodotExtensions.TweenOutcome.Cancelled" /> instead of
+	/// throwing, so it behaves like a freed owner and the caller needs only one early return. A caller that passes a
+	/// token also resumes inside the <c>Finished</c> emission, in the same frame, where a caller without one resumes
+	/// after the frame draws.
+	/// </param>
 	/// <returns>
-	/// <c>true</c> if the tween finished normally and the owner is still alive when control returns to the caller.
-	/// <c>false</c> if the owner exited the tree before the tween completed, OR if the owner was freed between the
-	/// tween's <c>Finished</c> signal firing and the caller's continuation resuming.
-	/// Callers should bail out early when <c>false</c> is returned.
+	/// <see cref="F:MegaCrit.Sts2.Core.Nodes.GodotExtensions.TweenOutcome.Finished" /> if the tween finished normally and the owner is still alive and inside the
+	/// tree when the caller resumes. Otherwise the reason the wait ended: <see cref="F:MegaCrit.Sts2.Core.Nodes.GodotExtensions.TweenOutcome.Killed" /> if the
+	/// tween stopped without finishing, <see cref="F:MegaCrit.Sts2.Core.Nodes.GodotExtensions.TweenOutcome.OwnerExited" /> if the owner left the tree,
+	/// <see cref="F:MegaCrit.Sts2.Core.Nodes.GodotExtensions.TweenOutcome.Cancelled" /> if <paramref name="ct" /> was cancelled, and
+	/// <see cref="F:MegaCrit.Sts2.Core.Nodes.GodotExtensions.TweenOutcome.OwnerFreed" /> if the owner was freed, at entry or between the <c>Finished</c> signal
+	/// and the caller resuming. A caller that gets anything other than <see cref="F:MegaCrit.Sts2.Core.Nodes.GodotExtensions.TweenOutcome.Finished" /> must
+	/// return without doing its remaining work.
+	///
+	/// A tween that is already invalid when it is passed in returns <see cref="F:MegaCrit.Sts2.Core.Nodes.GodotExtensions.TweenOutcome.Finished" />, because an
+	/// invalid tween has almost always finished normally before the caller reached the await.
 	/// </returns>
-	public static async Task<bool> AwaitFinished(this Tween tween, Node owner)
+	public static async Task<TweenOutcome> AwaitFinished(this Tween tween, Node owner, CancellationToken ct = default(CancellationToken))
 	{
-		if (!(await AwaitFinishedInternal(tween, owner)))
-		{
-			return false;
-		}
-		return GodotObject.IsInstanceValid(owner) && owner.IsInsideTree();
-	}
-
-	private static Task<bool> AwaitFinishedInternal(Tween tween, Node owner)
-	{
-		if (!tween.IsValid() || !tween.IsRunning())
-		{
-			return Task.FromResult(result: true);
-		}
-		TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-		bool resolved = false;
-		tween.Finished += OnFinished;
-		owner.TreeExiting += OnExiting;
-		if (!tween.IsValid() || !tween.IsRunning())
-		{
-			OnFinished();
-		}
-		else if (!owner.IsInsideTree())
-		{
-			OnExiting();
-		}
-		return tcs.Task;
-		void OnExiting()
-		{
-			if (!resolved)
-			{
-				resolved = true;
-				if (tween.IsValid())
-				{
-					tween.Finished -= OnFinished;
-				}
-				if (GodotObject.IsInstanceValid(owner))
-				{
-					owner.TreeExiting -= OnExiting;
-				}
-				tcs.TrySetResult(result: false);
-			}
-		}
-		void OnFinished()
-		{
-			if (!resolved)
-			{
-				resolved = true;
-				if (tween.IsValid())
-				{
-					tween.Finished -= OnFinished;
-				}
-				if (GodotObject.IsInstanceValid(owner))
-				{
-					owner.TreeExiting -= OnExiting;
-				}
-				tcs.TrySetResult(result: true);
-			}
-		}
+		return AfterResume(owner, await new TweenWait(tween, owner, ct).Task);
 	}
 
 	/// <summary>
-	/// Awaits the tween's <see cref="F:Godot.Tween.SignalName.Finished" /> signal with cancellation support.
-	/// Unlike <c>ToSignal(tween, Tween.SignalName.Finished)</c>, this will not hang when the tween is killed,
-	/// provided the caller cancels the token.
+	/// Checks the owner again once the caller resumes, so that the outcome reflects the owner's state at that point.
 	/// </summary>
-	/// <remarks>
-	/// <c>Tween.Kill()</c> does not emit the <c>finished</c> signal (see <c>scene/animation/tween.cpp</c>).
-	/// <c>ToSignal</c> connects via <c>CONNECT_ONE_SHOT</c>, but one-shot cleanup only runs during signal
-	/// emission (<c>object.cpp</c>). Since the signal is never emitted, the <c>SignalAwaiterCallable</c>
-	/// remains in the tween's signal map, holding a strong GC handle that pins the <c>SignalAwaiter</c> and
-	/// the async state machine. The state machine in turn holds the tween reference, forming a reference cycle
-	/// across the managed/native boundary that persists for the lifetime of the process.
-	/// This method sidesteps that by using a <see cref="T:System.Threading.Tasks.TaskCompletionSource" /> that can be cancelled externally.
-	/// </remarks>
-	public static Task AwaitFinished(this Tween tween, CancellationToken ct)
+	internal static TweenOutcome AfterResume(Node owner, TweenOutcome outcome)
 	{
-		TaskCompletionSource tcs = new TaskCompletionSource();
-		int unsubscribed = 0;
-		CancellationTokenRegistration ctr = default;
-		tween.Finished += OnFinished;
-		if (ct.CanBeCanceled)
+		if (!GodotObject.IsInstanceValid(owner))
 		{
-			ctr = ct.Register(() =>
-			{
-				if (Interlocked.Exchange(ref unsubscribed, 1) == 0)
-				{
-					tween.Finished -= OnFinished;
-				}
-				tcs.TrySetCanceled(ct);
-			});
+			return TweenOutcome.OwnerFreed;
 		}
-		return tcs.Task;
-		void OnFinished()
+		if (outcome == TweenOutcome.Finished && !owner.IsInsideTree())
 		{
-			if (Interlocked.Exchange(ref unsubscribed, 1) == 0)
-			{
-				tween.Finished -= OnFinished;
-			}
-			ctr.Dispose();
-			tcs.TrySetResult();
+			return TweenOutcome.OwnerExited;
 		}
+		return outcome;
 	}
 }

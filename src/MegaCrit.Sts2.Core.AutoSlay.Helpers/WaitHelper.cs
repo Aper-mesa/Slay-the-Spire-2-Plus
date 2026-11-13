@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,14 +35,14 @@ public static class WaitHelper
 		{
 			while (!condition())
 			{
-				AutoSlayer.CurrentWatchdog?.Check();
+				Watchdog.Current?.Check();
 				await Task.Delay(AutoSlayConfig.pollingInterval, linkedCts.Token);
 			}
 		}
 		catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
 		{
 			string message = timeoutMessage?.Invoke() ?? $"Condition not met after {actualTimeout.TotalSeconds}s";
-			throw new AutoSlayTimeoutException(message);
+			throw new DriverTimeoutException(message);
 		}
 	}
 
@@ -241,27 +242,42 @@ public static class WaitHelper
 	/// <summary>
 	/// Waits for a task to complete while periodically checking the watchdog.
 	/// </summary>
+	/// <exception cref="T:MegaCrit.Sts2.Core.AutoSlay.DriverTimeoutException">The task did not complete within the timeout.</exception>
 	public static async Task ForTask(Task task, CancellationToken ct, TimeSpan? timeout = null, string? timeoutMessage = null)
 	{
 		TimeSpan actualTimeout = timeout ?? AutoSlayConfig.nodeWaitTimeout;
-		using CancellationTokenSource timeoutCts = new CancellationTokenSource(actualTimeout);
-		using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
-		_ = 1;
+		Stopwatch elapsed = Stopwatch.StartNew();
 		try
 		{
 			while (!task.IsCompleted)
 			{
-				AutoSlayer.CurrentWatchdog?.Check();
-				Task task2 = Task.Delay(AutoSlayConfig.pollingInterval, linkedCts.Token);
-				await Task.WhenAny(task, task2);
+				Watchdog.Current?.Check();
+				TimeSpan timeSpan = actualTimeout - elapsed.Elapsed;
+				if (timeSpan <= TimeSpan.Zero)
+				{
+					throw new DriverTimeoutException(timeoutMessage ?? $"Task not completed after {actualTimeout.TotalSeconds}s");
+				}
+				try
+				{
+					await task.WaitAsync((timeSpan < AutoSlayConfig.pollingInterval) ? timeSpan : AutoSlayConfig.pollingInterval, ct);
+				}
+				catch (TimeoutException)
+				{
+				}
 			}
-			await task;
 		}
-		catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+		catch (Exception)
 		{
-			string message = timeoutMessage ?? $"Task not completed after {actualTimeout.TotalSeconds}s";
-			throw new AutoSlayTimeoutException(message);
+			ObserveFault(task);
+			throw;
 		}
+		await task;
+	}
+
+	/// <summary>Swallows the fault of a task nobody is going to await.</summary>
+	private static void ObserveFault(Task task)
+	{
+		task.ContinueWith((Task abandoned) => abandoned.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 	}
 
 	/// <summary>
@@ -279,6 +295,6 @@ public static class WaitHelper
 			await task;
 			return;
 		}
-		throw new AutoSlayTimeoutException($"Operation timed out after {timeout.TotalSeconds}s");
+		throw new DriverTimeoutException($"Operation timed out after {timeout.TotalSeconds}s");
 	}
 }

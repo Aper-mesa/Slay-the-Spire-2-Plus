@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text.Json;
-using System.Threading;
 using Godot;
 using MegaCrit.Sts2.Core.Logging;
 
@@ -25,10 +24,10 @@ public static class AtlasManager
 
 	private record SpriteInfo(Texture2D Atlas, TpSheetSprite Sprite);
 
-	private static readonly string[] _knownAtlases = new string[12]
+	private static readonly string[] _knownAtlases = new string[13]
 	{
-		"ui_atlas", "compressed", "epoch_atlas", "relic_atlas", "relic_outline_atlas", "power_atlas", "card_atlas", "potion_atlas", "potion_outline_atlas", "stats_screen_atlas",
-		"intent_atlas", "era_atlas"
+		"ui_atlas", "compressed_atlas", "epoch_atlas", "relic_atlas", "relic_outline_atlas", "power_atlas", "card_atlas", "potion_atlas", "potion_outline_atlas", "stats_screen_atlas",
+		"intent_atlas", "era_atlas", "controller_atlas"
 	};
 
 	private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
@@ -40,14 +39,12 @@ public static class AtlasManager
 
 	private static readonly ConcurrentDictionary<string, AtlasTexture> _spriteCache = new ConcurrentDictionary<string, AtlasTexture>();
 
-	private static readonly Lock _loadLock = new Lock();
-
 	/// <summary>
 	/// Atlases needed before main menu scene loads.
 	/// Their .tres files are referenced by scene ext_resources and must be loaded
 	/// before Godot's scene deserializer encounters them.
 	/// </summary>
-	private static readonly string[] _essentialAtlases = new string[2] { "ui_atlas", "compressed" };
+	private static readonly string[] _essentialAtlases = new string[2] { "ui_atlas", "compressed_atlas" };
 
 	/// <summary>
 	/// Loads all known atlases. Call during initialization.
@@ -76,43 +73,43 @@ public static class AtlasManager
 
 	/// <summary>
 	/// Loads a single atlas by parsing its .tpsheet file and loading PNG textures.
-	/// Thread-safe: uses lock to prevent duplicate loading work.
+	/// Thread-safe without a lock: this can run on Godot's loader threads (via AtlasResourceLoader),
+	/// and blocking those threads while doing nested ResourceLoader.Load calls can deadlock the
+	/// threaded loader. Concurrent duplicate builds are idempotent (ResourceLoader caches the page
+	/// textures) and the first insert wins.
 	/// </summary>
 	public static void LoadAtlas(string atlasName)
 	{
-		if (_atlases.ContainsKey(atlasName))
+		if (!_atlases.ContainsKey(atlasName))
 		{
-			return;
-		}
-		using (_loadLock.EnterScope())
-		{
-			if (!_atlases.ContainsKey(atlasName))
+			AtlasData atlasData = BuildAtlasData(atlasName);
+			if (atlasData != null && _atlases.TryAdd(atlasName, atlasData))
 			{
-				LoadAtlasInternal(atlasName);
+				Log.Info($"AtlasManager: Loaded {atlasName} with {atlasData.SpriteMap.Count} sprites");
 			}
 		}
 	}
 
-	private static void LoadAtlasInternal(string atlasName)
+	private static AtlasData? BuildAtlasData(string atlasName)
 	{
 		string text = "res://images/atlases/" + atlasName + ".tpsheet";
 		if (!FileAccess.FileExists(text))
 		{
 			Log.Warn("AtlasManager: tpsheet not found: " + text);
-			return;
+			return null;
 		}
 		using FileAccess fileAccess = FileAccess.Open(text, FileAccess.ModeFlags.Read);
 		if (fileAccess == null)
 		{
 			Log.Warn("AtlasManager: Failed to open " + text);
-			return;
+			return null;
 		}
 		string asText = fileAccess.GetAsText();
 		TpSheetData tpSheetData = JsonSerializer.Deserialize<TpSheetData>(asText, _jsonOptions);
 		if (tpSheetData == null)
 		{
 			Log.Warn("AtlasManager: Failed to parse " + text);
-			return;
+			return null;
 		}
 		Dictionary<string, Texture2D> dictionary = new Dictionary<string, Texture2D>();
 		Dictionary<string, SpriteInfo> dictionary2 = new Dictionary<string, SpriteInfo>();
@@ -132,14 +129,12 @@ public static class AtlasManager
 				dictionary2[key] = new SpriteInfo(texture2D, sprite);
 			}
 		}
-		AtlasData value = new AtlasData
+		return new AtlasData
 		{
 			TpSheet = tpSheetData,
 			PageTextures = dictionary,
 			SpriteMap = dictionary2
 		};
-		_atlases[atlasName] = value;
-		Log.Info($"AtlasManager: Loaded {atlasName} with {dictionary2.Count} sprites");
 	}
 
 	/// <summary>

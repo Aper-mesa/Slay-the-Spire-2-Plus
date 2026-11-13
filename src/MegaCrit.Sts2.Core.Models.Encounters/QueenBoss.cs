@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Godot;
 using MegaCrit.Sts2.Core.Models.Afflictions;
+using MegaCrit.Sts2.Core.Models.Dread;
+using MegaCrit.Sts2.Core.Models.Dread.Dominions;
 using MegaCrit.Sts2.Core.Models.Monsters;
 using MegaCrit.Sts2.Core.Rooms;
 
@@ -47,5 +49,10 @@ public sealed class QueenBoss : EncounterModel
 			(ModelDb.Monster<TorchHeadAmalgam>().ToMutable(), "amalgam"),
 			(ModelDb.Monster<Queen>().ToMutable(), "queen")
 		});
+	}
+
+	public override DominionModel GetDominion()
+	{
+		return ModelDb.Dominion<QueenDominion>();
 	}
 }

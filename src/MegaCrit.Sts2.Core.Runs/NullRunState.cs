@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Acts;
-using MegaCrit.Sts2.Core.Models.Singleton;
+using MegaCrit.Sts2.Core.Models.Dread;
 using MegaCrit.Sts2.Core.Odds;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Rooms;
@@ -49,6 +49,8 @@ public class NullRunState : IRunState, ICardScope, IPlayerCollection
 		}
 	}
 
+	public IReadOnlyList<MapCoord> VisitedMapCoords => Array.Empty<MapCoord>();
+
 	public MapCoord? CurrentMapCoord => null;
 
 	public MapPoint? CurrentMapPoint => null;
@@ -58,6 +60,8 @@ public class NullRunState : IRunState, ICardScope, IPlayerCollection
 	public RunLocation RunLocation => new RunLocation(MapLocation, null);
 
 	public GameMode GameMode => GameMode.Standard;
+
+	public bool IsCustomGame => false;
 
 	public int ActFloor
 	{
@@ -77,7 +81,9 @@ public class NullRunState : IRunState, ICardScope, IPlayerCollection
 
 	public IReadOnlyList<BadgeModel> BadgeModels => Array.Empty<BadgeModel>();
 
-	public MultiplayerScalingModel? MultiplayerScalingModel => null;
+	public IReadOnlyList<RunModel> RunModels => Array.Empty<RunModel>();
+
+	public DominionModel? Dominion => null;
 
 	public IReadOnlyList<IReadOnlyList<MapPointHistoryEntry>> MapPointHistory => Array.Empty<IReadOnlyList<MapPointHistoryEntry>>();
 

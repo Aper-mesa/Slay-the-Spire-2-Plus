@@ -389,6 +389,7 @@ public class NRewardsScreen : Control, IOverlayScreen, IScreenContext
 		_waitingForOtherPlayersOverlay.GetNode<MegaLabel>("Label").SetTextAutoSize(_waitingLoc.GetRawText());
 		_rewardsWindow = GetNode<Control>("Rewards");
 		_rewardsWindow.Modulate = StsColors.transparentBlack;
+		_proceedButton.Initialize(_runState);
 		_proceedButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnProceedButtonPressed));
 		_proceedButton.SetPulseState(isPulsing: false);
 		TryEnableProceedButton();
@@ -410,12 +411,12 @@ public class NRewardsScreen : Control, IOverlayScreen, IScreenContext
 			if (currentMapPointHistoryEntry != null && currentMapPointHistoryEntry.GetEntry(_rewardsSet.Player.NetId).WasMugged)
 			{
 				text = "COMBAT_REWARD_HEADER_MUGGED";
-				goto IL_01e6;
+				goto IL_01f7;
 			}
 		}
 		text = "COMBAT_REWARD_HEADER_LOOT";
-		goto IL_01e6;
-		IL_01e6:
+		goto IL_01f7;
+		IL_01f7:
 		string locEntryKey = text;
 		_headerLabel.SetTextAutoSize(new LocString("gameplay_ui", locEntryKey).GetFormattedText());
 		GetViewport().Connect(Viewport.SignalName.GuiFocusChanged, Callable.From<Control>(ProcessGuiFocus));
@@ -569,40 +570,43 @@ public class NRewardsScreen : Control, IOverlayScreen, IScreenContext
 		{
 			RunManager.Instance.debugAfterCombatRewardsOverride?.Invoke();
 		}
-		else if (_isTerminal && (_runState.CurrentRoom.RoomType == RoomType.Boss || _runState.CurrentRoom.IsVictoryRoom))
-		{
-			if (_runState.Map.SecondBossMapPoint != null && _runState.CurrentMapCoord == _runState.Map.BossMapPoint.coord)
-			{
-				TaskHelper.RunSafely(RunManager.Instance.ProceedFromTerminalRewardsScreen());
-				return;
-			}
-			_proceedButton.Disable();
-			_disableProceedForever = true;
-			if (RunManager.Instance.ActChangeSynchronizer.IsWaitingForOtherPlayers())
-			{
-				_waitingForOtherPlayersOverlay.Visible = true;
-			}
-			RunManager.Instance.ActChangeSynchronizer.SetLocalPlayerReady();
-		}
 		else if (_isTerminal)
 		{
-			if (_proceedButton.IsSkip)
+			bool flag = _runState.Map.SecondBossMapPoint != null && _runState.CurrentMapPoint == _runState.Map.BossMapPoint;
+			bool flag2 = (_runState.CurrentRoom.RoomType == RoomType.Boss || _runState.CurrentRoom.IsVictoryRoom) && _runState.CurrentMapPoint == (_runState.Map.SecondBossMapPoint ?? _runState.Map.BossMapPoint);
+			if (flag)
+			{
+				RunManager.Instance.ProceedFromTerminalRewardsScreen();
+			}
+			else if (flag2)
+			{
+				_proceedButton.Disable();
+				_disableProceedForever = true;
+				if (RunManager.Instance.ActChangeSynchronizer.IsWaitingForOtherPlayers())
+				{
+					_waitingForOtherPlayersOverlay.Visible = true;
+				}
+				RunManager.Instance.ActChangeSynchronizer.SetLocalPlayerReady();
+			}
+			else if (_proceedButton.IsSkip)
 			{
 				if (TestMode.IsOn || SaveManager.Instance.SeenFtue("combat_reward_ftue"))
 				{
-					TaskHelper.RunSafely(RunManager.Instance.ProceedFromTerminalRewardsScreen());
+					RunManager.Instance.ProceedFromTerminalRewardsScreen();
 				}
 				else
 				{
 					TaskHelper.RunSafely(RewardFtueCheck());
 				}
-				return;
 			}
-			if (_runState.ActFloor > 4)
+			else
 			{
-				SaveManager.Instance.MarkFtueAsComplete("combat_reward_ftue");
+				if (_runState.ActFloor > 4)
+				{
+					SaveManager.Instance.MarkFtueAsComplete("combat_reward_ftue");
+				}
+				RunManager.Instance.ProceedFromTerminalRewardsScreen();
 			}
-			TaskHelper.RunSafely(RunManager.Instance.ProceedFromTerminalRewardsScreen());
 		}
 		else
 		{

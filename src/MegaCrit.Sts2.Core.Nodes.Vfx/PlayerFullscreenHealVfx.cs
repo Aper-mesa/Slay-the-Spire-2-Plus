@@ -34,7 +34,7 @@ public static class PlayerFullscreenHealVfx
 			nVfxParticleSystem.GlobalPosition = viewportRect.Size * 0.5f;
 			GpuParticles2D node = nVfxParticleSystem.GetNode<GpuParticles2D>("beam");
 			ParticleProcessMaterial particleProcessMaterial = (ParticleProcessMaterial)node.ProcessMaterial;
-			particleProcessMaterial.EmissionBoxExtents = new Vector3(viewportRect.Size.X / 2f, viewportRect.Size.Y / 2f, 1f);
+			particleProcessMaterial.EmissionBoxExtents = new Vector3(viewportRect.Size.X * 0.5f, viewportRect.Size.Y * 0.5f, 1f);
 			int amount = Mathf.RoundToInt(num * 40f + 10f);
 			node.Amount = amount;
 			vfxContainer.AddChildSafely(nVfxParticleSystem);

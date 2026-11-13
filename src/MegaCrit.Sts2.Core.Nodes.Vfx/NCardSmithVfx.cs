@@ -87,6 +87,8 @@ public class NCardSmithVfx : Node2D
 
 	private Tween? _tween;
 
+	private readonly OwnerFreeingTween _sparks;
+
 	public const string smithSfx = "card_smith.mp3";
 
 	private bool _willPlaySfx = true;
@@ -106,6 +108,11 @@ public class NCardSmithVfx : Node2D
 	});
 
 	public float SfxVolume { get; set; } = 1f;
+
+	public NCardSmithVfx()
+	{
+		_sparks = new OwnerFreeingTween(this);
+	}
 
 	public static NCardSmithVfx? Create(IEnumerable<CardModel> cards, bool playSfx = true)
 	{
@@ -169,24 +176,24 @@ public class NCardSmithVfx : Node2D
 		{
 			NDebugAudioManager.Instance?.Play("card_smith.mp3", SfxVolume, PitchVariance.Small);
 		}
-		_tween = CreateTween();
-		_tween.Parallel().TweenCallback(Callable.From(() =>
+		await _sparks.Play((Tween tween) =>
 		{
-			PlaySubParticles(GetNode<Control>("Spark1"));
-		}));
-		_tween.TweenInterval(0.25);
-		_tween.Chain().TweenCallback(Callable.From(() =>
-		{
-			PlaySubParticles(GetNode<Control>("Spark2"));
-		}));
-		_tween.TweenInterval(0.25);
-		_tween.Chain().TweenCallback(Callable.From(() =>
-		{
-			PlaySubParticles(GetNode<Control>("Spark3"));
-		}));
-		_tween.TweenInterval(0.4000000059604645);
-		await _tween.AwaitFinished(this);
-		this.QueueFreeSafely();
+			tween.Parallel().TweenCallback(Callable.From(() =>
+			{
+				PlaySubParticles(GetNode<Control>("Spark1"));
+			}));
+			tween.TweenInterval(0.25);
+			tween.Chain().TweenCallback(Callable.From(() =>
+			{
+				PlaySubParticles(GetNode<Control>("Spark2"));
+			}));
+			tween.TweenInterval(0.25);
+			tween.Chain().TweenCallback(Callable.From(() =>
+			{
+				PlaySubParticles(GetNode<Control>("Spark3"));
+			}));
+			tween.TweenInterval(0.4000000059604645);
+		});
 	}
 
 	private async Task PlayAnimation(IEnumerable<CardModel> cards)
@@ -256,7 +263,7 @@ public class NCardSmithVfx : Node2D
 			NGame.Instance?.ScreenShake(ShakeStrength.Weak, ShakeDuration.Short, 180f + Rng.Chaotic.NextFloat(-10f, 10f));
 		}));
 		_tween.TweenInterval(0.3499999940395355);
-		if (!(await _tween.AwaitFinished(this)))
+		if (await _tween.AwaitFinished(this) != TweenOutcome.Finished)
 		{
 			return;
 		}

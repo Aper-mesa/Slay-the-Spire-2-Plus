@@ -146,7 +146,24 @@ public class NMultiplayerSubmenu : NSubmenu
 
 	private const string _keyAbandon = "MP_ABANDON";
 
+	private const string _iconHost = "host";
+
+	private const string _iconLoad = "load";
+
+	private const string _iconJoin = "join";
+
+	private const string _iconAbandon = "abandon";
+
 	private Control _loadingOverlay;
+
+	public static string[] AssetPaths => new string[5]
+	{
+		_scenePath,
+		NSubmenuPortrait.GetIconPath("host"),
+		NSubmenuPortrait.GetIconPath("load"),
+		NSubmenuPortrait.GetIconPath("join"),
+		NSubmenuPortrait.GetIconPath("abandon")
+	};
 
 	protected override Control InitialFocusedControl
 	{
@@ -175,16 +192,20 @@ public class NMultiplayerSubmenu : NSubmenu
 		_loadingOverlay = GetNode<Control>("%LoadingOverlay");
 		_hostButton = GetNode<NSubmenuButton>("ButtonContainer/HostButton");
 		_hostButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnHostPressed));
-		_hostButton.SetIconAndLocalization("HOST");
+		_hostButton.SetLocalization("HOST");
+		_hostButton.SetIcon("host");
 		_loadButton = GetNode<NSubmenuButton>("ButtonContainer/LoadButton");
 		_loadButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(StartLoad));
-		_loadButton.SetIconAndLocalization("MP_LOAD");
+		_loadButton.SetLocalization("MP_LOAD");
+		_loadButton.SetIcon("load");
 		_joinButton = GetNode<NSubmenuButton>("ButtonContainer/JoinButton");
 		_joinButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OpenJoinFriendsScreen));
-		_joinButton.SetIconAndLocalization("JOIN");
+		_joinButton.SetLocalization("JOIN");
+		_joinButton.SetIcon("join");
 		_abandonButton = GetNode<NSubmenuButton>("ButtonContainer/AbandonButton");
 		_abandonButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(AbandonRun));
-		_abandonButton.SetIconAndLocalization("MP_ABANDON");
+		_abandonButton.SetLocalization("MP_ABANDON");
+		_abandonButton.SetIcon("abandon");
 		UpdateButtons();
 	}
 
@@ -246,9 +267,9 @@ public class NMultiplayerSubmenu : NSubmenu
 		ReadSaveResult<SerializableRun> readSaveResult = SaveManager.Instance.LoadAndCanonicalizeMultiplayerRunSave(PlatformUtil.GetLocalPlayerId(platformType));
 		if (!readSaveResult.Success || readSaveResult.SaveData == null)
 		{
-			Log.Warn("Broken multiplayer run save detected, disabling button");
+			Log.Warn($"Multiplayer run save could not be loaded (status={readSaveResult.Status}), disabling button");
 			_loadButton.Disable();
-			NErrorPopup modalToCreate = NErrorPopup.Create(new LocString("main_menu_ui", "INVALID_SAVE_POPUP.title"), new LocString("main_menu_ui", "INVALID_SAVE_POPUP.description_run"), new LocString("main_menu_ui", "INVALID_SAVE_POPUP.dismiss"), showReportBugButton: true);
+			NErrorPopup modalToCreate = NErrorPopup.CreateForRunSave(readSaveResult.Status);
 			NModalContainer.Instance.Add(modalToCreate);
 			NModalContainer.Instance.ShowBackstop();
 		}
@@ -266,14 +287,14 @@ public class NMultiplayerSubmenu : NSubmenu
 		}
 		else
 		{
-			TaskHelper.RunSafely(NMultiplayerHostSubmenu.StartHostAsync(GameMode.Standard, _loadingOverlay, _stack));
+			TaskHelper.RunSafely(NMultiplayerHostSubmenu.StartHostAsync(GameMode.Standard, isCustom: false, _loadingOverlay, _stack));
 		}
 	}
 
-	public void FastHost(GameMode gameMode)
+	public void FastHost(GameMode gameMode, bool isCustom)
 	{
 		NMultiplayerHostSubmenu nMultiplayerHostSubmenu = _stack.PushSubmenuType<NMultiplayerHostSubmenu>();
-		nMultiplayerHostSubmenu.StartHost(gameMode);
+		nMultiplayerHostSubmenu.StartHost(gameMode, isCustom);
 	}
 
 	public void StartHost(SerializableRun run)
@@ -299,29 +320,23 @@ public class NMultiplayerSubmenu : NSubmenu
 			}
 			if (!netErrorInfo.HasValue)
 			{
-				switch (run.GameMode)
+				if (run.GameMode == GameMode.Daily)
 				{
-				case GameMode.Daily:
-				{
-					NDailyRunLoadScreen submenuType3 = _stack.GetSubmenuType<NDailyRunLoadScreen>();
-					submenuType3.InitializeAsHost(netService, run);
-					_stack.Push(submenuType3);
-					break;
+					NDailyRunLoadScreen submenuType = _stack.GetSubmenuType<NDailyRunLoadScreen>();
+					submenuType.InitializeAsHost(netService, run);
+					_stack.Push(submenuType);
 				}
-				case GameMode.Custom:
+				else if (run.IsCustomGame)
 				{
 					NCustomRunLoadScreen submenuType2 = _stack.GetSubmenuType<NCustomRunLoadScreen>();
 					submenuType2.InitializeAsHost(netService, run);
 					_stack.Push(submenuType2);
-					break;
 				}
-				default:
+				else
 				{
-					NMultiplayerLoadGameScreen submenuType = _stack.GetSubmenuType<NMultiplayerLoadGameScreen>();
-					submenuType.InitializeAsHost(netService, run);
-					_stack.Push(submenuType);
-					break;
-				}
+					NMultiplayerLoadGameScreen submenuType3 = _stack.GetSubmenuType<NMultiplayerLoadGameScreen>();
+					submenuType3.InitializeAsHost(netService, run);
+					_stack.Push(submenuType3);
 				}
 			}
 			else
@@ -385,7 +400,8 @@ public class NMultiplayerSubmenu : NSubmenu
 		}, null));
 		list.Add(new MethodInfo(MethodName.FastHost, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
-			new PropertyInfo(Variant.Type.Int, "gameMode", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+			new PropertyInfo(Variant.Type.Int, "gameMode", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false),
+			new PropertyInfo(Variant.Type.Bool, "isCustom", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.OpenJoinFriendsScreen, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
@@ -435,9 +451,9 @@ public class NMultiplayerSubmenu : NSubmenu
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.FastHost && args.Count == 1)
+		if (method == MethodName.FastHost && args.Count == 2)
 		{
-			FastHost(VariantUtils.ConvertTo<GameMode>(in args[0]));
+			FastHost(VariantUtils.ConvertTo<GameMode>(in args[0]), VariantUtils.ConvertTo<bool>(in args[1]));
 			ret = default;
 			return true;
 		}

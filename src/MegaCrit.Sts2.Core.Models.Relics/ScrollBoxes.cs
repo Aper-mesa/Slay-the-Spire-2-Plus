@@ -31,7 +31,7 @@ public sealed class ScrollBoxes : RelicModel
 
 	public override async Task AfterObtained()
 	{
-		List<IReadOnlyList<CardModel>> list = GenerateRandomBundles(Owner);
+		List<IReadOnlyList<CardModel>> list = GenerateRandomBundles(Owner, Owner.PlayerRng.Rewards);
 		List<IReadOnlyList<CardModel>> list2 = new List<IReadOnlyList<CardModel>>();
 		foreach (IReadOnlyList<CardModel> item in list)
 		{
@@ -64,9 +64,10 @@ public sealed class ScrollBoxes : RelicModel
 	/// All 6 cards across both bundles are unique.
 	/// For Defect, each bundle has a 1% chance to be 3x Claw instead.
 	/// </summary>
-	public static List<IReadOnlyList<CardModel>> GenerateRandomBundles(Player player)
+	/// <param name="player">The player the bundles are for.</param>
+	/// <param name="rng">The RNG to roll the bundles with.</param>
+	public static List<IReadOnlyList<CardModel>> GenerateRandomBundles(Player player, Rng rng)
 	{
-		Rng rewards = player.PlayerRng.Rewards;
 		bool flag = player.Character is Defect;
 		CardPoolModel cardPool = GetCardPool(player.Character);
 		CardCreationOptions options = CardCreationOptions.ForNonCombatWithUniformOdds(new _003C_003Ez__ReadOnlySingleElementList<CardPoolModel>(cardPool), (CardModel c) => c.Rarity == CardRarity.Common).WithFlags(CardCreationFlags.NoRarityModification);
@@ -79,7 +80,7 @@ public sealed class ScrollBoxes : RelicModel
 		HashSet<ModelId> usedCardIds = new HashSet<ModelId>();
 		for (int num = 0; num < 2; num++)
 		{
-			if (flag && rewards.NextInt(100) < 1)
+			if (flag && rng.NextInt(100) < 1)
 			{
 				CardModel cardModel = ModelDb.Card<Claw>();
 				list.Add(new _003C_003Ez__ReadOnlyArray<CardModel>(new CardModel[3] { cardModel, cardModel, cardModel }));
@@ -89,13 +90,13 @@ public sealed class ScrollBoxes : RelicModel
 			List<CardModel> list3 = source.Where((CardModel c) => !usedCardIds.Contains(c.Id)).ToList();
 			for (int num2 = 0; num2 < 2; num2++)
 			{
-				CardModel cardModel2 = rewards.NextItem(list3);
+				CardModel cardModel2 = rng.NextItem(list3);
 				list2.Add(cardModel2);
 				usedCardIds.Add(cardModel2.Id);
 				list3.Remove(cardModel2);
 			}
 			List<CardModel> items = source2.Where((CardModel c) => !usedCardIds.Contains(c.Id)).ToList();
-			CardModel cardModel3 = rewards.NextItem(items);
+			CardModel cardModel3 = rng.NextItem(items);
 			list2.Add(cardModel3);
 			usedCardIds.Add(cardModel3.Id);
 			list.Add(list2);

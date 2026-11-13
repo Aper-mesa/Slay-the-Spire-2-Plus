@@ -10,6 +10,7 @@ using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Saves;
@@ -25,7 +26,7 @@ public class NCardLibraryGrid : NCardGrid
 {
 	private struct InitialSorter(List<CardPoolModel> cardPoolModels) : IComparer<CardModel>
 	{
-		private List<CardPoolModel> _cardPoolModels = cardPoolModels;
+		private readonly List<CardPoolModel> _cardPoolModels = cardPoolModels;
 
 		public int Compare(CardModel? x, CardModel? y)
 		{
@@ -118,7 +119,7 @@ public class NCardLibraryGrid : NCardGrid
 
 	private HashSet<ModelId> _seenCards;
 
-	private HashSet<CardModel> _unlockedCards;
+	private HashSet<ModelId> _unlockedCards;
 
 	private bool _showStats;
 
@@ -159,8 +160,21 @@ public class NCardLibraryGrid : NCardGrid
 				_allCards.Add(allCard);
 			}
 		}
+		_allCards.Add(CreateUpgradedCopy(ModelDb.Card<DingyDagger>(), 3));
+		_allCards.Add(CreateUpgradedCopy(ModelDb.Card<DingyDagger>(), 6));
 		_allCards.Sort(new InitialSorter(cardPoolModels));
 		RefreshVisibility();
+	}
+
+	private static CardModel CreateUpgradedCopy(CardModel card, int upgradeLevel)
+	{
+		CardModel cardModel = card.ToMutable();
+		for (int i = 0; i < upgradeLevel; i++)
+		{
+			cardModel.UpgradeInternal();
+			cardModel.FinalizeUpgradeInternal();
+		}
+		return cardModel;
 	}
 
 	/// <summary>
@@ -171,7 +185,8 @@ public class NCardLibraryGrid : NCardGrid
 	{
 		_seenCards = SaveManager.Instance.Progress.DiscoveredCards.ToHashSet();
 		UnlockState unlockState = SaveManager.Instance.GenerateUnlockStateFromProgress();
-		_unlockedCards = ModelDb.AllCardPools.Select((CardPoolModel p) => p.GetUnlockedCards(unlockState, CardMultiplayerConstraint.None)).SelectMany((IEnumerable<CardModel> c) => c).ToHashSet();
+		_unlockedCards = (from c in ModelDb.AllCardPools.Select((CardPoolModel p) => p.GetUnlockedCards(unlockState, CardMultiplayerConstraint.None)).SelectMany((IEnumerable<CardModel> c) => c)
+			select c.Id).ToHashSet();
 	}
 
 	public void FilterCards(Func<CardModel, bool> filter)
@@ -231,7 +246,7 @@ public class NCardLibraryGrid : NCardGrid
 
 	protected override ModelVisibility GetCardVisibility(CardModel card)
 	{
-		if (!_unlockedCards.Contains(card))
+		if (!_unlockedCards.Contains(card.Id))
 		{
 			return ModelVisibility.Locked;
 		}

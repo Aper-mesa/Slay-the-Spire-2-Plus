@@ -25,7 +25,7 @@ public static class NetCursorHelper
 		}
 		Vector2 vector = rootNode.GetGlobalTransformWithCanvas() * mouseScreenPos;
 		Vector2 vector2 = new Vector2(960f, 540f);
-		return (vector - rootNode.Size / 2f) / vector2;
+		return (vector - rootNode.Size * 0.5f) / vector2;
 	}
 
 	public static Vector2 GetControlSpacePosition(Vector2 normalizedCursorPosition, Control? rootNode)
@@ -39,6 +39,6 @@ public static class NetCursorHelper
 			throw new InvalidOperationException("Root node should only be null in tests!");
 		}
 		Vector2 vector = new Vector2(960f, 540f);
-		return normalizedCursorPosition * vector + rootNode.Size / 2f;
+		return normalizedCursorPosition * vector + rootNode.Size * 0.5f;
 	}
 }

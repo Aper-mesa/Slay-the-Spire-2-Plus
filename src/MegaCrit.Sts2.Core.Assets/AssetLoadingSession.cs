@@ -181,6 +181,7 @@ public class AssetLoadingSession
 			return;
 		}
 		_totalLoaded++;
+		_assetCache?.CancelPendingDispose(resource);
 		_cache[path] = resource;
 	}
 

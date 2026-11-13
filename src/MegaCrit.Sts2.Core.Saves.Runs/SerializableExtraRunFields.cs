@@ -17,11 +17,16 @@ public class SerializableExtraRunFields : IPacketSerializable
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public bool FreedRepy { get; set; }
 
+	[JsonPropertyName("used_debug_command")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool UsedDebugCommand { get; set; }
+
 	public void Serialize(PacketWriter writer)
 	{
 		writer.WriteBool(StartedWithNeow);
 		writer.WriteInt(TestSubjectKills);
 		writer.WriteBool(FreedRepy);
+		writer.WriteBool(UsedDebugCommand);
 	}
 
 	public void Deserialize(PacketReader reader)
@@ -29,5 +34,6 @@ public class SerializableExtraRunFields : IPacketSerializable
 		StartedWithNeow = reader.ReadBool();
 		TestSubjectKills = reader.ReadInt();
 		FreedRepy = reader.ReadBool();
+		UsedDebugCommand = reader.ReadBool();
 	}
 }

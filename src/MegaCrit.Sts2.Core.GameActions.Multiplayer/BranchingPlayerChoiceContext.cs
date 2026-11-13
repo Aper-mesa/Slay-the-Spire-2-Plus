@@ -43,33 +43,31 @@ namespace MegaCrit.Sts2.Core.GameActions.Multiplayer;
 /// </summary>
 public class BranchingPlayerChoiceContext : PlayerChoiceContext
 {
-	private PlayerChoiceContext _originalContext;
-
-	private readonly GameActionType _gameActionType;
+	private readonly PlayerChoiceContext _originalContext;
 
 	private readonly ulong _localPlayerId;
 
 	private HookPlayerChoiceContext? _createdContext;
 
-	private TaskCompletionSource _pausedCompletionSource = new TaskCompletionSource();
+	private readonly TaskCompletionSource _pausedCompletionSource = new TaskCompletionSource();
 
 	public AbstractModel? Source { get; }
 
-	public override ulong? OwnerId => _originalContext.OwnerId;
+	public override ulong? OwnerId => (_createdContext ?? _originalContext).OwnerId;
+
+	public override GameActionType? GameActionType => (_createdContext ?? _originalContext).GameActionType;
 
 	public event Action<HookPlayerChoiceContext>? AfterBranched;
 
-	public BranchingPlayerChoiceContext(ulong localPlayerId, GameActionType gameActionType, PlayerChoiceContext existing)
+	public BranchingPlayerChoiceContext(ulong localPlayerId, PlayerChoiceContext existing)
 	{
 		_originalContext = existing;
-		_gameActionType = gameActionType;
 		_localPlayerId = localPlayerId;
 	}
 
-	public BranchingPlayerChoiceContext(AbstractModel source, ulong localPlayerId, GameActionType gameActionType, PlayerChoiceContext existing)
+	public BranchingPlayerChoiceContext(AbstractModel source, ulong localPlayerId, PlayerChoiceContext existing)
 	{
 		_originalContext = existing;
-		_gameActionType = gameActionType;
 		_localPlayerId = localPlayerId;
 		Source = source;
 	}
@@ -77,7 +75,7 @@ public class BranchingPlayerChoiceContext : PlayerChoiceContext
 	public override async Task SignalPlayerChoiceBegun(Player chooser, PlayerChoiceOptions options)
 	{
 		PlayerChoiceContext playerChoiceContext;
-		if (!_originalContext.OwnerId.HasValue || chooser.NetId == _originalContext.OwnerId)
+		if (!_originalContext.OwnerId.HasValue || !_originalContext.GameActionType.HasValue || chooser.NetId == _originalContext.OwnerId)
 		{
 			if (!_originalContext.OwnerId.HasValue)
 			{
@@ -95,11 +93,11 @@ public class BranchingPlayerChoiceContext : PlayerChoiceContext
 			Log.LogMessage(LogLevel.Debug, LogType.GameSync, $"Branching context began choice for {chooser.NetId} who is not the owner ({_originalContext.OwnerId}). Using new {"HookPlayerChoiceContext"}");
 			if (Source != null)
 			{
-				_createdContext = new HookPlayerChoiceContext(Source, chooser, _localPlayerId, _gameActionType);
+				_createdContext = new HookPlayerChoiceContext(Source, chooser, _localPlayerId, _originalContext.GameActionType.Value);
 			}
 			else
 			{
-				_createdContext = new HookPlayerChoiceContext(chooser, _localPlayerId, _gameActionType);
+				_createdContext = new HookPlayerChoiceContext(chooser, _localPlayerId, _originalContext.GameActionType.Value);
 			}
 			AfterBranched?.Invoke(_createdContext);
 			_pausedCompletionSource.SetResult();

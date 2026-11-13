@@ -229,6 +229,7 @@ public class NEventLayout : Control
 		_sharedEventLabel?.SetTextAutoSize(_sharedEventLoc.GetFormattedText());
 		_optionsContainer = GetNode<VBoxContainer>("%OptionsContainer");
 		_description?.SetText(string.Empty);
+		_description?.ApplyRtlText();
 		ApplyDebugUiVisibility();
 	}
 

@@ -55,21 +55,34 @@ public sealed class Rocket : MonsterModel
 
 	public override int MaxInitialHp => MinInitialHp;
 
-	private int TargetingReticleDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 4, 3);
+	private int CalculatingDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 4, 3);
 
-	private int PrecisionBeamDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 20, 18);
+	private int PreciseSmashDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 20, 18);
 
-	private int LaserDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 35, 31);
+	private int RocketClawDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 35, 31) + (AscensionHelper.IsDread() ? 5 : 0);
 
 	private int ChargeUpStrengthGain => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 3, 2);
+
+	private int PlatingAmount
+	{
+		get
+		{
+			if (!AscensionHelper.IsDread())
+			{
+				return 0;
+			}
+			return 14;
+		}
+	}
 
 	protected override MonsterMoveStateMachine GenerateMoveStateMachine()
 	{
 		List<MonsterState> list = new List<MonsterState>();
-		MoveState moveState = new MoveState("TARGETING_RETICLE_MOVE", TargetingReticleMove, new SingleAttackIntent(TargetingReticleDamage));
-		MoveState moveState2 = new MoveState("PRECISION_BEAM_MOVE", PrecisionBeamMove, new SingleAttackIntent(PrecisionBeamDamage));
+		MoveState moveState = new MoveState("CALCULATING_MOVE", CalculatingMove, new SingleAttackIntent(CalculatingDamage));
+		MoveState moveState2 = new MoveState("PRECISE_SMASH_MOVE", PreciseSmashMove, new SingleAttackIntent(PreciseSmashDamage));
+		MoveState item = new MoveState("PRECISE_SMASH_MOVE_2", PreciseSmashMove, new SingleAttackIntent(PreciseSmashDamage));
 		MoveState moveState3 = new MoveState("CHARGE_UP_MOVE", ChargeUpMove, new BuffIntent());
-		MoveState moveState4 = new MoveState("LASER_MOVE", LaserMove, new SingleAttackIntent(LaserDamage));
+		MoveState moveState4 = new MoveState("ROCKET_CLAW_MOVE", RocketClawMove, new SingleAttackIntent(RocketClawDamage));
 		MoveState moveState5 = new MoveState("RECHARGE_MOVE", RechargeMove, new SleepIntent());
 		moveState.FollowUpState = moveState2;
 		moveState2.FollowUpState = moveState3;
@@ -78,6 +91,7 @@ public sealed class Rocket : MonsterModel
 		moveState5.FollowUpState = moveState;
 		list.Add(moveState);
 		list.Add(moveState2);
+		list.Add(item);
 		list.Add(moveState3);
 		list.Add(moveState4);
 		list.Add(moveState5);
@@ -90,6 +104,10 @@ public sealed class Rocket : MonsterModel
 		await PowerCmd.Apply<SurroundedPower>(new ThrowingPlayerChoiceContext(), CombatState.GetOpponentsOf(Creature), 1m, Creature, null);
 		await PowerCmd.Apply<BackAttackRightPower>(new ThrowingPlayerChoiceContext(), Creature, 1m, Creature, null);
 		await PowerCmd.Apply<CrabRagePower>(new ThrowingPlayerChoiceContext(), Creature, 1m, Creature, null);
+		if (PlatingAmount > 0)
+		{
+			await PowerCmd.Apply<PlatingPower>(new ThrowingPlayerChoiceContext(), Creature, PlatingAmount, Creature, null);
+		}
 		Background?.SetVisible(visible: true);
 	}
 
@@ -128,20 +146,20 @@ public sealed class Rocket : MonsterModel
 		SfxCmd.StopLoop(Creature, "event:/sfx/enemy/enemy_attacks/kaiser_crab/kaiser_crab_right_buff");
 	}
 
-	private async Task TargetingReticleMove(IReadOnlyList<Creature> targets)
+	private async Task CalculatingMove(IReadOnlyList<Creature> targets)
 	{
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/kaiser_crab/kaiser_crab_right_attack_snap");
 		await (Background?.PlayAttackAnim(NKaiserCrabBossBackground.ArmSide.Right, "attack", 0.35f) ?? Task.CompletedTask);
-		await DamageCmd.Attack(TargetingReticleDamage).FromMonster(this).WithAttackerFx(null, AttackSfx)
+		await DamageCmd.Attack(CalculatingDamage).FromMonster(this).WithAttackerFx(null, AttackSfx)
 			.WithHitFx("vfx/vfx_attack_slash")
 			.Execute(null);
 	}
 
-	private async Task PrecisionBeamMove(IReadOnlyList<Creature> targets)
+	private async Task PreciseSmashMove(IReadOnlyList<Creature> targets)
 	{
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/kaiser_crab/kaiser_crab_right_attack_slam");
 		await (Background?.PlayAttackAnim(NKaiserCrabBossBackground.ArmSide.Right, "attack_med", 0.5f) ?? Task.CompletedTask);
-		await DamageCmd.Attack(PrecisionBeamDamage).FromMonster(this).WithAttackerFx(null, AttackSfx)
+		await DamageCmd.Attack(PreciseSmashDamage).FromMonster(this).WithAttackerFx(null, AttackSfx)
 			.WithHitFx("vfx/vfx_heavy_blunt", null, "heavy_attack.mp3")
 			.WithHitVfxSpawnedAtBase()
 			.Execute(null);
@@ -154,12 +172,12 @@ public sealed class Rocket : MonsterModel
 		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, ChargeUpStrengthGain, Creature, null);
 	}
 
-	private async Task LaserMove(IReadOnlyList<Creature> targets)
+	private async Task RocketClawMove(IReadOnlyList<Creature> targets)
 	{
 		SfxCmd.StopLoop(Creature, "event:/sfx/enemy/enemy_attacks/kaiser_crab/kaiser_crab_right_buff");
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/kaiser_crab/kaiser_crab_rocket");
 		await (Background?.PlayRightSideHeavy(0.5f) ?? Task.CompletedTask);
-		await DamageCmd.Attack(LaserDamage).FromMonster(this).WithAttackerFx(null, AttackSfx)
+		await DamageCmd.Attack(RocketClawDamage).FromMonster(this).WithAttackerFx(null, AttackSfx)
 			.WithHitFx("vfx/vfx_attack_blunt")
 			.Execute(null);
 	}

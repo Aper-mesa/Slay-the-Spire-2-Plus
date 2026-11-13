@@ -330,7 +330,7 @@ public class CloudSaveStore : ICloudSaveStore, ISaveStore
 		}
 		catch (Exception ex)
 		{
-			Log.Warn("SteamRemoteStorage: Failed to sync " + path + " from cloud, skipping: " + ex.Message);
+			Log.Warn("Failed to sync " + path + " from cloud, skipping: " + ex.Message);
 			if (_syncFailureReporter.ShouldReport(ex))
 			{
 				SentryService.CaptureException(ex);
@@ -341,39 +341,42 @@ public class CloudSaveStore : ICloudSaveStore, ISaveStore
 	private async Task SyncCloudToLocalInternal(string path)
 	{
 		bool flag = CloudStore.FileExists(path);
-		bool flag2 = LocalStore.FileExists(path);
+		bool localHasFile = LocalStore.FileExists(path);
 		if (flag)
 		{
-			DateTimeOffset lastModifiedTime = CloudStore.GetLastModifiedTime(path);
-			DateTimeOffset? dateTimeOffset = (flag2 ? new DateTimeOffset?(LocalStore.GetLastModifiedTime(path)) : ((DateTimeOffset?)null));
-			bool flag3 = !flag2 || lastModifiedTime != dateTimeOffset;
-			if (!flag3)
+			DateTimeOffset cloudSaveTime = CloudStore.GetLastModifiedTime(path);
+			DateTimeOffset? localSaveTime = (localHasFile ? new DateTimeOffset?(LocalStore.GetLastModifiedTime(path)) : ((DateTimeOffset?)null));
+			int cloudFileSize = CloudStore.GetFileSize(path);
+			int? localFileSize = (localHasFile ? new int?(LocalStore.GetFileSize(path)) : ((int?)null));
+			bool needsDownload = !localHasFile || cloudSaveTime != localSaveTime;
+			if (!needsDownload)
 			{
-				string value = LocalStore.ReadFile(path);
-				if (string.IsNullOrWhiteSpace(value))
+				string text = await LocalStore.ReadFileAsync(path);
+				if (string.IsNullOrWhiteSpace(text) || text[0] == '\0')
 				{
 					Log.Warn("Local file " + path + " appears corrupt (empty content) despite matching cloud timestamp, forcing re-download from cloud");
-					flag3 = true;
+					needsDownload = true;
 				}
 			}
-			if (flag3)
+			if (needsDownload)
 			{
-				Log.Info($"Copying {path} from cloud to local. Local file exists: {flag2} Cloud save time: {lastModifiedTime} Local save time: {dateTimeOffset}");
-				string text = await CloudStore.ReadFileAsync(path);
-				if (string.IsNullOrWhiteSpace(text) || text[0] == '\0')
+				Log.Info($"Copying {path} from cloud to local. Local file exists: {localHasFile} Cloud vs local time: {cloudSaveTime} - {localSaveTime}. Cloud vs local size: {cloudFileSize} - {localFileSize}.");
+				string text2 = await CloudStore.ReadFileAsync(path);
+				if (string.IsNullOrWhiteSpace(text2) || text2[0] == '\0')
 				{
 					Log.Warn("Cloud file " + path + " has empty content, skipping download");
 					return;
 				}
-				await LocalStore.WriteFileAsync(path, text);
+				await LocalStore.WriteFileAsync(path, text2);
 				SyncLocalTimestamp(path);
 			}
 			else
 			{
-				Log.Debug($"Skipping sync for {path}, last modified time matches on local and remote ({lastModifiedTime})");
+				LogLevel level = ((!path.Contains("history")) ? LogLevel.Info : LogLevel.Debug);
+				Log.LogMessage(level, LogType.Generic, $"Skipping sync for {path}, last modified time matches on local and remote ({cloudSaveTime}). Cloud vs local size: {cloudFileSize} - {localFileSize}.");
 			}
 		}
-		else if (flag2)
+		else if (localHasFile)
 		{
 			Log.Info("Deleting " + path + " because it does not exist on remote");
 			LocalStore.DeleteFile(path);

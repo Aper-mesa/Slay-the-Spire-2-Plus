@@ -22,6 +22,8 @@ public sealed class SnappingJaxfruit : MonsterModel
 {
 	private const string _idleLoopSfx = "event:/sfx/enemy/enemy_attacks/orb_plant/orb_plant_idle_loop";
 
+	private const string _energyOrbSfx = "event:/sfx/enemy/enemy_attacks/orb_plant/snapping_jaxfruit_energy_orb";
+
 	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 34, 31);
 
 	public override int MaxInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 36, 33);
@@ -62,6 +64,7 @@ public sealed class SnappingJaxfruit : MonsterModel
 			}
 		}
 		await DamageCmd.Attack(EnergyDamage).FromMonster(this).WithAttackerAnim("Cast", 0.25f)
+			.WithAttackerFx(null, "event:/sfx/enemy/enemy_attacks/orb_plant/snapping_jaxfruit_energy_orb")
 			.Execute(null);
 		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, 2m, Creature, null);
 	}

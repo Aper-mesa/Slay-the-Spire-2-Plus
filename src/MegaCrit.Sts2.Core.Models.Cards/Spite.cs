@@ -20,7 +20,7 @@ public sealed class Spite : CardModel
 	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[2]
 	{
 		new DamageVar(5m, ValueProp.Move),
-		new RepeatVar(2)
+		new HitCountVar(2)
 	});
 
 	public Spite()
@@ -31,7 +31,7 @@ public sealed class Spite : CardModel
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay.Target, "cardPlay.Target");
-		int hitCount = ((!LostHpThisTurn(Owner.Creature)) ? 1 : DynamicVars.Repeat.IntValue);
+		int hitCount = ((!LostHpThisTurn(Owner.Creature)) ? 1 : DynamicVars.HitCount.IntValue);
 		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(hitCount).FromCard(this, cardPlay)
 			.Targeting(cardPlay.Target)
 			.WithHitFx("vfx/vfx_attack_slash")
@@ -40,7 +40,7 @@ public sealed class Spite : CardModel
 
 	protected override void OnUpgrade()
 	{
-		DynamicVars.Repeat.UpgradeValueBy(1m);
+		DynamicVars.HitCount.UpgradeValueBy(1m);
 	}
 
 	private static bool LostHpThisTurn(Creature creature)

@@ -13,7 +13,6 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
-using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
 using MegaCrit.Sts2.Core.Nodes.Multiplayer;
@@ -44,11 +43,6 @@ public class NMouseCardPlay : NCardPlay
 		/// Cached name for the 'Start' method.
 		/// </summary>
 		public new static readonly StringName Start = "Start";
-
-		/// <summary>
-		/// Cached name for the '_EnterTree' method.
-		/// </summary>
-		public new static readonly StringName _EnterTree = "_EnterTree";
 
 		/// <summary>
 		/// Cached name for the '_ExitTree' method.
@@ -240,22 +234,9 @@ public class NMouseCardPlay : NCardPlay
 		TaskHelper.RunSafely(StartAsync());
 	}
 
-	public override void _EnterTree()
-	{
-		if (NControllerManager.Instance != null)
-		{
-			NControllerManager.Instance.Connect(NControllerManager.SignalName.MouseDetected, Callable.From(CancelPlayCard));
-			NControllerManager.Instance.Connect(NControllerManager.SignalName.ControllerDetected, Callable.From(CancelPlayCard));
-		}
-	}
-
 	public override void _ExitTree()
 	{
-		if (NControllerManager.Instance != null)
-		{
-			NControllerManager.Instance.Disconnect(NControllerManager.SignalName.MouseDetected, Callable.From(CancelPlayCard));
-			NControllerManager.Instance.Disconnect(NControllerManager.SignalName.ControllerDetected, Callable.From(CancelPlayCard));
-		}
+		base._ExitTree();
 		_cancellationTokenSource.Cancel();
 		DisconnectTargetingSignals();
 	}
@@ -466,7 +447,7 @@ public class NMouseCardPlay : NCardPlay
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(9);
+		List<MethodInfo> list = new List<MethodInfo>(8);
 		list.Add(new MethodInfo(MethodName.Create, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Node"), exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "holder", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false),
@@ -478,7 +459,6 @@ public class NMouseCardPlay : NCardPlay
 			new PropertyInfo(Variant.Type.Object, "inputEvent", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("InputEvent"), exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.Start, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName._EnterTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.DisconnectTargetingSignals, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnCancelPlayCard, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -505,12 +485,6 @@ public class NMouseCardPlay : NCardPlay
 		if (method == MethodName.Start && args.Count == 0)
 		{
 			Start();
-			ret = default;
-			return true;
-		}
-		if (method == MethodName._EnterTree && args.Count == 0)
-		{
-			_EnterTree();
 			ret = default;
 			return true;
 		}
@@ -570,10 +544,6 @@ public class NMouseCardPlay : NCardPlay
 			return true;
 		}
 		if (method == MethodName.Start)
-		{
-			return true;
-		}
-		if (method == MethodName._EnterTree)
 		{
 			return true;
 		}

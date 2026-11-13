@@ -27,60 +27,23 @@ public abstract class CharacterModel : AbstractModel
 
 	public const string relaxedAnim = "relaxed_loop";
 
-	/// <summary>
-	/// Is this a playable character?
-	/// True for the characters that can be played in the game.
-	/// False for test characters (<see cref="T:MegaCrit.Sts2.Core.Models.Characters.Deprived" />), meta-characters (<see cref="T:MegaCrit.Sts2.Core.Models.Characters.RandomCharacter" />), etc.
-	/// </summary>
 	public virtual bool IsPlayable => true;
 
-	/// <summary>
-	/// The name of the character. e.g. Ironclad, Silent, etc.
-	/// </summary>
+	public LocString ShortTitle => new LocString("characters", Id.Entry + ".shortTitle");
+
 	public LocString Title => new LocString("characters", Id.Entry + ".title");
 
-	/// <summary>
-	/// The name of the character in object form.
-	/// This is the same as Title in english, but may be different in other languages.
-	/// For example,
-	/// </summary>
 	public LocString TitleObject => new LocString("characters", Id.Entry + ".titleObject");
 
-	/// <summary>
-	/// Color used when rendering this character's name in the Statistics screen.
-	/// </summary>
 	public abstract Color NameColor { get; }
 
-	/// <summary>
-	/// The gender of the character for grammatical purposes.
-	/// </summary>
 	public abstract CharacterGender Gender { get; }
 
-	/// <summary>
-	/// What character do you need to do a run with to unlock this one?
-	/// Returns null if there is no pre-requisite character.
-	/// </summary>
 	protected abstract CharacterModel? UnlocksAfterRunAs { get; }
 
-	/// <summary>
-	/// Quote to display in the Bestiary Stats screen when a character has encountered a monster but has never killed it.
-	/// The quote is unique per character and is the same quote for all monsters.
-	/// </summary>
 	public LocString BestiarySeenQuote => new LocString("characters", Id.Entry + ".bestiaryQuote");
 
-	/// <summary>
-	/// Unique Character x Monster quote. There are a lot of these. If this quote is missing, we display a placeholder quote
-	/// from bestiary.json -&gt; "QUOTE_PLACEHOLDER"
-	/// </summary>
 	public LocString? BestiaryKillQuote => LocString.GetIfExists("characters", Id.Entry + ".bestiaryKillQuote");
-
-	public LocString PronounObject => new LocString("characters", Id.Entry + ".pronounObject");
-
-	public LocString PossessiveAdjective => new LocString("characters", Id.Entry + ".possessiveAdjective");
-
-	public LocString PronounPossessive => new LocString("characters", Id.Entry + ".pronounPossessive");
-
-	public LocString PronounSubject => new LocString("characters", Id.Entry + ".pronounSubject");
 
 	public LocString CardsModifierTitle => new LocString("characters", Id.Entry + ".cardsModifierTitle");
 
@@ -99,6 +62,8 @@ public abstract class CharacterModel : AbstractModel
 	public virtual Color EnergyLabelOutlineColor => new Color("0000000D");
 
 	public virtual int BaseOrbSlotCount => 0;
+
+	public virtual int BaseArrowSlotCount => 0;
 
 	public virtual bool ShouldAlwaysShowStarCounter => false;
 
@@ -172,18 +137,18 @@ public abstract class CharacterModel : AbstractModel
 
 	public virtual string CharacterSelectTransitionPath => "res://materials/transitions/" + Id.Entry.ToLowerInvariant() + "_transition_mat.tres";
 
+	public virtual float DreadBgBrightness => 0.7f;
+
+	public virtual float DreadBgContrast => 1.1f;
+
+	public virtual Color DreadNameColor => new Color("ffd500c0");
+
 	protected virtual string MapMarkerPath => ImageHelper.GetImagePath("packed/map/icons/map_marker_" + Id.Entry.ToLowerInvariant() + ".png");
 
 	public CompressedTexture2D MapMarker => PreloadManager.Cache.GetCompressedTexture2D(MapMarkerPath);
 
-	/// <summary>
-	/// The color of the speech bubble during Ancient dialogues.
-	/// </summary>
 	public virtual Color DialogueColor { get; } = new Color("28454f");
 
-	/// <summary>
-	/// Color of speech bubbles when the character talks (e.g. to the Architect)
-	/// </summary>
 	public virtual VfxColor SpeechBubbleColor { get; } = VfxColor.Cyan;
 
 	public virtual Color MapDrawingColor => Colors.Black;
@@ -192,14 +157,8 @@ public abstract class CharacterModel : AbstractModel
 
 	public virtual Color RemoteTargetingLineOutline => Colors.Black;
 
-	/// <summary>
-	/// Assets required for the character select screen
-	/// </summary>
 	public IEnumerable<string> AssetPathsCharacterSelect => new _003C_003Ez__ReadOnlyArray<string>(new string[5] { CharacterSelectBg, CharacterSelectIconPath, IconTexturePath, CharacterSelectLockedIconPath, CharacterSelectTransitionPath });
 
-	/// <summary>
-	/// Assets required for the run.
-	/// </summary>
 	public IEnumerable<string> AssetPaths => new string[9] { VisualsPath, IconTexturePath, IconPath, EnergyCounterPath, RestSiteAnimPath, MerchantAnimPath, CharacterSelectTransitionPath, MapMarkerPath, TrailPath }.Concat(ExtraAssetPaths);
 
 	public abstract float AttackAnimDelay { get; }
@@ -222,10 +181,6 @@ public abstract class CharacterModel : AbstractModel
 
 	protected Func<Creature, bool> IsLowHealth => (Creature creature) => creature.GetHpPercentRemaining() <= 0.25;
 
-	/// <summary>
-	/// These are the standard animations based on the animation trigger.
-	/// These animations always transition back to an idle.
-	/// </summary>
 	protected virtual List<(AnimState, string)> AnimationStates => new List<(AnimState, string)>
 	{
 		(new AnimState("cast"), "Cast"),
@@ -236,14 +191,29 @@ public abstract class CharacterModel : AbstractModel
 
 	public override bool ShouldReceiveCombatHooks => false;
 
+	private LocString GetPronoun(string pronounKey, FoolPronounGuess pronounGuess)
+	{
+		if (Gender != CharacterGender.Tree)
+		{
+			return new LocString("characters", Id.Entry + "." + pronounKey);
+		}
+		return new LocString("characters", $"{Id.Entry}.guess.{pronounGuess.ToLocKey()}.{pronounKey}");
+	}
+
+	private CharacterGender GetGrammaticalGender(FoolPronounGuess pronounGuess)
+	{
+		if (Gender != CharacterGender.Tree)
+		{
+			return Gender;
+		}
+		return pronounGuess.ToGrammaticalGender();
+	}
+
 	public virtual NCreatureVisuals CreateVisuals()
 	{
 		return PreloadManager.Cache.GetScene(VisualsPath).Instantiate<NCreatureVisuals>(PackedScene.GenEditState.Disabled);
 	}
 
-	/// <summary>
-	/// Get the VFX paths to use when this character is attacking <see cref="T:MegaCrit.Sts2.Core.Models.Events.TheArchitect" />.
-	/// </summary>
 	public abstract List<string> GetArchitectAttackVfx();
 
 	public virtual CreatureAnimator GenerateAnimator(MegaSprite controller, Creature creature)
@@ -266,23 +236,17 @@ public abstract class CharacterModel : AbstractModel
 		return creatureAnimator;
 	}
 
-	/// <summary>
-	/// Add details about this character to the given LocString.
-	/// </summary>
-	public void AddDetailsTo(LocString str)
+	public void AddDetailsTo(LocString str, FoolPronounGuess pronounGuess = FoolPronounGuess.Neutral)
 	{
 		str.Add("character", Title);
 		str.Add("characterObject", TitleObject);
-		str.Add("characterGender", Gender.ToString().ToLowerInvariant());
-		str.Add("possessiveAdjective", PossessiveAdjective);
-		str.Add("pronounObject", PronounObject);
-		str.Add("pronounPossessive", PronounPossessive);
-		str.Add("pronounSubject", PronounSubject);
+		str.Add("characterGender", GetGrammaticalGender(pronounGuess).ToString().ToLowerInvariant());
+		str.Add("possessiveAdjective", GetPronoun("possessiveAdjective", pronounGuess));
+		str.Add("pronounObject", GetPronoun("pronounObject", pronounGuess));
+		str.Add("pronounPossessive", GetPronoun("pronounPossessive", pronounGuess));
+		str.Add("pronounSubject", GetPronoun("pronounSubject", pronounGuess));
 	}
 
-	/// <summary>
-	/// Get the text to show on the character selection screen that explains how to unlock this character.
-	/// </summary>
 	public LocString GetUnlockText()
 	{
 		LocString locString = new LocString("characters", Id.Entry + ".unlockText");

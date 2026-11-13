@@ -114,7 +114,7 @@ public class NPlayerTurnBanner : Control
 		tween.TweenProperty(this, "modulate:a", 1f, 1.0).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
 		tween.TweenProperty(_label, "position", _label.Position + new Vector2(0f, -50f), 1.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
 		tween.TweenProperty(_turnLabel, "position", _turnLabel.Position + new Vector2(0f, 50f), 1.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
-		if (await tween.AwaitFinished(this))
+		if (await tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			tween = CreateTween();
 			tween.TweenInterval(0.4);

@@ -94,6 +94,12 @@ public class DynamicVar : IConvertible
 
 	public int IntValue => (int)BaseValue;
 
+	/// <summary>
+	/// The number shown to the player: PreviewValue truncated to a whole number. Weak and Vulnerable make previews
+	/// fractional, and the card prints the whole part.
+	/// </summary>
+	private int ShownValue => (int)PreviewValue;
+
 	public DynamicVar(string name, decimal baseValue)
 	{
 		Name = name;
@@ -170,19 +176,19 @@ public class DynamicVar : IConvertible
 	/// <returns>Highlighted preview value.</returns>
 	public string ToHighlightedString(bool inverse)
 	{
-		int value = (int)PreviewValue;
-		int value2 = (int)EnchantedValue;
-		return StsTextUtilities.HighlightChangeText(baseComparison: WasJustUpgraded ? 1 : ((!inverse) ? value.CompareTo(value2) : value2.CompareTo(value)), text: value.ToString(CultureInfo.InvariantCulture));
+		int shownValue = ShownValue;
+		int value = (int)EnchantedValue;
+		return StsTextUtilities.HighlightChangeText(baseComparison: WasJustUpgraded ? 1 : ((!inverse) ? shownValue.CompareTo(value) : value.CompareTo(shownValue)), text: shownValue.ToString(CultureInfo.InvariantCulture));
 	}
 
 	public override string ToString()
 	{
-		return IntValue.ToString();
+		return ShownValue.ToString();
 	}
 
 	public object GetSourceValue(ISelectorInfo selector)
 	{
-		return GetBaseValueForIConvertible();
+		return ShownValue;
 	}
 
 	public TypeCode GetTypeCode()
@@ -197,7 +203,7 @@ public class DynamicVar : IConvertible
 
 	public byte ToByte(IFormatProvider? provider)
 	{
-		return Convert.ToByte(GetBaseValueForIConvertible(), provider);
+		return Convert.ToByte(ShownValue, provider);
 	}
 
 	public char ToChar(IFormatProvider? provider)
@@ -212,66 +218,61 @@ public class DynamicVar : IConvertible
 
 	public decimal ToDecimal(IFormatProvider? provider)
 	{
-		return GetBaseValueForIConvertible();
+		return ShownValue;
 	}
 
 	public double ToDouble(IFormatProvider? provider)
 	{
-		return Convert.ToDouble(GetBaseValueForIConvertible(), provider);
+		return Convert.ToDouble(ShownValue, provider);
 	}
 
 	public short ToInt16(IFormatProvider? provider)
 	{
-		return Convert.ToInt16(GetBaseValueForIConvertible(), provider);
+		return Convert.ToInt16(ShownValue, provider);
 	}
 
 	public int ToInt32(IFormatProvider? provider)
 	{
-		return Convert.ToInt32(GetBaseValueForIConvertible(), provider);
+		return Convert.ToInt32(ShownValue, provider);
 	}
 
 	public long ToInt64(IFormatProvider? provider)
 	{
-		return Convert.ToInt64(GetBaseValueForIConvertible(), provider);
+		return Convert.ToInt64(ShownValue, provider);
 	}
 
 	public sbyte ToSByte(IFormatProvider? provider)
 	{
-		return Convert.ToSByte(GetBaseValueForIConvertible(), provider);
+		return Convert.ToSByte(ShownValue, provider);
 	}
 
 	public float ToSingle(IFormatProvider? provider)
 	{
-		return Convert.ToSingle(GetBaseValueForIConvertible(), provider);
+		return Convert.ToSingle(ShownValue, provider);
 	}
 
 	public string ToString(IFormatProvider? provider)
 	{
-		return GetBaseValueForIConvertible().ToString(provider);
+		return ShownValue.ToString(provider);
 	}
 
 	public object ToType(Type conversionType, IFormatProvider? provider)
 	{
-		return Convert.ChangeType(GetBaseValueForIConvertible(), conversionType, provider);
+		return Convert.ChangeType(ShownValue, conversionType, provider);
 	}
 
 	public ushort ToUInt16(IFormatProvider? provider)
 	{
-		return Convert.ToUInt16(GetBaseValueForIConvertible(), provider);
+		return Convert.ToUInt16(ShownValue, provider);
 	}
 
 	public uint ToUInt32(IFormatProvider? provider)
 	{
-		return Convert.ToUInt32(GetBaseValueForIConvertible(), provider);
+		return Convert.ToUInt32(ShownValue, provider);
 	}
 
 	public ulong ToUInt64(IFormatProvider? provider)
 	{
-		return Convert.ToUInt64(GetBaseValueForIConvertible(), provider);
-	}
-
-	protected virtual decimal GetBaseValueForIConvertible()
-	{
-		return BaseValue;
+		return Convert.ToUInt64(ShownValue, provider);
 	}
 }

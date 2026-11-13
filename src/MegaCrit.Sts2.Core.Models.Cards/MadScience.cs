@@ -99,7 +99,7 @@ public sealed class MadScience : CardModel
 		new BlockVar(8m, ValueProp.Move),
 		new PowerVar<WeakPower>("SappingWeak", 2m),
 		new PowerVar<VulnerablePower>("SappingVulnerable", 2m),
-		new DynamicVar("ViolenceHits", 3m),
+		new HitCountVar("ViolenceHits", 3),
 		new PowerVar<StranglePower>("ChokingDamage", 6m),
 		new EnergyVar("EnergizedEnergy", 2),
 		new CardsVar("WisdomCards", 3),
@@ -178,11 +178,11 @@ public sealed class MadScience : CardModel
 	{
 		return cardType switch
 		{
-			CardType.Attack => "mad_science_attack", 
-			CardType.Skill => "mad_science_skill", 
-			CardType.Power => "mad_science_power", 
-			CardType.None => "mad_science_attack", 
-			_ => throw new InvalidOperationException($"Mad Science is invalid type {TinkerTimeType}."), 
+			CardType.Attack => "mad_science_attack",
+			CardType.Skill => "mad_science_skill",
+			CardType.Power => "mad_science_power",
+			CardType.None => "mad_science_attack",
+			_ => throw new InvalidOperationException($"Mad Science is invalid type {TinkerTimeType}."),
 		};
 	}
 

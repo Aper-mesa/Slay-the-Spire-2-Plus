@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Ancients;
+using MegaCrit.Sts2.Core.Entities.Characters;
 using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Models.Relics;
@@ -11,6 +14,8 @@ namespace MegaCrit.Sts2.Core.Models.Events;
 public class Orobas : AncientEventModel
 {
 	private const float _prismaticOdds = 0.3333333f;
+
+	public override FoolPronounGuess FoolPronounGuess => FoolPronounGuess.It;
 
 	public override Color ButtonColor => new Color(0.05f, 0f, 0.1f, 0.35f);
 
@@ -25,19 +30,41 @@ public class Orobas : AncientEventModel
 		new _003C_003Ez__ReadOnlySingleElementList<EventOption>(PrismaticGemOption)
 	}.SelectMany((IEnumerable<EventOption> x) => x);
 
-	private IEnumerable<EventOption> OptionPool1 => new _003C_003Ez__ReadOnlyArray<EventOption>(new EventOption[2]
+	private List<EventOption> OptionPool1
 	{
-		RelicOption<ElectricShrymp>(),
-		RelicOption<GlassEye>()
-	});
+		get
+		{
+			int num = 2;
+			List<EventOption> list = new List<EventOption>(num);
+			CollectionsMarshal.SetCount(list, num);
+			Span<EventOption> span = CollectionsMarshal.AsSpan(list);
+			int num2 = 0;
+			span[num2] = RelicOption<ElectricShrymp>();
+			num2++;
+			span[num2] = RelicOption<GlassEye>();
+			return list;
+		}
+	}
 
-	private IEnumerable<EventOption> OptionPool2 => new _003C_003Ez__ReadOnlyArray<EventOption>(new EventOption[4]
+	private List<EventOption> OptionPool2
 	{
-		RelicOption<AlchemicalCoffer>(),
-		RelicOption<Driftwood>(),
-		RelicOption<RadiantPearl>(),
-		RelicOption<SandCastle>()
-	});
+		get
+		{
+			int num = 4;
+			List<EventOption> list = new List<EventOption>(num);
+			CollectionsMarshal.SetCount(list, num);
+			Span<EventOption> span = CollectionsMarshal.AsSpan(list);
+			int num2 = 0;
+			span[num2] = RelicOption<AlchemicalCoffer>();
+			num2++;
+			span[num2] = RelicOption<Driftwood>();
+			num2++;
+			span[num2] = RelicOption<RadiantPearl>();
+			num2++;
+			span[num2] = RelicOption<SandCastle>();
+			return list;
+		}
+	}
 
 	private IEnumerable<EventOption> SeaGlassOptions
 	{
@@ -56,7 +83,7 @@ public class Orobas : AncientEventModel
 
 	private EventOption PrismaticGemOption => RelicOption<PrismaticGem>();
 
-	private IEnumerable<EventOption> OptionPool3
+	private List<EventOption> OptionPool3
 	{
 		get
 		{
@@ -192,7 +219,7 @@ public class Orobas : AncientEventModel
 		{
 			characterModel = character;
 		}
-		List<EventOption> list = OptionPool1.ToList();
+		List<EventOption> optionPool = OptionPool1;
 		EventOption item;
 		if (Rng.NextFloat() < 0.3333333f)
 		{
@@ -204,12 +231,7 @@ public class Orobas : AncientEventModel
 			seaGlass.CharacterId = characterModel.Id;
 			item = RelicOption(seaGlass);
 		}
-		list.Add(item);
-		return new _003C_003Ez__ReadOnlyArray<EventOption>(new EventOption[3]
-		{
-			Rng.NextItem(list),
-			Rng.NextItem(OptionPool2),
-			Rng.NextItem(OptionPool3)
-		});
+		optionPool.Add(item);
+		return GetOptionsFromThreePools(optionPool, OptionPool2, OptionPool3);
 	}
 }

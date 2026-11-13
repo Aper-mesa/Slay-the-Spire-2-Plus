@@ -1,9 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Powers;
 
@@ -32,11 +28,8 @@ public sealed class DrawCardsNextTurnPower : PowerModel
 		return count + (decimal)Amount;
 	}
 
-	public override async Task AfterSideTurnStart(CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState)
+	public override async Task AfterModifyingHandDraw()
 	{
-		if (participants.Contains(Owner) && AmountOnTurnStart != 0)
-		{
-			await PowerCmd.Remove(this);
-		}
+		await PowerCmd.Remove(this);
 	}
 }

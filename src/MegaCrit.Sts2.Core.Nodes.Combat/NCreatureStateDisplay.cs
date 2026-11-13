@@ -85,6 +85,11 @@ public class NCreatureStateDisplay : Control
 		public static readonly StringName HideImmediately = "HideImmediately";
 
 		/// <summary>
+		/// Cached name for the 'Reposition' method.
+		/// </summary>
+		public static readonly StringName Reposition = "Reposition";
+
+		/// <summary>
 		/// Cached name for the 'AnimateIn' method.
 		/// </summary>
 		public static readonly StringName AnimateIn = "AnimateIn";
@@ -98,6 +103,16 @@ public class NCreatureStateDisplay : Control
 		/// Cached name for the 'AnimateOut' method.
 		/// </summary>
 		public static readonly StringName AnimateOut = "AnimateOut";
+
+		/// <summary>
+		/// Cached name for the 'AnimateInSimple' method.
+		/// </summary>
+		public static readonly StringName AnimateInSimple = "AnimateInSimple";
+
+		/// <summary>
+		/// Cached name for the 'AnimateOutSimple' method.
+		/// </summary>
+		public static readonly StringName AnimateOutSimple = "AnimateOutSimple";
 
 		/// <summary>
 		/// Cached name for the 'OnBlockTrackingCreatureBlockChanged' method.
@@ -328,6 +343,15 @@ public class NCreatureStateDisplay : Control
 		Modulate = modulate;
 	}
 
+	public void Reposition(Vector2 position)
+	{
+		_originalPosition = position;
+		Position = position;
+	}
+
+	/// <summary>
+	/// Called to animate the HP bar in under various circumstances.
+	/// </summary>
 	public void AnimateIn(HealthBarAnimMode mode)
 	{
 		if (SaveManager.Instance.PrefsSave.FastMode == FastModeType.Instant)
@@ -362,6 +386,9 @@ public class NCreatureStateDisplay : Control
 		}
 	}
 
+	/// <summary>
+	/// Called when the HP bar is unhovered and it should be animated out.
+	/// </summary>
 	public void AnimateOut()
 	{
 		if (SaveManager.Instance.PrefsSave.FastMode == FastModeType.Instant)
@@ -377,6 +404,43 @@ public class NCreatureStateDisplay : Control
 		_showHideTween.TweenProperty(this, "modulate:a", 0f, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Sine);
 		_showHideTween.TweenProperty(this, "position", _healthBarAnimOffset, 0.25).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Quad);
 		_showHideTween.Chain().TweenCallback(Callable.From(() => Visible = false));
+	}
+
+	/// <summary>
+	/// Called ONLY when the creature is revived. All other paths use AnimateIn.
+	/// </summary>
+	public Tween AnimateInSimple()
+	{
+		_showHideTween?.Kill();
+		Position = _originalPosition;
+		_showHideTween = CreateTween();
+		_showHideTween.TweenProperty(this, "modulate:a", 1f, 0.5).SetDelay(0.5).SetEase(Tween.EaseType.Out)
+			.SetTrans(Tween.TransitionType.Expo);
+		return _showHideTween;
+	}
+
+	/// <summary>
+	/// Called when the creature dies and the HP bar should be animated out.
+	/// </summary>
+	public Tween? AnimateOutSimple()
+	{
+		if (!IsNodeReady())
+		{
+			return null;
+		}
+		if (SaveManager.Instance.PrefsSave.FastMode == FastModeType.Instant)
+		{
+			Color modulate = Modulate;
+			modulate.A = 0f;
+			Modulate = modulate;
+			Visible = false;
+			return null;
+		}
+		_showHideTween?.Kill();
+		_showHideTween = CreateTween();
+		_showHideTween.TweenProperty(this, "modulate:a", 0f, 0.5).SetDelay(0.5).SetEase(Tween.EaseType.Out)
+			.SetTrans(Tween.TransitionType.Expo);
+		return _showHideTween;
 	}
 
 	private void OnCreatureDied(Creature _)
@@ -412,7 +476,7 @@ public class NCreatureStateDisplay : Control
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(16);
+		List<MethodInfo> list = new List<MethodInfo>(19);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._EnterTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -428,6 +492,10 @@ public class NCreatureStateDisplay : Control
 		list.Add(new MethodInfo(MethodName.ShowNameplate, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.HideNameplate, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.HideImmediately, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.Reposition, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Vector2, "position", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
 		list.Add(new MethodInfo(MethodName.AnimateIn, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Int, "mode", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
@@ -438,6 +506,8 @@ public class NCreatureStateDisplay : Control
 			new PropertyInfo(Variant.Type.Int, "blockGain", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.AnimateOut, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.AnimateInSimple, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Tween"), exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.AnimateOutSimple, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Tween"), exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnBlockTrackingCreatureBlockChanged, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Int, "oldBlock", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false),
@@ -522,6 +592,12 @@ public class NCreatureStateDisplay : Control
 			ret = default;
 			return true;
 		}
+		if (method == MethodName.Reposition && args.Count == 1)
+		{
+			Reposition(VariantUtils.ConvertTo<Vector2>(in args[0]));
+			ret = default;
+			return true;
+		}
 		if (method == MethodName.AnimateIn && args.Count == 1)
 		{
 			AnimateIn(VariantUtils.ConvertTo<HealthBarAnimMode>(in args[0]));
@@ -538,6 +614,16 @@ public class NCreatureStateDisplay : Control
 		{
 			AnimateOut();
 			ret = default;
+			return true;
+		}
+		if (method == MethodName.AnimateInSimple && args.Count == 0)
+		{
+			ret = VariantUtils.CreateFrom<Tween>(AnimateInSimple());
+			return true;
+		}
+		if (method == MethodName.AnimateOutSimple && args.Count == 0)
+		{
+			ret = VariantUtils.CreateFrom<Tween>(AnimateOutSimple());
 			return true;
 		}
 		if (method == MethodName.OnBlockTrackingCreatureBlockChanged && args.Count == 2)
@@ -601,6 +687,10 @@ public class NCreatureStateDisplay : Control
 		{
 			return true;
 		}
+		if (method == MethodName.Reposition)
+		{
+			return true;
+		}
 		if (method == MethodName.AnimateIn)
 		{
 			return true;
@@ -610,6 +700,14 @@ public class NCreatureStateDisplay : Control
 			return true;
 		}
 		if (method == MethodName.AnimateOut)
+		{
+			return true;
+		}
+		if (method == MethodName.AnimateInSimple)
+		{
+			return true;
+		}
+		if (method == MethodName.AnimateOutSimple)
 		{
 			return true;
 		}

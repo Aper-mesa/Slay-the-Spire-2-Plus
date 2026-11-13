@@ -55,7 +55,7 @@ public sealed class TheInsatiable : MonsterModel
 
 	public static string EatPlayerAnim => "eat_player";
 
-	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 341, 321);
+	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 341, 321) + (AscensionHelper.IsDread() ? 20 : 0);
 
 	public override int MaxInitialHp => MinInitialHp;
 
@@ -64,6 +64,18 @@ public sealed class TheInsatiable : MonsterModel
 	private int BiteDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 31, 28);
 
 	private int SalivateStrength => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 3, 2);
+
+	private int SandpitAmount
+	{
+		get
+		{
+			if (!AscensionHelper.IsDread())
+			{
+				return 4;
+			}
+			return 3;
+		}
+	}
 
 	private bool HasLiquified
 	{
@@ -80,7 +92,7 @@ public sealed class TheInsatiable : MonsterModel
 
 	public override DamageSfxType TakeDamageSfxType => DamageSfxType.Insect;
 
-	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (creature != Creature)
 		{
@@ -122,7 +134,7 @@ public sealed class TheInsatiable : MonsterModel
 		{
 			SandpitPower sandpitPower = (SandpitPower)ModelDb.Power<SandpitPower>().ToMutable();
 			sandpitPower.Target = target;
-			await PowerCmd.Apply(new ThrowingPlayerChoiceContext(), sandpitPower, Creature, 4m, Creature, null);
+			await PowerCmd.Apply(new ThrowingPlayerChoiceContext(), sandpitPower, Creature, SandpitAmount, Creature, null);
 		}
 		foreach (Creature target2 in targets)
 		{

@@ -10,7 +10,7 @@ namespace MegaCrit.Sts2.Core.Nodes.Pooling;
 
 public class NodePool
 {
-	private static System.Collections.Generic.Dictionary<Type, INodePool> _pools = new System.Collections.Generic.Dictionary<Type, INodePool>();
+	private static readonly System.Collections.Generic.Dictionary<Type, INodePool> _pools = new System.Collections.Generic.Dictionary<Type, INodePool>();
 
 	public static NodePool<T> Init<T>(string scenePath, int prewarmCount) where T : Node, IPoolable
 	{
@@ -61,7 +61,7 @@ public class NodePool<T> : INodePool where T : Node, IPoolable
 
 	private static Variant _signalStr = Variant.CreateFrom("signal");
 
-	private string _scenePath;
+	private readonly string _scenePath;
 
 	private readonly List<T> _freeObjects = new List<T>();
 

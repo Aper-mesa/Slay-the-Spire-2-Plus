@@ -20,6 +20,8 @@ public struct CardSelectorPrefs
 
 	public static LocString UpgradeSelectionPrompt => new LocString("card_selection", "TO_UPGRADE");
 
+	public static LocString AbsorbSelectionPrompt => new LocString("card_selection", "TO_ABSORB");
+
 	public LocString Prompt { get; }
 
 	public int MinSelect { get; }

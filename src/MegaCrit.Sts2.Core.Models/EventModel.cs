@@ -10,6 +10,7 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Debug;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Characters;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -87,6 +88,12 @@ public abstract class EventModel : AbstractModel
 	/// Only relevant when <see cref="P:MegaCrit.Sts2.Core.Models.EventModel.LayoutType" /> is <see cref="F:MegaCrit.Sts2.Core.Events.EventLayoutType.Combat" />.
 	/// </summary>
 	public virtual EncounterModel? CanonicalEncounter => null;
+
+	/// <summary>
+	/// What this event (or Ancient) guesses the Fool's pronouns are when its text refers to them.
+	/// Override to give a specific event/Ancient its own guess. Ignored for non-Fool characters.
+	/// </summary>
+	public virtual FoolPronounGuess FoolPronounGuess => FoolPronounGuess.Neutral;
 
 	public bool IsFinished
 	{
@@ -171,11 +178,11 @@ public abstract class EventModel : AbstractModel
 
 	private string LayoutScenePath => LayoutType switch
 	{
-		EventLayoutType.Default => "res://scenes/events/default_event_layout.tscn", 
-		EventLayoutType.Combat => "res://scenes/events/combat_event_layout.tscn", 
-		EventLayoutType.Ancient => "res://scenes/events/ancient_event_layout.tscn", 
-		EventLayoutType.Custom => SceneHelper.GetScenePath("events/custom/" + Id.Entry.ToLowerInvariant()), 
-		_ => throw new ArgumentOutOfRangeException(), 
+		EventLayoutType.Default => "res://scenes/events/default_event_layout.tscn",
+		EventLayoutType.Combat => "res://scenes/events/combat_event_layout.tscn",
+		EventLayoutType.Ancient => "res://scenes/events/ancient_event_layout.tscn",
+		EventLayoutType.Custom => SceneHelper.GetScenePath("events/custom/" + Id.Entry.ToLowerInvariant()),
+		_ => throw new ArgumentOutOfRangeException(),
 	};
 
 	public EventModel CanonicalInstance
@@ -456,6 +463,13 @@ public abstract class EventModel : AbstractModel
 	/// Gets called when entering an Event. Useful for setting ambient vfx, changing music, etc
 	/// </summary>
 	public virtual void OnRoomEnter()
+	{
+	}
+
+	/// <summary>
+	/// Gets called when exiting an Event. Useful for cleaning up ambient vfx, changing music, etc
+	/// </summary>
+	public virtual void OnRoomExit()
 	{
 	}
 

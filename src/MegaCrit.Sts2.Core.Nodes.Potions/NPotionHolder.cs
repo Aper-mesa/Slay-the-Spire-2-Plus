@@ -480,9 +480,9 @@ public class NPotionHolder : NClickableControl
 			ICombatState combatState = creature.CombatState;
 			List<Creature> source = (targetType switch
 			{
-				TargetType.AnyEnemy => (IEnumerable<Creature>)combatState.GetOpponentsOf(creature), 
-				TargetType.AnyPlayer => combatState.GetTeammatesOf(creature), 
-				_ => throw new ArgumentOutOfRangeException("targetType", targetType, null), 
+				TargetType.AnyEnemy => (IEnumerable<Creature>)combatState.GetOpponentsOf(creature),
+				TargetType.AnyPlayer => combatState.GetTeammatesOf(creature),
+				_ => throw new ArgumentOutOfRangeException("targetType", targetType, null),
 			}).Where((Creature c) => c.IsAlive).ToList();
 			NCombatRoom.Instance.RestrictControllerNavigation(source.Select((Creature c) => NCombatRoom.Instance.GetCreatureNode(c).Hitbox));
 			NCombatRoom.Instance.GetCreatureNode(source.First()).Hitbox.TryGrabFocus();
@@ -505,7 +505,7 @@ public class NPotionHolder : NClickableControl
 				if (merchantScreenContext != null)
 				{
 					savedFocusBehavior = merchantScreenContext.FocusBehaviorRecursive;
-					merchantScreenContext.FocusBehaviorRecursive = FocusBehaviorRecursiveEnum.Enabled;
+					merchantScreenContext.FocusBehaviorRecursive = FocusBehaviorRecursiveEnum.Inherited;
 				}
 				if (!merchantButton.IsEnabled)
 				{
@@ -521,7 +521,7 @@ public class NPotionHolder : NClickableControl
 			Node node = await instance.SelectionFinished();
 			NCombatRoom.Instance?.EnableControllerNavigation();
 			NRun.Instance.GlobalUi.MultiplayerPlayerContainer.UnlockNavigation();
-			if (node != null)
+			if (node != null && !RunManager.Instance.IsPotionUseLocked)
 			{
 				Creature creature2;
 				if (!(node is NCreature nCreature))

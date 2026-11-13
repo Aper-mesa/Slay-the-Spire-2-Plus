@@ -278,10 +278,10 @@ public static class SentryService
 	{
 		_sampleRate = branch switch
 		{
-			"public" => 0.1f, 
-			"private-beta" => 1f, 
-			"public-beta" => 0.2f, 
-			_ => (branch != null) ? 0.1f : (SampleForNonSteamBranches ? 1f : 0f), 
+			"public" => 0.1f,
+			"private-beta" => 1f,
+			"public-beta" => 0.2f,
+			_ => (branch != null) ? 0.1f : (SampleForNonSteamBranches ? 1f : 0f),
 		};
 		_platformBranchResolved = true;
 		if (IsEnabled)
@@ -583,7 +583,7 @@ public static class SentryService
 		{
 			return null;
 		}
-		if (sentryEvent.Exception is AutoSlayTimeoutException)
+		if (sentryEvent.Exception is DriverTimeoutException)
 		{
 			return null;
 		}

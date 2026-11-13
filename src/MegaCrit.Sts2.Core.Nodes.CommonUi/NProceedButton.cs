@@ -3,10 +3,16 @@ using System.ComponentModel;
 using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
+using MegaCrit.Sts2.Core.Audio.Debug;
 using MegaCrit.Sts2.Core.ControllerInput;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Map;
+using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.Vfx;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.addons.mega_text;
 
 namespace MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -144,6 +150,11 @@ public class NProceedButton : NButton
 		public static readonly StringName _viewport = "_viewport";
 
 		/// <summary>
+		/// Cached name for the '_voteContainer' field.
+		/// </summary>
+		public static readonly StringName _voteContainer = "_voteContainer";
+
+		/// <summary>
 		/// Cached name for the '_defaultOutlineColor' field.
 		/// </summary>
 		public static readonly StringName _defaultOutlineColor = "_defaultOutlineColor";
@@ -215,6 +226,8 @@ public class NProceedButton : NButton
 
 	private Viewport _viewport;
 
+	private NMultiplayerVoteContainer _voteContainer;
+
 	private Color _defaultOutlineColor = StsColors.cream;
 
 	private Color _hoveredOutlineColor = StsColors.gold;
@@ -241,6 +254,8 @@ public class NProceedButton : NButton
 
 	private static readonly Vector2 _hidePosRatio = _showPosRatio + new Vector2(400f, 0f) / NGame.devResolution;
 
+	private IRunState? _runState;
+
 	public static LocString ProceedLoc => new LocString("gameplay_ui", "PROCEED_BUTTON");
 
 	public static LocString SkipLoc => new LocString("gameplay_ui", "CHOOSE_CARD_SKIP_BUTTON");
@@ -260,16 +275,29 @@ public class NProceedButton : NButton
 		_buttonImage = GetNode<Control>("%Image");
 		_hsv = (ShaderMaterial)_buttonImage.GetMaterial();
 		_label = GetNode<MegaLabel>("%Label");
+		_voteContainer = GetNode<NMultiplayerVoteContainer>("%MultiplayerVoteContainer");
 		_viewport = GetViewport();
 		Position = HidePos;
 		Disable();
 		NGame.Instance.DebugToggleProceedButton += DebugToggleVisibility;
+		RunManager.Instance.MapSelectionSynchronizer.PlayerVoteChanged += OnPlayerVoteChanged;
+		RunManager.Instance.MapSelectionSynchronizer.PlayerVoteCancelled += OnPlayerVoteCancelled;
+		RunManager.Instance.FlavorSynchronizer.MapPingReceived += OnMapPingReceived;
 	}
 
 	public override void _ExitTree()
 	{
 		base._ExitTree();
 		NGame.Instance.DebugToggleProceedButton -= DebugToggleVisibility;
+		RunManager.Instance.MapSelectionSynchronizer.PlayerVoteChanged -= OnPlayerVoteChanged;
+		RunManager.Instance.MapSelectionSynchronizer.PlayerVoteCancelled -= OnPlayerVoteCancelled;
+		RunManager.Instance.FlavorSynchronizer.MapPingReceived -= OnMapPingReceived;
+	}
+
+	public void Initialize(IRunState runState)
+	{
+		_runState = runState;
+		_voteContainer.Initialize(ShouldShowMapVote, runState.Players);
 	}
 
 	/// <summary>
@@ -415,6 +443,60 @@ public class NProceedButton : NButton
 	private void UpdateShaderV(float value)
 	{
 		_hsv.SetShaderParameter(_v, value);
+	}
+
+	/// <summary>
+	/// Called when a player votes for a map point.
+	/// This is used to refresh the player heads container when in Blitz mode, where pressing the proceed button votes
+	/// to move on to the next map point.
+	/// </summary>
+	private void OnPlayerVoteChanged(Player player, MapVote? oldLocation, MapVote? newLocation)
+	{
+		_voteContainer.RefreshPlayerVotes();
+	}
+
+	/// <summary>
+	/// Called when a player cancels their vote to move on.
+	/// This is used to refresh the player heads container when in Blitz mode, where pressing the proceed button votes
+	/// to move on to the next map point.
+	/// </summary>
+	private void OnPlayerVoteCancelled(Player player, MapVote? oldLocation)
+	{
+		_voteContainer.RefreshPlayerVotes();
+	}
+
+	/// <summary>
+	/// Called when a player attempts to ping.
+	/// This is called when ANY ping occurs, but should only do something when the proceed button is double-pressed in
+	/// Blitz mode.
+	/// </summary>
+	private void OnMapPingReceived(Player player, MapCoord coord)
+	{
+		if (player.RunState.GameMode == GameMode.Blitz && Visible)
+		{
+			NMapPingVfx nMapPingVfx = NMapPingVfx.Create();
+			nMapPingVfx.Modulate = player.Character.MapDrawingColor;
+			this.AddChildSafely(nMapPingVfx);
+			this.MoveChildSafely(nMapPingVfx, 0);
+			nMapPingVfx.Size *= Size.Y * (1f / 64f);
+			nMapPingVfx.PivotOffset = nMapPingVfx.Size * 0.5f;
+			nMapPingVfx.Position = Size * 0.5f - nMapPingVfx.PivotOffset;
+			NRun.Instance.GlobalUi.MultiplayerPlayerContainer.FlashPlayerReady(player);
+			NDebugAudioManager.Instance.Play("map_ping.mp3", 1f, PitchVariance.Medium);
+		}
+	}
+
+	/// <summary>
+	/// Called by the player vote container to know whether it should show the player head for the given player.
+	/// </summary>
+	private bool ShouldShowMapVote(Player player)
+	{
+		IRunState? runState = _runState;
+		if (runState == null || runState.GameMode != GameMode.Blitz)
+		{
+			return false;
+		}
+		return RunManager.Instance.MapSelectionSynchronizer.GetVote(player).HasValue;
 	}
 
 	/// <summary>
@@ -640,6 +722,11 @@ public class NProceedButton : NButton
 			_viewport = VariantUtils.ConvertTo<Viewport>(in value);
 			return true;
 		}
+		if (name == PropertyName._voteContainer)
+		{
+			_voteContainer = VariantUtils.ConvertTo<NMultiplayerVoteContainer>(in value);
+			return true;
+		}
 		if (name == PropertyName._defaultOutlineColor)
 		{
 			_defaultOutlineColor = VariantUtils.ConvertTo<Color>(in value);
@@ -745,6 +832,11 @@ public class NProceedButton : NButton
 			value = VariantUtils.CreateFrom(in _viewport);
 			return true;
 		}
+		if (name == PropertyName._voteContainer)
+		{
+			value = VariantUtils.CreateFrom(in _voteContainer);
+			return true;
+		}
 		if (name == PropertyName._defaultOutlineColor)
 		{
 			value = VariantUtils.CreateFrom(in _defaultOutlineColor);
@@ -814,6 +906,7 @@ public class NProceedButton : NButton
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._label, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._hsv, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._viewport, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._voteContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Color, PropertyName._defaultOutlineColor, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Color, PropertyName._hoveredOutlineColor, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Color, PropertyName._downColor, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -840,6 +933,7 @@ public class NProceedButton : NButton
 		info.AddProperty(PropertyName._label, Variant.From(in _label));
 		info.AddProperty(PropertyName._hsv, Variant.From(in _hsv));
 		info.AddProperty(PropertyName._viewport, Variant.From(in _viewport));
+		info.AddProperty(PropertyName._voteContainer, Variant.From(in _voteContainer));
 		info.AddProperty(PropertyName._defaultOutlineColor, Variant.From(in _defaultOutlineColor));
 		info.AddProperty(PropertyName._hoveredOutlineColor, Variant.From(in _hoveredOutlineColor));
 		info.AddProperty(PropertyName._downColor, Variant.From(in _downColor));
@@ -881,45 +975,49 @@ public class NProceedButton : NButton
 		{
 			_viewport = value6.As<Viewport>();
 		}
-		if (info.TryGetProperty(PropertyName._defaultOutlineColor, out var value7))
+		if (info.TryGetProperty(PropertyName._voteContainer, out var value7))
 		{
-			_defaultOutlineColor = value7.As<Color>();
+			_voteContainer = value7.As<NMultiplayerVoteContainer>();
 		}
-		if (info.TryGetProperty(PropertyName._hoveredOutlineColor, out var value8))
+		if (info.TryGetProperty(PropertyName._defaultOutlineColor, out var value8))
 		{
-			_hoveredOutlineColor = value8.As<Color>();
+			_defaultOutlineColor = value8.As<Color>();
 		}
-		if (info.TryGetProperty(PropertyName._downColor, out var value9))
+		if (info.TryGetProperty(PropertyName._hoveredOutlineColor, out var value9))
 		{
-			_downColor = value9.As<Color>();
+			_hoveredOutlineColor = value9.As<Color>();
 		}
-		if (info.TryGetProperty(PropertyName._outlineColor, out var value10))
+		if (info.TryGetProperty(PropertyName._downColor, out var value10))
 		{
-			_outlineColor = value10.As<Color>();
+			_downColor = value10.As<Color>();
 		}
-		if (info.TryGetProperty(PropertyName._outlineTransparentColor, out var value11))
+		if (info.TryGetProperty(PropertyName._outlineColor, out var value11))
 		{
-			_outlineTransparentColor = value11.As<Color>();
+			_outlineColor = value11.As<Color>();
 		}
-		if (info.TryGetProperty(PropertyName._animTween, out var value12))
+		if (info.TryGetProperty(PropertyName._outlineTransparentColor, out var value12))
 		{
-			_animTween = value12.As<Tween>();
+			_outlineTransparentColor = value12.As<Color>();
 		}
-		if (info.TryGetProperty(PropertyName._glowTween, out var value13))
+		if (info.TryGetProperty(PropertyName._animTween, out var value13))
 		{
-			_glowTween = value13.As<Tween>();
+			_animTween = value13.As<Tween>();
 		}
-		if (info.TryGetProperty(PropertyName._hoverTween, out var value14))
+		if (info.TryGetProperty(PropertyName._glowTween, out var value14))
 		{
-			_hoverTween = value14.As<Tween>();
+			_glowTween = value14.As<Tween>();
 		}
-		if (info.TryGetProperty(PropertyName._elapsedTime, out var value15))
+		if (info.TryGetProperty(PropertyName._hoverTween, out var value15))
 		{
-			_elapsedTime = value15.As<float>();
+			_hoverTween = value15.As<Tween>();
 		}
-		if (info.TryGetProperty(PropertyName._shouldPulse, out var value16))
+		if (info.TryGetProperty(PropertyName._elapsedTime, out var value16))
 		{
-			_shouldPulse = value16.As<bool>();
+			_elapsedTime = value16.As<float>();
+		}
+		if (info.TryGetProperty(PropertyName._shouldPulse, out var value17))
+		{
+			_shouldPulse = value17.As<bool>();
 		}
 	}
 }

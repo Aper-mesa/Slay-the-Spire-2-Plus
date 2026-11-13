@@ -8,5 +8,6 @@ public enum GameMode
 	None,
 	Standard,
 	Daily,
-	Custom
+	Dread,
+	Blitz
 }

@@ -20,6 +20,8 @@ public sealed class HauntedShip : MonsterModel
 {
 	private const string _attackTripleTrigger = "AttackTriple";
 
+	private const string _stompSfx = "event:/sfx/enemy/enemy_attacks/haunted_ship/haunted_ship_stomp";
+
 	protected override bool HasPhobiaSpineSkin => true;
 
 	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 67, 63);
@@ -66,7 +68,7 @@ public sealed class HauntedShip : MonsterModel
 		await DamageCmd.Attack(StompDamage).WithHitCount(StompRepeat).FromMonster(this)
 			.WithAttackerAnim("AttackTriple", 0.15f)
 			.OnlyPlayAnimOnce()
-			.WithAttackerFx(null, AttackSfx)
+			.WithAttackerFx(null, "event:/sfx/enemy/enemy_attacks/haunted_ship/haunted_ship_stomp")
 			.WithHitFx("vfx/vfx_attack_slash")
 			.Execute(null);
 	}

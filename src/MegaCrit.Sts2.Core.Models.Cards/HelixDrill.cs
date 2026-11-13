@@ -23,7 +23,7 @@ public sealed class HelixDrill : CardModel
 		new DamageVar(3m, ValueProp.Move),
 		new CalculationBaseVar(0m),
 		new CalculationExtraVar(1m),
-		new CalculatedVar("CalculatedHits").WithMultiplier((CardModel card, Creature? _) =>
+		new CalculatedHitCountVar("CalculatedHits").WithMultiplier((CardModel card, Creature? _) =>
 		{
 			if (card.Pile == null)
 			{
@@ -32,9 +32,10 @@ public sealed class HelixDrill : CardModel
 			int num = (from e in CombatManager.Instance.History.Entries.OfType<EnergySpentEntry>()
 				where e.HappenedThisTurn(card.CombatState) && e.Actor.Player == card.Owner
 				select e).Sum((EnergySpentEntry c) => c.Amount);
-			if (card.Pile.Type == PileType.Play)
+			CardPlay currentCardPlay = CombatManager.Instance.History.Entries.OfType<CardPlayStartedEntry>().LastOrDefault((CardPlayStartedEntry e) => e.HappenedThisTurn(card.CombatState) && e.Actor.Player == card.Owner && e.CardPlay.Card == card)?.CardPlay;
+			if (currentCardPlay != null && !CombatManager.Instance.History.Entries.OfType<CardPlayFinishedEntry>().Any((CardPlayFinishedEntry e) => e.HappenedThisTurn(card.CombatState) && e.Actor.Player == card.Owner && e.CardPlay == currentCardPlay))
 			{
-				num -= card.EnergyCost.GetWithModifiers(CostModifiers.All);
+				num -= currentCardPlay.Resources.EnergySpent;
 			}
 			return num;
 		})

@@ -10,7 +10,7 @@ namespace MegaCrit.Sts2.Core.Models.Cards;
 
 public sealed class Speedster : CardModel
 {
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new PowerVar<SpeedsterPower>(2m));
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new PowerVar<SpeedsterPower>(3m));
 
 	public Speedster()
 		: base(2, CardType.Power, CardRarity.Uncommon, TargetType.Self)

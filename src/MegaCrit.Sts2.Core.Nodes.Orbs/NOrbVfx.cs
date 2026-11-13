@@ -166,7 +166,7 @@ public class NOrbVfx : Node2D
 	[Export(PropertyHint.None, "")]
 	private string _evokeVfxSceneName = "";
 
-	private static string _evokeVfxScenePath = "vfx/orbs/";
+	private const string _evokeVfxScenePath = "vfx/orbs/";
 
 	protected bool _forcedFocusPower;
 
@@ -342,7 +342,7 @@ public class NOrbVfx : Node2D
 	{
 		if (!string.IsNullOrEmpty(_evokeVfxSceneName))
 		{
-			VfxCmd.PlayVfx(GlobalPosition, _evokeVfxScenePath + _evokeVfxSceneName, VfxContainer);
+			VfxCmd.PlayVfx(GlobalPosition, "vfx/orbs/" + _evokeVfxSceneName, VfxContainer);
 		}
 	}
 

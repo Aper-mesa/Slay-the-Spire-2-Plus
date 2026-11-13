@@ -8,7 +8,6 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Platform;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Timeline;
@@ -302,15 +301,10 @@ public class NGeneralStatsGrid : Control
 			_streakEntry.SetBottomText("[red]" + locString.GetFormattedText() + "[/red]");
 		}
 		_characterStatContainer.FreeChildren();
-		CreateCharacterSection(progressSave, ModelDb.Character<Ironclad>().Id);
-		CreateCharacterSection(progressSave, ModelDb.Character<MegaCrit.Sts2.Core.Models.Characters.ClassicIronclad>().Id);
-		CreateCharacterSection(progressSave, ModelDb.Character<MegaCrit.Sts2.Core.Models.Characters.ClassicWatcher>().Id);
-		CreateCharacterSection(progressSave, ModelDb.Character<Silent>().Id);
-		CreateCharacterSection(progressSave, ModelDb.Character<MegaCrit.Sts2.Core.Models.Characters.ClassicSilent>().Id);
-		CreateCharacterSection(progressSave, ModelDb.Character<Regent>().Id);
-		CreateCharacterSection(progressSave, ModelDb.Character<Necrobinder>().Id);
-		CreateCharacterSection(progressSave, ModelDb.Character<Defect>().Id);
-		CreateCharacterSection(progressSave, ModelDb.Character<MegaCrit.Sts2.Core.Models.Characters.ClassicDefect>().Id);
+		foreach (CharacterModel allCharacter in ModelDb.AllCharacters)
+		{
+			CreateCharacterSection(progressSave, allCharacter.Id);
+		}
 	}
 
 	private void CreateCharacterSection(ProgressState progressSave, ModelId id)

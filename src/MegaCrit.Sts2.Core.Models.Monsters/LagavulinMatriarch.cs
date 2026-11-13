@@ -46,19 +46,31 @@ public sealed class LagavulinMatriarch : MonsterModel
 
 	private NSleepingVfx? _sleepingVfx;
 
-	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 233, 222);
+	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 233, 222) + (AscensionHelper.IsDread() ? 22 : 0);
 
 	public override int MaxInitialHp => MinInitialHp;
 
 	private int SlashDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 21, 19);
 
-	private int Slash2Damage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 14, 12);
+	private int Slash2Damage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 14, 12) + (AscensionHelper.IsDread() ? 2 : 0);
 
-	private int Slash2Block => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 14, 12);
+	private int Slash2Block => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 14, 12) + (AscensionHelper.IsDread() ? 2 : 0);
 
 	private int DisembowelDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 10, 9);
 
 	private int DisembowelRepeat => 2;
+
+	private int DebuffAmount
+	{
+		get
+		{
+			if (!AscensionHelper.IsDread())
+			{
+				return -2;
+			}
+			return -3;
+		}
+	}
 
 	public override DamageSfxType TakeDamageSfxType => DamageSfxType.ArmorBig;
 
@@ -145,7 +157,7 @@ public sealed class LagavulinMatriarch : MonsterModel
 		return Task.CompletedTask;
 	}
 
-	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (creature != Creature)
 		{
@@ -237,8 +249,8 @@ public sealed class LagavulinMatriarch : MonsterModel
 		SleepingVfx = null;
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/lagavulin_matriarch/lagavulin_matriarch_cast");
 		await CreatureCmd.TriggerAnim(Creature, "Cast", 0.6f);
-		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), targets, -2m, Creature, null);
-		await PowerCmd.Apply<DexterityPower>(new ThrowingPlayerChoiceContext(), targets, -2m, Creature, null);
+		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), targets, DebuffAmount, Creature, null);
+		await PowerCmd.Apply<DexterityPower>(new ThrowingPlayerChoiceContext(), targets, DebuffAmount, Creature, null);
 		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, 2m, Creature, null);
 	}
 

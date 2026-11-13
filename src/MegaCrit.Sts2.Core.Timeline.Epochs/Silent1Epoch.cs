@@ -14,7 +14,7 @@ public class Silent1Epoch : EpochModel
 
 	public override EpochEra Era => EpochEra.Invitation0;
 
-	public override int EraPosition => 3;
+	public override int EraPosition => 4;
 
 	public override string StoryId => "Silent";
 

@@ -238,7 +238,7 @@ public class NCreditsScreen : Control, IScreenContext
 
 	public override void _Ready()
 	{
-		NHotkeyManager.Instance.PushHotkeyReleasedBinding(MegaInput.back, CloseScreenDebug);
+		NHotkeyManager.Instance.PushHotkeyReleasedBinding(MegaInput.back, CloseScreenDebug, 0L);
 		_screenContents = GetNode<Control>("%ScreenContents");
 		_backButton = GetNode<NBackButton>("BackButton");
 		_screenContents.Modulate = StsColors.transparentWhite;
@@ -420,7 +420,7 @@ public class NCreditsScreen : Control, IScreenContext
 	public override void _EnterTree()
 	{
 		NHotkeyManager.Instance.AddBlockingScreen(this);
-		NHotkeyManager.Instance.PushHotkeyReleasedBinding(MegaInput.cancel, CloseScreenDebug);
+		NHotkeyManager.Instance.PushHotkeyReleasedBinding(MegaInput.cancel, CloseScreenDebug, 0L);
 	}
 
 	public override void _ExitTree()
@@ -453,7 +453,7 @@ public class NCreditsScreen : Control, IScreenContext
 		_tween?.Kill();
 		_tween = CreateTween().SetParallel();
 		_tween.TweenProperty(_screenContents, "modulate:a", 0f, 1.0);
-		if (await _tween.AwaitFinished(this))
+		if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			NModalContainer.Instance.Clear();
 		}

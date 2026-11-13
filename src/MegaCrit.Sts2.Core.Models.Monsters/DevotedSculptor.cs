@@ -18,7 +18,7 @@ public sealed class DevotedSculptor : MonsterModel
 {
 	private static readonly LocString _forbiddenIncantationDialogue = new LocString("monsters", "DEVOTED_SCULPTOR.moves.FORBIDDEN_INCANTATION.banter");
 
-	private readonly int _ritualGain = 9;
+	private const int _ritualGain = 9;
 
 	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 172, 162);
 
@@ -47,7 +47,7 @@ public sealed class DevotedSculptor : MonsterModel
 		VfxCmd.PlayOnCreatureCenter(Creature, "vfx/vfx_scream");
 		TalkCmd.Play(_forbiddenIncantationDialogue, Creature, VfxColor.Blue);
 		await Cmd.CustomScaledWait(0.75f, 1f);
-		await PowerCmd.Apply<RitualPower>(new ThrowingPlayerChoiceContext(), Creature, _ritualGain, null, null);
+		await PowerCmd.Apply<RitualPower>(new ThrowingPlayerChoiceContext(), Creature, 9m, null, null);
 	}
 
 	private async Task SavageMove(IReadOnlyList<Creature> targets)

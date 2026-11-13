@@ -106,16 +106,19 @@ public class NDebugAudioManager : Node
 
 	private static readonly StringName _master = new StringName("Master");
 
-	private List<AudioStreamPlayer> _freeAudioPlayers = new List<AudioStreamPlayer>();
+	private static NDebugAudioManager? _instance;
+
+	private readonly List<AudioStreamPlayer> _freeAudioPlayers = new List<AudioStreamPlayer>();
 
 	private readonly List<PlayingSound> _playingSounds = new List<PlayingSound>();
 
 	private int _nextId;
 
-	public static NDebugAudioManager? Instance => NGame.Instance?.DebugAudio;
+	public static NDebugAudioManager? Instance => NGame.Instance?.DebugAudio ?? _instance;
 
 	public override void _Ready()
 	{
+		_instance = this;
 		_freeAudioPlayers.AddRange(GetChildren().OfType<AudioStreamPlayer>());
 	}
 
@@ -238,7 +241,7 @@ public class NDebugAudioManager : Node
 	/// <param name="linearVolume">Volume from 0-1.</param>
 	public void SetMasterAudioVolume(float linearVolume)
 	{
-		AudioServer.Singleton.SetBusVolumeDb(AudioServer.Singleton.GetBusIndex(_master), Mathf.LinearToDb(Mathf.Pow(linearVolume, 2f)));
+		AudioServer.Singleton.SetBusVolumeDb(AudioServer.Singleton.GetBusIndex(_master), Mathf.LinearToDb(linearVolume * linearVolume));
 	}
 
 	/// <summary>
@@ -247,7 +250,7 @@ public class NDebugAudioManager : Node
 	/// <param name="linearVolume">Volume from 0-1.</param>
 	public void SetSfxAudioVolume(float linearVolume)
 	{
-		AudioServer.Singleton.SetBusVolumeDb(AudioServer.Singleton.GetBusIndex(_sfx), Mathf.LinearToDb(Mathf.Pow(linearVolume, 2f)));
+		AudioServer.Singleton.SetBusVolumeDb(AudioServer.Singleton.GetBusIndex(_sfx), Mathf.LinearToDb(linearVolume * linearVolume));
 	}
 
 	private void PlayerFinished(AudioStreamPlayer player)
@@ -266,12 +269,12 @@ public class NDebugAudioManager : Node
 	{
 		float num = variance switch
 		{
-			PitchVariance.None => 0f, 
-			PitchVariance.Small => 0.02f, 
-			PitchVariance.Medium => 0.05f, 
-			PitchVariance.Large => 0.1f, 
-			PitchVariance.TooMuch => 0.2f, 
-			_ => throw new ArgumentOutOfRangeException("variance", variance, null), 
+			PitchVariance.None => 0f,
+			PitchVariance.Small => 0.02f,
+			PitchVariance.Medium => 0.05f,
+			PitchVariance.Large => 0.1f,
+			PitchVariance.TooMuch => 0.2f,
+			_ => throw new ArgumentOutOfRangeException("variance", variance, null),
 		};
 		if (num == 0f)
 		{

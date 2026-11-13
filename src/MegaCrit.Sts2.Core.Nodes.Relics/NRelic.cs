@@ -115,6 +115,18 @@ public class NRelic : Control
 		return nRelic;
 	}
 
+	/// <summary>
+	/// Used to bypass some tests lol.
+	/// NRelic was part of TreasureRelicHolder but now it's a separate
+	/// </summary>
+	public static NRelic CreateNonNull(RelicModel relic, IconSize iconSize)
+	{
+		NRelic nRelic = PreloadManager.Cache.GetScene(_scenePath).Instantiate<NRelic>(PackedScene.GenEditState.Disabled);
+		nRelic.Model = relic;
+		nRelic._iconSize = iconSize;
+		return nRelic;
+	}
+
 	public override void _Ready()
 	{
 		Icon = GetNode<TextureRect>("%Icon");

@@ -12,6 +12,8 @@ public struct LobbyPlayerChangedCharacterMessage : INetMessage, IPacketSerializa
 {
 	public CharacterModel character;
 
+	public bool isRotatingDread;
+
 	public bool ShouldBroadcast => true;
 
 	public NetTransferMode Mode => NetTransferMode.Reliable;
@@ -23,10 +25,12 @@ public struct LobbyPlayerChangedCharacterMessage : INetMessage, IPacketSerializa
 	public void Serialize(PacketWriter writer)
 	{
 		writer.WriteModel(character);
+		writer.WriteBool(isRotatingDread);
 	}
 
 	public void Deserialize(PacketReader reader)
 	{
 		character = reader.ReadModel<CharacterModel>();
+		isRotatingDread = reader.ReadBool();
 	}
 }

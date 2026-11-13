@@ -15,7 +15,7 @@ loc_probe/
 recover_probe/
 tmp_probe/
 pck_files.tsv
-tools/
+/tools/
 *.zip
 
 # Local AI assistant config (never commit)

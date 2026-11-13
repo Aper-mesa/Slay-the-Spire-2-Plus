@@ -14,7 +14,11 @@ public struct StartRunLobbyPlayer : IPacketSerializable
 
 	public SerializableUnlockState unlockState;
 
-	public int maxMultiplayerAscensionUnlocked;
+	public int maxStandardAscension;
+
+	public int maxBlitzAscension;
+
+	public bool isRotatingDread;
 
 	public bool isModded;
 
@@ -26,7 +30,9 @@ public struct StartRunLobbyPlayer : IPacketSerializable
 		writer.WriteInt(slotId, 2);
 		writer.WriteModel(character);
 		writer.Write(unlockState);
-		writer.WriteInt(maxMultiplayerAscensionUnlocked);
+		writer.WriteInt(maxStandardAscension, 8);
+		writer.WriteInt(maxBlitzAscension, 8);
+		writer.WriteBool(isRotatingDread);
 		writer.WriteBool(isModded);
 		writer.WriteBool(isReady);
 	}
@@ -37,13 +43,15 @@ public struct StartRunLobbyPlayer : IPacketSerializable
 		slotId = reader.ReadInt(2);
 		character = reader.ReadModel<CharacterModel>();
 		unlockState = reader.Read<SerializableUnlockState>();
-		maxMultiplayerAscensionUnlocked = reader.ReadInt();
+		maxStandardAscension = reader.ReadInt(8);
+		maxBlitzAscension = reader.ReadInt(8);
+		isRotatingDread = reader.ReadBool();
 		isModded = reader.ReadBool();
 		isReady = reader.ReadBool();
 	}
 
 	public override string ToString()
 	{
-		return $"Player {id}, {character.Id.Entry}";
+		return $"Player {id}, {character?.Id.Entry}";
 	}
 }

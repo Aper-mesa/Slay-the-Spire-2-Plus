@@ -34,11 +34,6 @@ public class NUnlockConfirmButton : NButton
 		public new static readonly StringName OnFocus = "OnFocus";
 
 		/// <summary>
-		/// Cached name for the '_Process' method.
-		/// </summary>
-		public new static readonly StringName _Process = "_Process";
-
-		/// <summary>
 		/// Cached name for the 'OnPress' method.
 		/// </summary>
 		public new static readonly StringName OnPress = "OnPress";
@@ -114,10 +109,6 @@ public class NUnlockConfirmButton : NButton
 		_hoverTween.TweenProperty(this, "scale", Vector2.One * 1.1f, 0.05);
 	}
 
-	public override void _Process(double delta)
-	{
-	}
-
 	protected override void OnPress()
 	{
 		base.OnPress();
@@ -143,14 +134,10 @@ public class NUnlockConfirmButton : NButton
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(6);
+		List<MethodInfo> list = new List<MethodInfo>(5);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnUnfocus, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnFocus, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName._Process, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
-		{
-			new PropertyInfo(Variant.Type.Float, "delta", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
-		}, null));
 		list.Add(new MethodInfo(MethodName.OnPress, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnRelease, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		return list;
@@ -175,12 +162,6 @@ public class NUnlockConfirmButton : NButton
 		if (method == MethodName.OnFocus && args.Count == 0)
 		{
 			OnFocus();
-			ret = default;
-			return true;
-		}
-		if (method == MethodName._Process && args.Count == 1)
-		{
-			_Process(VariantUtils.ConvertTo<double>(in args[0]));
 			ret = default;
 			return true;
 		}
@@ -212,10 +193,6 @@ public class NUnlockConfirmButton : NButton
 			return true;
 		}
 		if (method == MethodName.OnFocus)
-		{
-			return true;
-		}
-		if (method == MethodName._Process)
 		{
 			return true;
 		}

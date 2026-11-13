@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using MegaCrit.Sts2.Core.Saves.Runs;
 
 namespace MegaCrit.Sts2.Core.Map;
 
@@ -20,6 +21,53 @@ public abstract class ActMap
 	public virtual MapPoint? SecondBossMapPoint => null;
 
 	protected abstract MapPoint?[,] Grid { get; }
+
+	/// <summary>
+	/// Connects parent and child points from saved data rather than from generation code, so a map restored
+	/// from a save keeps the exact topology it was saved with. Children absent from the lookup are skipped.
+	/// </summary>
+	protected static void ConnectChildren(IEnumerable<SerializableMapPoint> points, Dictionary<MapCoord, MapPoint> lookup)
+	{
+		foreach (SerializableMapPoint point in points)
+		{
+			ConnectChildren(point, lookup);
+		}
+	}
+
+	/// <inheritdoc cref="M:MegaCrit.Sts2.Core.Map.ActMap.ConnectChildren(System.Collections.Generic.IEnumerable{MegaCrit.Sts2.Core.Saves.Runs.SerializableMapPoint},System.Collections.Generic.Dictionary{MegaCrit.Sts2.Core.Map.MapCoord,MegaCrit.Sts2.Core.Map.MapPoint})" />
+	protected static void ConnectChildren(SerializableMapPoint savedPoint, Dictionary<MapCoord, MapPoint> lookup)
+	{
+		if (savedPoint.ChildCoords == null)
+		{
+			return;
+		}
+		MapPoint mapPoint = lookup[savedPoint.Coord];
+		foreach (MapCoord childCoord in savedPoint.ChildCoords)
+		{
+			if (lookup.TryGetValue(childCoord, out MapPoint value))
+			{
+				mapPoint.AddChildPoint(value);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Restores the start points a saved map recorded. Coords with no point in the lookup are skipped.
+	/// </summary>
+	protected void RestoreStartMapPoints(SerializableActMap saved, Dictionary<MapCoord, MapPoint> lookup)
+	{
+		if (saved.StartMapPointCoords == null)
+		{
+			return;
+		}
+		foreach (MapCoord startMapPointCoord in saved.StartMapPointCoords)
+		{
+			if (lookup.TryGetValue(startMapPointCoord, out MapPoint value))
+			{
+				startMapPoints.Add(value);
+			}
+		}
+	}
 
 	public int GetColumnCount()
 	{

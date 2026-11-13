@@ -11,29 +11,32 @@ public static class StoryModelSubtypes
 	private static readonly Type _t0 = typeof(DefectStory);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties)]
-	private static readonly Type _t1 = typeof(IroncladStory);
+	private static readonly Type _t1 = typeof(FoolStory);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties)]
-	private static readonly Type _t2 = typeof(MagnumOpusStory);
+	private static readonly Type _t2 = typeof(IroncladStory);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties)]
-	private static readonly Type _t3 = typeof(NecrobinderStory);
+	private static readonly Type _t3 = typeof(MagnumOpusStory);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties)]
-	private static readonly Type _t4 = typeof(RegentStory);
+	private static readonly Type _t4 = typeof(NecrobinderStory);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties)]
-	private static readonly Type _t5 = typeof(SilentStory);
+	private static readonly Type _t5 = typeof(RegentStory);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties)]
-	private static readonly Type _t6 = typeof(TalesFromTheSpireStory);
+	private static readonly Type _t6 = typeof(SilentStory);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties)]
-	private static readonly Type _t7 = typeof(TheReopeningStory);
+	private static readonly Type _t7 = typeof(TalesFromTheSpireStory);
 
-	private static readonly Type[] _subtypes = new Type[8] { _t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7 };
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties)]
+	private static readonly Type _t8 = typeof(TheReopeningStory);
 
-	public static int Count => 8;
+	private static readonly Type[] _subtypes = new Type[9] { _t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8 };
+
+	public static int Count => 9;
 
 	public static IReadOnlyList<Type> All => _subtypes;
 

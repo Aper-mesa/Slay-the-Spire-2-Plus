@@ -50,6 +50,22 @@ public abstract class ControllerConfig
 			Controller.dPadRight
 		},
 		{
+			"Alt_Up",
+			Controller.rStickUp
+		},
+		{
+			"Alt_Down",
+			Controller.rStickDown
+		},
+		{
+			"Alt_Left",
+			Controller.rStickLeft
+		},
+		{
+			"Alt_Right",
+			Controller.rStickRight
+		},
+		{
 			"Select",
 			Controller.faceButtonSouth
 		},
@@ -208,15 +224,15 @@ public abstract class ControllerConfig
 
 	private string Ps4Touchpad => ImageHelper.GetImagePath(FolderPath + "/touchpad.tres");
 
-	private string RightJoystickNorth => ImageHelper.GetImagePath(FolderPath + "/rs_up.tres");
+	protected virtual string RightJoystickNorth => ImageHelper.GetImagePath(FolderPath + "/rs_up.tres");
 
-	private string RightJoystickSouth => ImageHelper.GetImagePath(FolderPath + "/rs_down.tres");
+	protected virtual string RightJoystickSouth => ImageHelper.GetImagePath(FolderPath + "/rs_down.tres");
 
-	private string RightJoystickEast => ImageHelper.GetImagePath(FolderPath + "/rs_right.tres");
+	protected virtual string RightJoystickEast => ImageHelper.GetImagePath(FolderPath + "/rs_right.tres");
 
-	private string RightJoystickWest => ImageHelper.GetImagePath(FolderPath + "/rs_left.tres");
+	protected virtual string RightJoystickWest => ImageHelper.GetImagePath(FolderPath + "/rs_left.tres");
 
-	private Dictionary<string, string> GlyphMap
+	internal Dictionary<string, string> GlyphMap
 	{
 		get
 		{

@@ -26,7 +26,7 @@ public class DigRestSiteOption : RestSiteOption
 
 	public override async Task<bool> OnSelect()
 	{
-		await RelicCmd.Obtain(RelicFactory.PullNextRelicFromFront(Owner).ToMutable(), Owner);
+		await RelicCmd.Obtain(RelicFactory.PullNextRelicForRewardFromFront(Owner).ToMutable(), Owner);
 		return true;
 	}
 

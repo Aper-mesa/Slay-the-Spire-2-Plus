@@ -146,7 +146,7 @@ public sealed class Trial : EventModel
 		await CardPileCmd.AddCurseToDeck<Regret>(Owner);
 		for (int i = 0; i < 2; i++)
 		{
-			await RelicCmd.Obtain(RelicFactory.PullNextRelicFromFront(Owner).ToMutable(), Owner);
+			await RelicCmd.Obtain(RelicFactory.PullNextRelicFromFront(Owner, Rng).ToMutable(), Owner);
 		}
 		SetTrialFinished("TRIAL.pages.MERCHANT_GUILTY.description");
 	}

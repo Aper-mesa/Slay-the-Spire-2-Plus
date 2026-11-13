@@ -523,7 +523,7 @@ public class NClickableControl : Control
 
 	protected void CheckMouseDragThreshold(InputEvent inputEvent)
 	{
-		if (!(_ignoreDragThreshold <= 0f) && _isPressed && inputEvent is InputEventMouseMotion { GlobalPosition: var globalPosition } && globalPosition.DistanceTo(_beginDragPosition) >= _ignoreDragThreshold)
+		if (!(_ignoreDragThreshold <= 0f) && _isPressed && inputEvent is InputEventMouseMotion { GlobalPosition: var globalPosition } && globalPosition.DistanceSquaredTo(_beginDragPosition) >= _ignoreDragThreshold * _ignoreDragThreshold)
 		{
 			_isPressed = false;
 		}

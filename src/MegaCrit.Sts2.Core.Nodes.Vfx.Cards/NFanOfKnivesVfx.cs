@@ -215,7 +215,7 @@ public class NFanOfKnivesVfx : Node2D
 		_fanTween.TweenProperty(_shiv7, "rotation", 0.872665f, 0.8).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Back);
 		_fanTween.TweenProperty(_shiv8, "rotation", 1.3089975f, 0.8).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Back);
 		_fanTween.TweenProperty(_shiv9, "rotation", 1.74533f, 0.8).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Back);
-		if (await _spawnTween.AwaitFinished(this) && await _fanTween.AwaitFinished(this))
+		if (await _spawnTween.AwaitFinished(this) == TweenOutcome.Finished && await _fanTween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			this.QueueFreeSafely();
 		}

@@ -64,7 +64,13 @@ public struct NetErrorInfo
 	/// Extra info about the disconnection.
 	/// You usually do not need to access this directly; use GetErrorString and show that to the user.
 	/// </summary>
-	public ConnectionFailureExtraInfo? ConnectionExtraInfo { get; }
+	public ConnectionFailureExtraInfo? ConnectionExtraInfo { get; set; }
+
+	/// <summary>
+	/// Extra info about a join failure.
+	/// This is only set if the disconnection occurs on a client during the join flow.
+	/// </summary>
+	public JoinFailureExtraInfo? JoinExtraInfo { get; set; }
 
 	/// <summary>
 	/// Set to true if ANYONE in the session has mods.
@@ -81,6 +87,7 @@ public struct NetErrorInfo
 		_debugReason = null;
 		_godotError = null;
 		ConnectionExtraInfo = null;
+		JoinExtraInfo = null;
 		IsModded = false;
 		_reason = reason;
 		SelfInitiated = selfInitiated;
@@ -94,6 +101,7 @@ public struct NetErrorInfo
 		_lobbyEnterResponse = null;
 		_debugReason = null;
 		_godotError = null;
+		JoinExtraInfo = null;
 		IsModded = false;
 		_connectionReason = reason;
 		ConnectionExtraInfo = extraInfo;
@@ -108,6 +116,7 @@ public struct NetErrorInfo
 		_lobbyEnterResponse = null;
 		_godotError = null;
 		ConnectionExtraInfo = null;
+		JoinExtraInfo = null;
 		IsModded = false;
 		_steamReason = steamReason;
 		_debugReason = debugReason;
@@ -123,6 +132,7 @@ public struct NetErrorInfo
 		_debugReason = null;
 		_godotError = null;
 		ConnectionExtraInfo = null;
+		JoinExtraInfo = null;
 		IsModded = false;
 		_lobbyEnterResponse = lobbyEnterResponse;
 		SelfInitiated = true;
@@ -137,6 +147,7 @@ public struct NetErrorInfo
 		_debugReason = null;
 		_godotError = null;
 		ConnectionExtraInfo = null;
+		JoinExtraInfo = null;
 		IsModded = false;
 		_lobbyCreationResult = lobbyCreationResult;
 		SelfInitiated = true;
@@ -151,6 +162,7 @@ public struct NetErrorInfo
 		_lobbyEnterResponse = null;
 		_debugReason = null;
 		ConnectionExtraInfo = null;
+		JoinExtraInfo = null;
 		IsModded = false;
 		_godotError = error;
 		SelfInitiated = true;
@@ -175,13 +187,13 @@ public struct NetErrorInfo
 			ConnectionFailureReason value = _connectionReason.Value;
 			return value switch
 			{
-				ConnectionFailureReason.None => NetError.None, 
-				ConnectionFailureReason.LobbyFull => NetError.LobbyFull, 
-				ConnectionFailureReason.RunInProgress => NetError.RunInProgress, 
-				ConnectionFailureReason.NotInSaveGame => NetError.NotInSaveGame, 
-				ConnectionFailureReason.VersionMismatch => NetError.VersionMismatch, 
-				ConnectionFailureReason.ModMismatch => NetError.ModMismatch, 
-				ConnectionFailureReason.HandshakeTimeout => NetError.HandshakeTimeout, 
+				ConnectionFailureReason.None => NetError.None,
+				ConnectionFailureReason.LobbyFull => NetError.LobbyFull,
+				ConnectionFailureReason.RunInProgress => NetError.RunInProgress,
+				ConnectionFailureReason.NotInSaveGame => NetError.NotInSaveGame,
+				ConnectionFailureReason.VersionMismatch => NetError.VersionMismatch,
+				ConnectionFailureReason.ModMismatch => NetError.ModMismatch,
+				ConnectionFailureReason.HandshakeTimeout => NetError.HandshakeTimeout,
 			};
 		}
 		if (_steamReason.HasValue)
@@ -197,18 +209,18 @@ public struct NetErrorInfo
 			EChatRoomEnterResponse value2 = _lobbyEnterResponse.Value;
 			return value2 switch
 			{
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseDoesntExist => NetError.InvalidJoin, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseNotAllowed => NetError.InternalError, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseFull => NetError.LobbyFull, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseError => NetError.UnknownNetworkError, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseBanned => NetError.JoinBlockedByUser, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseLimited => NetError.UnknownNetworkError, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseClanDisabled => NetError.JoinBlockedByUser, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseCommunityBan => NetError.JoinBlockedByUser, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseMemberBlockedYou => NetError.JoinBlockedByUser, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseYouBlockedMember => NetError.JoinBlockedByUser, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseRatelimitExceeded => NetError.RateLimited, 
-				EChatRoomEnterResponse.k_EChatRoomEnterResponseSuccess => NetError.None, 
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseDoesntExist => NetError.InvalidJoin,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseNotAllowed => NetError.InternalError,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseFull => NetError.LobbyFull,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseError => NetError.UnknownNetworkError,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseBanned => NetError.JoinBlockedByUser,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseLimited => NetError.UnknownNetworkError,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseClanDisabled => NetError.JoinBlockedByUser,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseCommunityBan => NetError.JoinBlockedByUser,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseMemberBlockedYou => NetError.JoinBlockedByUser,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseYouBlockedMember => NetError.JoinBlockedByUser,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseRatelimitExceeded => NetError.RateLimited,
+				EChatRoomEnterResponse.k_EChatRoomEnterResponseSuccess => NetError.None,
 			};
 		}
 		if (_godotError.HasValue)

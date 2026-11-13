@@ -21,7 +21,7 @@ public sealed class FlakCannon : CardModel
 		new DamageVar(8m, ValueProp.Move),
 		new CalculationBaseVar(0m),
 		new CalculationExtraVar(1m),
-		new CalculatedVar("CalculatedHits").WithMultiplier((CardModel card, Creature? _) => GetStatuses(card.Owner).Count())
+		new CalculatedHitCountVar("CalculatedHits").WithMultiplier((CardModel card, Creature? _) => GetStatuses(card.Owner).Count())
 	});
 
 	protected override IEnumerable<IHoverTip> ExtraHoverTips => new _003C_003Ez__ReadOnlySingleElementList<IHoverTip>(HoverTipFactory.FromKeyword(CardKeyword.Exhaust));

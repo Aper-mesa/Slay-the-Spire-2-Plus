@@ -21,7 +21,7 @@ public sealed class AlchemicalCoffer : RelicModel
 	{
 		int originalSlotCount = Owner.MaxPotionCount;
 		await PlayerCmd.GainMaxPotionCount(DynamicVars["PotionSlots"].IntValue, Owner);
-		IEnumerable<PotionModel> enumerable = PotionFactory.CreateRandomPotionsOutOfCombat(Owner, DynamicVars["PotionSlots"].IntValue, Owner.RunState.Rng.CombatPotionGeneration);
+		IEnumerable<PotionModel> enumerable = PotionFactory.CreateRandomPotionsOutOfCombat(Owner, DynamicVars["PotionSlots"].IntValue, Owner.PlayerRng.NonCombatGeneration);
 		int i = 0;
 		foreach (PotionModel item in enumerable)
 		{

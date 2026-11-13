@@ -23,7 +23,7 @@ public class NightTerrors : ModifierModel
 		if (!isMimicked)
 		{
 			int num = Mathf.Min(5, player.Creature.MaxHp - 1);
-			await CreatureCmd.LoseMaxHp(new ThrowingPlayerChoiceContext(), player.Creature, num, isFromCard: false);
+			await CreatureCmd.LoseMaxHp(new ThrowingPlayerChoiceContext(), player.Creature, num, null);
 		}
 	}
 
@@ -40,6 +40,21 @@ public class NightTerrors : ModifierModel
 			num++;
 		}
 		array[num] = additionalRestSiteHealText;
+		return new _003C_003Ez__ReadOnlyArray<LocString>(array);
+	}
+
+	public override IReadOnlyList<LocString> ModifyExtraRestSiteMendText(Player player, IReadOnlyList<LocString> currentExtraText)
+	{
+		LocString additionalRestSiteMendText = AdditionalRestSiteMendText;
+		additionalRestSiteMendText.Add("MaxHpLoss", 5m);
+		int num = 0;
+		LocString[] array = new LocString[1 + currentExtraText.Count];
+		foreach (LocString item in currentExtraText)
+		{
+			array[num] = item;
+			num++;
+		}
+		array[num] = additionalRestSiteMendText;
 		return new _003C_003Ez__ReadOnlyArray<LocString>(array);
 	}
 }

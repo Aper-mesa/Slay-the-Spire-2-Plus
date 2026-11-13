@@ -28,7 +28,7 @@ public sealed class EntropyPower : PowerModel
 		List<CardModel> list = (await CardSelectCmd.FromHand(choiceContext, player, prefs, null, this)).ToList();
 		foreach (CardModel item in list)
 		{
-			await CardCmd.TransformToRandom(item, player.RunState.Rng.CombatCardSelection);
+			await CardCmd.TransformToRandom(item, player.RunState.Rng.CombatCardGeneration);
 		}
 	}
 }

@@ -42,8 +42,6 @@ public sealed class KnowledgeDemon : MonsterModel
 
 	private static readonly LocString _curseOfKnowledgeDoneLine = MonsterModel.L10NMonsterLookup("KNOWLEDGE_DEMON.moves.CURSE_OF_KNOWLEDGE.doneLine");
 
-	private static readonly int[] _disintegrationDamageValues = new int[3] { 6, 7, 8 };
-
 	private static readonly IReadOnlyList<IReadOnlyList<IChoosable>> _curseOfKnowledgeSets = new _003C_003Ez__ReadOnlyArray<IReadOnlyList<IChoosable>>(new IReadOnlyList<IChoosable>[3]
 	{
 		new _003C_003Ez__ReadOnlyArray<IChoosable>(new IChoosable[2]
@@ -80,6 +78,18 @@ public sealed class KnowledgeDemon : MonsterModel
 	private const string _heavyAttackTrigger = "HeavyAttackTrigger";
 
 	private const string _healTrigger = "HealTrigger";
+
+	private static int[] DisintegrationDamageValues
+	{
+		get
+		{
+			if (AscensionHelper.IsDread())
+			{
+				return new int[3] { 8, 9, 10 };
+			}
+			return new int[3] { 6, 7, 8 };
+		}
+	}
 
 	private int CurseOfKnowledgeCounter
 	{
@@ -173,7 +183,7 @@ public sealed class KnowledgeDemon : MonsterModel
 		{
 			return;
 		}
-		int disintegrationDamage = _disintegrationDamageValues[CurseOfKnowledgeCounter];
+		int disintegrationDamage = DisintegrationDamageValues[CurseOfKnowledgeCounter];
 		List<CardModel> cards = _curseOfKnowledgeSets[CurseOfKnowledgeCounter].Select((IChoosable c) =>
 		{
 			CardModel cardModel2 = CombatState.CreateCard((CardModel)c, target.Player);

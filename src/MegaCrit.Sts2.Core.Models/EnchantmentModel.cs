@@ -75,6 +75,7 @@ public abstract class EnchantmentModel : AbstractModel
 			{
 				extraCardText.Add("TargetType", Card.TargetType.ToString());
 			}
+			extraCardText.Add("energyPrefix", EnergyIconHelper.GetPrefix(this));
 			DynamicVars.AddTo(extraCardText);
 			return extraCardText;
 		}

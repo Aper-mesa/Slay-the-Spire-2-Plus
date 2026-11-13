@@ -326,12 +326,34 @@ public class MigrationManager
 	}
 
 	/// <summary>
-	/// Preserves a corrupted save file using standardized naming convention.
+	/// Runs and run history are never renamed when they fail to load. A rename goes through the cloud too, where
+	/// Steam writes a copy and deletes the original, and every other device then deletes its own copy on its next sync
+	/// (PRG-7527). This build can't tell a broken file from one a newer build wrote, and nothing writes defaults over
+	/// these on a failed load. A broken one left in place is not copied over its .backup by the next save (see
+	/// <see cref="T:MegaCrit.Sts2.Core.Saves.SaveContent" />), so the backup it loaded from survives. Other save types are still renamed, since the
+	/// progress, prefs and settings loaders write defaults over a file that failed to load.
+	/// </summary>
+	private static bool IsLeftInPlaceOnFailedLoad<T>() where T : ISaveSchema
+	{
+		if (!(typeof(T) == typeof(SerializableRun)))
+		{
+			return typeof(T) == typeof(RunHistory);
+		}
+		return true;
+	}
+
+	/// <summary>
+	/// Preserves a corrupted save file using standardized naming convention. Runs and run history are left in place.
 	/// </summary>
 	/// <param name="savePath">The path to the corrupt save file</param>
 	/// <param name="status">The reason for corruption</param>
-	private void PreserveCorruptFile(string savePath, ReadSaveStatus status)
+	private void PreserveCorruptFile<T>(string savePath, ReadSaveStatus status) where T : ISaveSchema
 	{
+		if (IsLeftInPlaceOnFailedLoad<T>())
+		{
+			Log.Warn($"{typeof(T).Name} '{savePath}' failed to load ({status}), leaving it in place");
+			return;
+		}
 		try
 		{
 			if (savePath.EndsWith(".corrupt"))
@@ -350,33 +372,25 @@ public class MigrationManager
 	}
 
 	/// <summary>
-	/// Determines if a corrupt file should be preserved based on the status.
-	/// </summary>
-	/// <param name="status">The read save status</param>
-	/// <returns>True if the file should be preserved as corrupt</returns>
-	private static bool ShouldPreserveCorrupt(ReadSaveStatus status)
-	{
-		if (status != ReadSaveStatus.FileNotFound && status != ReadSaveStatus.Success)
-		{
-			return status != ReadSaveStatus.MigrationRequired;
-		}
-		return false;
-	}
-
-	/// <summary>
 	/// Loads save data with aggressive recovery attempts, falling back to a .backup if the primary file
 	/// is missing or corrupt. This covers the case where a non-atomic rename on Windows (delete-then-move)
-	/// lost the primary file during a power failure.
-	/// Does NOT create new saves or modify files - that's the caller's responsibility.
-	/// All recovery operations happen in memory only, preserving original files for debugging.
+	/// lost the primary file during a power failure. A run or run history file only falls back when the primary
+	/// looks like such an interrupted write: missing, empty, unreadable, or not valid JSON.
+	/// Does NOT create new saves - that's the caller's responsibility. Recovery happens in memory, but a file that
+	/// fails to load is renamed to .corrupt (except runs and run history, see <see cref="M:MegaCrit.Sts2.Core.Saves.Migrations.MigrationManager.IsLeftInPlaceOnFailedLoad``1" />),
+	/// and one that only loads after JSON repair gets a .pre-repair copy.
 	/// </summary>
 	/// <typeparam name="T">The type of save data</typeparam>
 	/// <param name="filePath">The path to the save file</param>
 	/// <returns>ReadSaveResult with save data or error status</returns>
 	public ReadSaveResult<T> LoadSave<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>(string filePath) where T : ISaveSchema, new()
 	{
-		ReadSaveResult<T> readSaveResult = LoadSaveFromPath<T>(filePath);
+		ReadSaveResult<T> readSaveResult = LoadSaveFromPath<T>(filePath, out var parsedAsJson);
 		if (readSaveResult.Success)
+		{
+			return readSaveResult;
+		}
+		if (parsedAsJson && IsLeftInPlaceOnFailedLoad<T>())
 		{
 			return readSaveResult;
 		}
@@ -384,7 +398,7 @@ public class MigrationManager
 		if (_saveStore.FileExists(text))
 		{
 			Log.Warn($"Primary save failed ({readSaveResult.Status}), attempting .backup fallback: {text}");
-			ReadSaveResult<T> readSaveResult2 = LoadSaveFromPath<T>(text);
+			ReadSaveResult<T> readSaveResult2 = LoadSaveFromPath<T>(text, out var _);
 			if (readSaveResult2.Success)
 			{
 				return readSaveResult2;
@@ -396,8 +410,11 @@ public class MigrationManager
 	/// <summary>
 	/// Loads save data from a single file path with aggressive recovery attempts.
 	/// </summary>
-	private ReadSaveResult<T> LoadSaveFromPath<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>(string filePath) where T : ISaveSchema, new()
+	/// <param name="filePath">The path to the save file</param>
+	/// <param name="parsedAsJson">Whether a load that failed read a file that is valid JSON as written</param>
+	private ReadSaveResult<T> LoadSaveFromPath<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>(string filePath, out bool parsedAsJson) where T : ISaveSchema, new()
 	{
+		parsedAsJson = false;
 		if (!_saveStore.FileExists(filePath))
 		{
 			return new ReadSaveResult<T>(ReadSaveStatus.FileNotFound);
@@ -408,15 +425,17 @@ public class MigrationManager
 			if (string.IsNullOrWhiteSpace(text))
 			{
 				Log.Warn("Empty save file found at " + filePath);
-				PreserveCorruptFile(filePath, ReadSaveStatus.FileEmpty);
+				PreserveCorruptFile<T>(filePath, ReadSaveStatus.FileEmpty);
 				return new ReadSaveResult<T>(ReadSaveStatus.FileEmpty);
 			}
-			return LoadWithAggressiveRecovery<T>(filePath, text);
+			ReadSaveResult<T> readSaveResult = LoadWithAggressiveRecovery<T>(filePath, text);
+			parsedAsJson = !readSaveResult.Success && SaveContent.IsWhole(text);
+			return readSaveResult;
 		}
 		catch (Exception ex)
 		{
 			Log.Error("File access error loading " + filePath + ": " + ex.Message);
-			PreserveCorruptFile(filePath, ReadSaveStatus.FileAccessError);
+			PreserveCorruptFile<T>(filePath, ReadSaveStatus.FileAccessError);
 			return new ReadSaveResult<T>(ReadSaveStatus.FileAccessError, ex.Message);
 		}
 	}
@@ -461,7 +480,7 @@ public class MigrationManager
 				}
 				string text = $"Save file version {num} is newer than current version {currentVersion}";
 				Log.Error(text + ": " + filePath);
-				PreserveCorruptFile(filePath, ReadSaveStatus.FutureVersion);
+				PreserveCorruptFile<T>(filePath, ReadSaveStatus.FutureVersion);
 				return new ReadSaveResult<T>(ReadSaveStatus.FutureVersion, text);
 			}
 			if (num < minimumSupportedVersion)
@@ -475,7 +494,7 @@ public class MigrationManager
 				}
 				string text2 = $"Save file version {num} is too old and couldn't be scavenged";
 				Log.Error(text2 + ": " + filePath);
-				PreserveCorruptFile(filePath, ReadSaveStatus.VersionTooOld);
+				PreserveCorruptFile<T>(filePath, ReadSaveStatus.VersionTooOld);
 				return new ReadSaveResult<T>(ReadSaveStatus.VersionTooOld, text2);
 			}
 			if (num < currentVersion)
@@ -497,7 +516,7 @@ public class MigrationManager
 						Log.Info("Migration failed but data scavenging succeeded");
 						return new ReadSaveResult<T>(val3, ReadSaveStatus.RecoveredWithDataLoss, $"Migration failed, recovered partial data from version {num}");
 					}
-					PreserveCorruptFile(filePath, ReadSaveStatus.MigrationFailed);
+					PreserveCorruptFile<T>(filePath, ReadSaveStatus.MigrationFailed);
 					return new ReadSaveResult<T>(ReadSaveStatus.MigrationFailed, ex2.Message);
 				}
 			}
@@ -513,13 +532,10 @@ public class MigrationManager
 				}
 				if (flag)
 				{
-					PreserveCorruptFile(filePath, ReadSaveStatus.MissingSchemaVersion);
+					PreserveCorruptFile<T>(filePath, ReadSaveStatus.MissingSchemaVersion);
 					return new ReadSaveResult<T>(ReadSaveStatus.MissingSchemaVersion, "Save file is missing schema version and cannot be deserialized");
 				}
-				if (ShouldPreserveCorrupt(readSaveResult.Status))
-				{
-					PreserveCorruptFile(filePath, readSaveResult.Status);
-				}
+				PreserveCorruptFile<T>(filePath, readSaveResult.Status);
 				return new ReadSaveResult<T>(readSaveResult.Status, readSaveResult.ErrorMessage);
 			}
 			return readSaveResult;
@@ -540,13 +556,13 @@ public class MigrationManager
 				}
 				return readSaveResult2;
 			}
-			PreserveCorruptFile(filePath, ReadSaveStatus.JsonParseError);
+			PreserveCorruptFile<T>(filePath, ReadSaveStatus.JsonParseError);
 			return new ReadSaveResult<T>(ReadSaveStatus.JsonParseError, $"JSON error at {value} (line {ex3.LineNumber}): {ex3.Message}");
 		}
 		catch (Exception ex4)
 		{
 			Log.Error("Unexpected error loading " + filePath + ": " + ex4.Message);
-			PreserveCorruptFile(filePath, ReadSaveStatus.Unrecoverable);
+			PreserveCorruptFile<T>(filePath, ReadSaveStatus.Unrecoverable);
 			return new ReadSaveResult<T>(ReadSaveStatus.Unrecoverable, ex4.Message);
 		}
 	}

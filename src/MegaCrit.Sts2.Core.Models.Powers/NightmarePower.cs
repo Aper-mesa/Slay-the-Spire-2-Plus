@@ -56,6 +56,7 @@ public sealed class NightmarePower : PowerModel
 	{
 		CardModel cardModel = card.CreateClone();
 		CardCmd.ClearAffliction(cardModel);
+		cardModel.EndOfTurnCleanup();
 		GetInternalData<Data>().selectedCard = cardModel;
 		((StringVar)DynamicVars["Card"]).StringValue = cardModel.Title;
 	}

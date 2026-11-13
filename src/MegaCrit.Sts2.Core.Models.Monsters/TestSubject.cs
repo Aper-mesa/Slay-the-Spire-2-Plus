@@ -84,7 +84,7 @@ public sealed class TestSubject : MonsterModel
 
 	public int ThirdFormHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 313, 300);
 
-	private int EnrageAmount => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 3, 2);
+	private int EnrageAmount => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 3, 2) + (AscensionHelper.IsDread() ? 1 : 0);
 
 	private int BiteDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 22, 20);
 
@@ -92,7 +92,17 @@ public sealed class TestSubject : MonsterModel
 
 	private int MultiClawDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 11, 10);
 
-	private int BaseMultiClawCount => 3;
+	private int BaseMultiClawCount
+	{
+		get
+		{
+			if (!AscensionHelper.IsDread())
+			{
+				return 3;
+			}
+			return 4;
+		}
+	}
 
 	private int Phase3LacerateDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 11, 10);
 
@@ -100,7 +110,7 @@ public sealed class TestSubject : MonsterModel
 
 	private int BurningGrowlBurnCount => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 5, 3);
 
-	private int BurningGrowlStrengthGain => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 3, 2);
+	private int BurningGrowlStrengthGain => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 3, 2) + (AscensionHelper.IsDread() ? 3 : 0);
 
 	public override string DeathSfx
 	{
@@ -220,7 +230,7 @@ public sealed class TestSubject : MonsterModel
 		return new MonsterMoveStateMachine(list, moveState);
 	}
 
-	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (creature != Creature)
 		{

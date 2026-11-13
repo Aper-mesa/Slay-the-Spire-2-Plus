@@ -1,8 +1,12 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Relics;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
+using MegaCrit.Sts2.Core.Models.Powers;
+using MegaCrit.Sts2.Core.Rooms;
 
 namespace MegaCrit.Sts2.Core.Models.Relics;
 
@@ -12,12 +16,12 @@ public sealed class RingingTriangle : RelicModel
 
 	protected override IEnumerable<IHoverTip> ExtraHoverTips => new _003C_003Ez__ReadOnlySingleElementList<IHoverTip>(HoverTipFactory.FromKeyword(CardKeyword.Retain));
 
-	public override bool ShouldFlush(Player player)
+	public override async Task AfterRoomEntered(AbstractRoom room)
 	{
-		if (player != Owner)
+		if (room is CombatRoom)
 		{
-			return true;
+			Flash();
+			await PowerCmd.Apply<RetainHandPower>(new ThrowingPlayerChoiceContext(), Owner.Creature, 1m, Owner.Creature, null);
 		}
-		return Owner.PlayerCombatState.TurnNumber > 1;
 	}
 }

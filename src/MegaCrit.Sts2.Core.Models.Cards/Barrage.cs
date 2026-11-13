@@ -22,7 +22,7 @@ public sealed class Barrage : CardModel
 		new DamageVar(5m, ValueProp.Move),
 		new CalculationBaseVar(0m),
 		new CalculationExtraVar(1m),
-		new CalculatedVar("CalculatedHits").WithMultiplier((CardModel card, Creature? _) => card.Owner.PlayerCombatState.OrbQueue.Orbs.Count)
+		new CalculatedHitCountVar("CalculatedHits").WithMultiplier((CardModel card, Creature? _) => card.Owner.PlayerCombatState.OrbQueue.Orbs.Count)
 	});
 
 	public Barrage()

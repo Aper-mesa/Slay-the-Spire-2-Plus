@@ -18,7 +18,7 @@ public sealed class GunkUp : CardModel
 	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[2]
 	{
 		new DamageVar(4m, ValueProp.Move),
-		new RepeatVar(3)
+		new HitCountVar(3)
 	});
 
 	public GunkUp()
@@ -29,7 +29,7 @@ public sealed class GunkUp : CardModel
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay.Target, "cardPlay.Target");
-		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(DynamicVars.Repeat.IntValue).FromCard(this, cardPlay)
+		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(DynamicVars.HitCount.IntValue).FromCard(this, cardPlay)
 			.Targeting(cardPlay.Target)
 			.WithHitFx(null, null, "blunt_attack.mp3")
 			.WithHitVfxNode(NGoopyImpactVfx.Create)

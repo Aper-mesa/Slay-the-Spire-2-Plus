@@ -33,7 +33,7 @@ public sealed class RoyalStamp : RelicModel
 	{
 		EnchantmentModel royalStamp = ModelDb.Enchantment<RoyallyApproved>();
 		List<CardModel> list = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => royalStamp.CanEnchant(c)).ToList();
-		CardModel cardModel = (await CardSelectCmd.FromDeckForEnchantment(prefs: new CardSelectorPrefs(CardSelectorPrefs.EnchantSelectionPrompt, 1), cards: list.UnstableShuffle(Owner.RunState.Rng.Niche).ToList(), enchantment: royalStamp, amount: 1)).FirstOrDefault();
+		CardModel cardModel = (await CardSelectCmd.FromDeckForEnchantment(prefs: new CardSelectorPrefs(CardSelectorPrefs.EnchantSelectionPrompt, 1), cards: list.UnstableShuffle(Owner.PlayerRng.NonCombatGeneration).ToList(), enchantment: royalStamp, amount: 1)).FirstOrDefault();
 		if (cardModel != null)
 		{
 			CardCmd.Enchant<RoyallyApproved>(cardModel, 1m);

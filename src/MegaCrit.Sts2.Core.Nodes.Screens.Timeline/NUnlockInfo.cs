@@ -101,7 +101,7 @@ public class NUnlockInfo : Control
 		_tween?.Kill();
 		_tween = CreateTween();
 		_tween.TweenProperty(this, "modulate:a", 0f, 0.1);
-		if (await _tween.AwaitFinished(this))
+		if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			_label.Text = text;
 			_tween?.Kill();

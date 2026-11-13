@@ -40,10 +40,14 @@ public sealed class SpoilsActMap : ActMap
 
 	private readonly MapPointTypeCounts _pointTypeCounts;
 
-	private static readonly HashSet<MapPointType> _lowerMapPointRestrictions = new HashSet<MapPointType>
+	/// <summary>
+	/// The lowest row each restricted type may appear on. Rest sites start one row lower than elites so that a short
+	/// act, such as Act 3 in multiplayer, still has room for its full rest site count.
+	/// </summary>
+	private static readonly Dictionary<MapPointType, int> _lowestRowByPointType = new Dictionary<MapPointType, int>
 	{
-		MapPointType.RestSite,
-		MapPointType.Elite
+		[MapPointType.RestSite] = 5,
+		[MapPointType.Elite] = 6
 	};
 
 	private static readonly HashSet<MapPointType> _upperMapPointRestrictions = new HashSet<MapPointType> { MapPointType.RestSite };
@@ -253,10 +257,10 @@ public sealed class SpoilsActMap : ActMap
 	{
 		return direction switch
 		{
-			-1 => Math.Max(0, currentCol - 1), 
-			0 => currentCol, 
-			1 => Math.Min(6, currentCol + 1), 
-			_ => currentCol, 
+			-1 => Math.Max(0, currentCol - 1),
+			0 => currentCol,
+			1 => Math.Min(6, currentCol + 1),
+			_ => currentCol,
 		};
 	}
 
@@ -416,21 +420,29 @@ public sealed class SpoilsActMap : ActMap
 		}
 	}
 
+	/// <summary>
+	/// Mirrors <see cref="T:MegaCrit.Sts2.Core.Map.StandardActMap" />: takes the first type the rules allow here and keeps the queue order, so
+	/// rest sites keep their priority over shops, elites and unknowns.
+	/// </summary>
 	private MapPointType GetNextValidPointType(Queue<MapPointType> pointTypesQueue, MapPoint mapPoint)
 	{
-		if (pointTypesQueue.Count == 0)
+		MapPointType[] array = pointTypesQueue.ToArray();
+		for (int i = 0; i < array.Length; i++)
 		{
-			return MapPointType.Unassigned;
-		}
-		int count = pointTypesQueue.Count;
-		for (int i = 0; i < count; i++)
-		{
-			MapPointType mapPointType = pointTypesQueue.Dequeue();
-			if (_pointTypeCounts.ShouldIgnoreMapPointRulesForMapPointType(mapPointType) || IsValidPointType(mapPointType, mapPoint))
+			MapPointType mapPointType = array[i];
+			if (!_pointTypeCounts.ShouldIgnoreMapPointRulesForMapPointType(mapPointType) && !IsValidPointType(mapPointType, mapPoint))
 			{
-				return mapPointType;
+				continue;
 			}
-			pointTypesQueue.Enqueue(mapPointType);
+			pointTypesQueue.Clear();
+			for (int j = 0; j < array.Length; j++)
+			{
+				if (j != i)
+				{
+					pointTypesQueue.Enqueue(array[j]);
+				}
+			}
+			return mapPointType;
 		}
 		return MapPointType.Unassigned;
 	}
@@ -462,9 +474,9 @@ public sealed class SpoilsActMap : ActMap
 
 	private static bool IsValidForLower(MapPointType pointType, MapPoint mapPoint)
 	{
-		if (mapPoint.coord.row < 6)
+		if (_lowestRowByPointType.TryGetValue(pointType, out var value))
 		{
-			return !_lowerMapPointRestrictions.Contains(pointType);
+			return mapPoint.coord.row >= value;
 		}
 		return true;
 	}

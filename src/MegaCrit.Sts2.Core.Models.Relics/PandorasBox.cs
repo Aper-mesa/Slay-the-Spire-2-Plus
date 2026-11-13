@@ -21,7 +21,7 @@ public sealed class PandorasBox : RelicModel
 	public override async Task AfterObtained()
 	{
 		List<CardModel> source = PileType.Deck.GetPile(Owner).Cards.Where((CardModel c) => c != null && c.IsBasicStrikeOrDefend && c.IsRemovable).ToList();
-		IEnumerable<CardTransformation> transformations = source.Select((CardModel c) => new CardTransformation(c, CardFactory.CreateRandomCardForTransform(c, isInCombat: false, Owner.RunState.Rng.Niche)));
+		IEnumerable<CardTransformation> transformations = source.Select((CardModel c) => new CardTransformation(c, CardFactory.CreateRandomCardForTransform(c, isInCombat: false, Owner.PlayerRng.Transformations)));
 		List<CardPileAddResult> list = (await CardCmd.Transform(transformations, null, CardPreviewStyle.None)).ToList();
 		if (list.Count > 0 && LocalContext.IsMe(Owner))
 		{

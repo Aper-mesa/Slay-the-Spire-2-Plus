@@ -4,9 +4,11 @@ using System.ComponentModel;
 using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
+using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.Fonts;
 using MegaCrit.Sts2.Core.Logging;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.addons.mega_text;
 
@@ -34,9 +36,19 @@ public class NSubmenuButton : NButton
 		public new static readonly StringName ConnectSignals = "ConnectSignals";
 
 		/// <summary>
-		/// Cached name for the 'SetIconAndLocalization' method.
+		/// Cached name for the 'SetLocalization' method.
 		/// </summary>
-		public static readonly StringName SetIconAndLocalization = "SetIconAndLocalization";
+		public static readonly StringName SetLocalization = "SetLocalization";
+
+		/// <summary>
+		/// Cached name for the 'SetIcon' method.
+		/// </summary>
+		public static readonly StringName SetIcon = "SetIcon";
+
+		/// <summary>
+		/// Cached name for the 'GetImagePath' method.
+		/// </summary>
+		public static readonly StringName GetImagePath = "GetImagePath";
 
 		/// <summary>
 		/// Cached name for the '_Notification' method.
@@ -90,9 +102,9 @@ public class NSubmenuButton : NButton
 		public static readonly StringName _bgPanel = "_bgPanel";
 
 		/// <summary>
-		/// Cached name for the '_icon' field.
+		/// Cached name for the '_portrait' field.
 		/// </summary>
-		public static readonly StringName _icon = "_icon";
+		public static readonly StringName _portrait = "_portrait";
 
 		/// <summary>
 		/// Cached name for the '_title' field.
@@ -135,7 +147,7 @@ public class NSubmenuButton : NButton
 
 	private Control _bgPanel;
 
-	private TextureRect _icon;
+	private NSubmenuPortrait _portrait;
 
 	private MegaLabel _title;
 
@@ -165,16 +177,32 @@ public class NSubmenuButton : NButton
 		base.ConnectSignals();
 		_bgPanel = GetNode<Control>("BgPanel");
 		_hsv = (ShaderMaterial)_bgPanel.Material;
-		_icon = GetNode<TextureRect>("Icon");
+		_portrait = GetNode<NSubmenuPortrait>("%SubmenuPortrait");
 		_title = GetNode<MegaLabel>("%Title");
 		_description = GetNode<MegaRichTextLabel>("%Description");
 		_defaultV = (float)_hsv.GetShaderParameter(_v);
 	}
 
-	public void SetIconAndLocalization(string locKeyPrefix)
+	public void SetLocalization(string locKeyPrefix)
 	{
 		_locKeyPrefix = locKeyPrefix;
 		RefreshLabels();
+	}
+
+	public void SetIcon(string fileName)
+	{
+		_portrait.SetTexture(PreloadManager.Cache.GetCompressedTexture2D(GetImagePath(fileName)));
+	}
+
+	private string GetImagePath(string fileName)
+	{
+		string iconPath = NSubmenuPortrait.GetIconPath(fileName);
+		if (ResourceLoader.Exists(iconPath))
+		{
+			return iconPath;
+		}
+		Log.Warn("MISSING ICON: " + fileName);
+		return NSubmenuPortrait.GetIconPath("unknown");
 	}
 
 	public override void _Notification(int what)
@@ -185,23 +213,24 @@ public class NSubmenuButton : NButton
 		}
 	}
 
-	public void RefreshLabels()
+	public void RefreshLabels(string? locKeyOverride = null)
 	{
-		LocString locString = new LocString("main_menu_ui", _locKeyPrefix + ".title");
+		string text = locKeyOverride ?? _locKeyPrefix;
+		LocString locString = new LocString("main_menu_ui", text + ".title");
 		_title.SetTextAutoSize(locString.GetFormattedText());
 		_title.ApplyLocaleFontSubstitution(FontType.Regular, ThemeConstants.Label.Font);
 		LocString locString2;
 		if (IsEnabled)
 		{
-			locString2 = new LocString("main_menu_ui", _locKeyPrefix + ".description");
+			locString2 = new LocString("main_menu_ui", text + ".description");
 		}
 		else
 		{
-			locString2 = new LocString("main_menu_ui", _locKeyPrefix + ".LOCKED.description");
+			locString2 = new LocString("main_menu_ui", text + ".LOCKED.description");
 			if (!locString2.Exists())
 			{
-				Log.Warn($"Submenu button {Name} tried to find locked description for {_locKeyPrefix} but couldn't");
-				locString2 = new LocString("main_menu_ui", _locKeyPrefix + ".description");
+				Log.Warn($"Submenu button {Name} tried to find locked description for {text} but couldn't");
+				locString2 = new LocString("main_menu_ui", text + ".description");
 			}
 		}
 		_description.Text = locString2.GetFormattedText();
@@ -213,17 +242,18 @@ public class NSubmenuButton : NButton
 	protected override void OnEnable()
 	{
 		Modulate = Colors.White;
-		GetNode<TextureRect>("%Lock").Visible = false;
 		_hsv.SetShaderParameter(_s, 1f);
-		_icon.Modulate = Colors.White;
+		_portrait.SetUnlocked();
 	}
 
+	/// <summary>
+	/// Sets this button to be locked.
+	/// </summary>
 	protected override void OnDisable()
 	{
 		Modulate = Colors.DarkGray;
-		GetNode<TextureRect>("%Lock").Visible = true;
+		_portrait.SetLocked();
 		_hsv.SetShaderParameter(_s, 0f);
-		_icon.Modulate = new Color(0.5f, 0.5f, 0.5f, 0.5f);
 	}
 
 	protected override void OnFocus()
@@ -255,18 +285,29 @@ public class NSubmenuButton : NButton
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(10);
+		List<MethodInfo> list = new List<MethodInfo>(12);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.ConnectSignals, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName.SetIconAndLocalization, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		list.Add(new MethodInfo(MethodName.SetLocalization, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.String, "locKeyPrefix", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName.SetIcon, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.String, "fileName", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName.GetImagePath, new PropertyInfo(Variant.Type.String, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.String, "fileName", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName._Notification, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Int, "what", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
-		list.Add(new MethodInfo(MethodName.RefreshLabels, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.RefreshLabels, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.String, "locKeyOverride", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
 		list.Add(new MethodInfo(MethodName.OnEnable, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnDisable, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnFocus, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -294,10 +335,21 @@ public class NSubmenuButton : NButton
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.SetIconAndLocalization && args.Count == 1)
+		if (method == MethodName.SetLocalization && args.Count == 1)
 		{
-			SetIconAndLocalization(VariantUtils.ConvertTo<string>(in args[0]));
+			SetLocalization(VariantUtils.ConvertTo<string>(in args[0]));
 			ret = default;
+			return true;
+		}
+		if (method == MethodName.SetIcon && args.Count == 1)
+		{
+			SetIcon(VariantUtils.ConvertTo<string>(in args[0]));
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.GetImagePath && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<string>(GetImagePath(VariantUtils.ConvertTo<string>(in args[0])));
 			return true;
 		}
 		if (method == MethodName._Notification && args.Count == 1)
@@ -306,9 +358,9 @@ public class NSubmenuButton : NButton
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.RefreshLabels && args.Count == 0)
+		if (method == MethodName.RefreshLabels && args.Count == 1)
 		{
-			RefreshLabels();
+			RefreshLabels(VariantUtils.ConvertTo<string>(in args[0]));
 			ret = default;
 			return true;
 		}
@@ -357,7 +409,15 @@ public class NSubmenuButton : NButton
 		{
 			return true;
 		}
-		if (method == MethodName.SetIconAndLocalization)
+		if (method == MethodName.SetLocalization)
+		{
+			return true;
+		}
+		if (method == MethodName.SetIcon)
+		{
+			return true;
+		}
+		if (method == MethodName.GetImagePath)
 		{
 			return true;
 		}
@@ -406,9 +466,9 @@ public class NSubmenuButton : NButton
 			_bgPanel = VariantUtils.ConvertTo<Control>(in value);
 			return true;
 		}
-		if (name == PropertyName._icon)
+		if (name == PropertyName._portrait)
 		{
-			_icon = VariantUtils.ConvertTo<TextureRect>(in value);
+			_portrait = VariantUtils.ConvertTo<NSubmenuPortrait>(in value);
 			return true;
 		}
 		if (name == PropertyName._title)
@@ -453,9 +513,9 @@ public class NSubmenuButton : NButton
 			value = VariantUtils.CreateFrom(in _bgPanel);
 			return true;
 		}
-		if (name == PropertyName._icon)
+		if (name == PropertyName._portrait)
 		{
-			value = VariantUtils.CreateFrom(in _icon);
+			value = VariantUtils.CreateFrom(in _portrait);
 			return true;
 		}
 		if (name == PropertyName._title)
@@ -497,7 +557,7 @@ public class NSubmenuButton : NButton
 		List<PropertyInfo> list = new List<PropertyInfo>();
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._hsv, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._bgPanel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._icon, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._portrait, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._title, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._description, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.String, PropertyName._locKeyPrefix, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -513,7 +573,7 @@ public class NSubmenuButton : NButton
 		base.SaveGodotObjectData(info);
 		info.AddProperty(PropertyName._hsv, Variant.From(in _hsv));
 		info.AddProperty(PropertyName._bgPanel, Variant.From(in _bgPanel));
-		info.AddProperty(PropertyName._icon, Variant.From(in _icon));
+		info.AddProperty(PropertyName._portrait, Variant.From(in _portrait));
 		info.AddProperty(PropertyName._title, Variant.From(in _title));
 		info.AddProperty(PropertyName._description, Variant.From(in _description));
 		info.AddProperty(PropertyName._locKeyPrefix, Variant.From(in _locKeyPrefix));
@@ -534,9 +594,9 @@ public class NSubmenuButton : NButton
 		{
 			_bgPanel = value2.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._icon, out var value3))
+		if (info.TryGetProperty(PropertyName._portrait, out var value3))
 		{
-			_icon = value3.As<TextureRect>();
+			_portrait = value3.As<NSubmenuPortrait>();
 		}
 		if (info.TryGetProperty(PropertyName._title, out var value4))
 		{

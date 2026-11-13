@@ -246,17 +246,17 @@ public class NTransition : ColorRect
 			gradientTransition2.Position = position;
 			_tween?.Kill();
 			_tween = CreateTween().SetParallel();
-			if (SaveManager.Instance.PrefsSave.FastMode == FastModeType.Normal)
-			{
-				_tween.TweenProperty(_gradientTransition, "position:y", _targetGradientYPosition, 0.6).SetDelay(0.5);
-				_tween.TweenProperty(_simpleTransition, "modulate:a", 1f, 0.6).SetDelay(0.5);
-			}
-			else if (SaveManager.Instance.PrefsSave.FastMode == FastModeType.Fast)
+			if (SaveManager.Instance.PrefsSave.FastMode == FastModeType.Fast)
 			{
 				_tween.TweenProperty(_simpleTransition, "modulate:a", 1f, 0.3).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Quad)
 					.SetDelay(0.3);
 			}
-			if (await _tween.AwaitFinished(this))
+			else
+			{
+				_tween.TweenProperty(_gradientTransition, "position:y", _targetGradientYPosition, 0.6).SetDelay(0.5);
+				_tween.TweenProperty(_simpleTransition, "modulate:a", 1f, 0.6).SetDelay(0.5);
+			}
+			if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 			{
 				MouseFilter = MouseFilterEnum.Stop;
 			}
@@ -311,7 +311,7 @@ public class NTransition : ColorRect
 				InTransition = false;
 			})).SetDelay(0.2);
 		}
-		if (await _tween.AwaitFinished(this))
+		if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			InTransition = false;
 		}

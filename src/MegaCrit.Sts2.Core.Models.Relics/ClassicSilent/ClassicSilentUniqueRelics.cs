@@ -32,7 +32,7 @@ public sealed class ClassicSilentTheSpecimen : ClassicSilentRelicModel
 {
     public override RelicRarity Rarity => RelicRarity.Rare;
 
-    public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+    public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
     {
         if (creature.Side == Owner.Creature.Side || !creature.IsDead) return;
         int poison = creature.GetPowerAmount<PoisonPower>();

@@ -65,7 +65,7 @@ public sealed class RelicTrader : EventModel
 				RelicModel[] array = new RelicModel[3];
 				for (int i = 0; i < array.Length; i++)
 				{
-					array[i] = RelicFactory.PullNextRelicFromFront(Owner);
+					array[i] = RelicFactory.PullNextRelicFromFront(Owner, Rng);
 				}
 				_newRelics = array;
 			}

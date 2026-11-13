@@ -1,6 +1,5 @@
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes;
-using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.TestSupport;
 
@@ -14,7 +13,7 @@ public static class MapCmd
 		if (TestMode.IsOff)
 		{
 			NRun.Instance.GlobalUi.TopBar.BossIcon.RefreshBossIcon();
-			NMapScreen.Instance?.SetMap(runState.Map, runState.Rng.Seed, clearDrawings: false);
+			RunManager.Instance.InvokeMapChanged(clearDrawings: false);
 		}
 	}
 }

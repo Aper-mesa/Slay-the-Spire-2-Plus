@@ -51,6 +51,8 @@ public class DynamicVarSet : IReadOnlyDictionary<string, DynamicVar>, IEnumerabl
 
 	public HpLossVar HpLoss => (HpLossVar)_vars["HpLoss"];
 
+	public HitCountVar HitCount => (HitCountVar)_vars["HitCount"];
+
 	public MaxHpVar MaxHp => (MaxHpVar)_vars["MaxHp"];
 
 	public OstyDamageVar OstyDamage => (OstyDamageVar)_vars["OstyDamage"];

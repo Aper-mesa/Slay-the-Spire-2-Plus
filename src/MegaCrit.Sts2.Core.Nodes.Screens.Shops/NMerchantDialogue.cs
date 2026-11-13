@@ -30,6 +30,11 @@ public class NMerchantDialogue : Node2D
 		public static readonly StringName ShowOnInventoryOpen = "ShowOnInventoryOpen";
 
 		/// <summary>
+		/// Cached name for the 'ShowForBlitzFinished' method.
+		/// </summary>
+		public static readonly StringName ShowForBlitzFinished = "ShowForBlitzFinished";
+
+		/// <summary>
 		/// Cached name for the 'ShowForPurchaseAttempt' method.
 		/// </summary>
 		public static readonly StringName ShowForPurchaseAttempt = "ShowForPurchaseAttempt";
@@ -115,6 +120,11 @@ public class NMerchantDialogue : Node2D
 		ShowRandom(_dialogueSet.OpenInventoryLines);
 	}
 
+	public void ShowForBlitzFinished()
+	{
+		ShowRandom(_dialogueSet.BlitzFinishedLines);
+	}
+
 	public void ShowForPurchaseAttempt(PurchaseStatus status)
 	{
 		ShowRandom(_dialogueSet.GetPurchaseSuccessLines(status));
@@ -152,9 +162,10 @@ public class NMerchantDialogue : Node2D
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(3);
+		List<MethodInfo> list = new List<MethodInfo>(4);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.ShowOnInventoryOpen, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.ShowForBlitzFinished, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.ShowForPurchaseAttempt, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Int, "status", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
@@ -178,6 +189,12 @@ public class NMerchantDialogue : Node2D
 			ret = default;
 			return true;
 		}
+		if (method == MethodName.ShowForBlitzFinished && args.Count == 0)
+		{
+			ShowForBlitzFinished();
+			ret = default;
+			return true;
+		}
 		if (method == MethodName.ShowForPurchaseAttempt && args.Count == 1)
 		{
 			ShowForPurchaseAttempt(VariantUtils.ConvertTo<PurchaseStatus>(in args[0]));
@@ -196,6 +213,10 @@ public class NMerchantDialogue : Node2D
 			return true;
 		}
 		if (method == MethodName.ShowOnInventoryOpen)
+		{
+			return true;
+		}
+		if (method == MethodName.ShowForBlitzFinished)
 		{
 			return true;
 		}

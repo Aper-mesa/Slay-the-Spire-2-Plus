@@ -65,7 +65,7 @@ public class NStunnedVfx : Node2D
 
 	private const string _scenePath = "res://scenes/vfx/stunned_vfx.tscn";
 
-	private static LocString _stunnedLoc = new LocString("vfx", "STUNNED");
+	private static readonly LocString _stunnedLoc = new LocString("vfx", "STUNNED");
 
 	private MegaLabel _label;
 

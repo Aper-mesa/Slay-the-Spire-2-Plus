@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Commands;
@@ -12,7 +13,7 @@ namespace MegaCrit.Sts2.Core.Models.Cards;
 
 public sealed class Dowsing : CardModel
 {
-	public const int maxRooms = 5;
+	public const int maxRooms = 4;
 
 	private const string _roomsKey = "Rooms";
 
@@ -20,7 +21,7 @@ public sealed class Dowsing : CardModel
 
 	public override int MaxUpgradeLevel => 0;
 
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new DynamicVar("Rooms", 5m));
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new DynamicVar("Rooms", 4m));
 
 	public override IEnumerable<CardKeyword> CanonicalKeywords => new _003C_003Ez__ReadOnlySingleElementList<CardKeyword>(CardKeyword.Unplayable);
 
@@ -37,7 +38,7 @@ public sealed class Dowsing : CardModel
 		{
 			AssertMutable();
 			_roomsEntered = value;
-			DynamicVars["Rooms"].BaseValue = 5 - RoomsEntered;
+			DynamicVars["Rooms"].BaseValue = Math.Max(1, 4 - RoomsEntered);
 		}
 	}
 
@@ -57,11 +58,27 @@ public sealed class Dowsing : CardModel
 		if (currentMapPoint != null && currentMapPoint.PointType == MapPointType.Unknown)
 		{
 			RoomsEntered++;
-			if (RoomsEntered >= 5)
+			if (RoomsEntered >= 4)
 			{
 				PlayerCmd.CompleteQuest(this);
 				await CardCmd.TransformTo<Abundance>(this);
 			}
 		}
+	}
+
+	public override IReadOnlySet<RoomType> ModifyUnknownMapPointRoomTypes(IReadOnlySet<RoomType> roomTypes)
+	{
+		HashSet<RoomType> hashSet = new HashSet<RoomType>();
+		foreach (RoomType roomType in roomTypes)
+		{
+			hashSet.Add(roomType);
+		}
+		HashSet<RoomType> hashSet2 = hashSet;
+		if (RoomsEntered >= 3)
+		{
+			hashSet2.Remove(RoomType.Monster);
+			hashSet2.Remove(RoomType.Elite);
+		}
+		return hashSet2;
 	}
 }

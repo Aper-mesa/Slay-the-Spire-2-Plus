@@ -71,7 +71,10 @@ public sealed class GasBomb : MonsterModel
 			.WithAttackerFx(null, "event:/sfx/enemy/enemy_attacks/living_fog/living_fog_explode")
 			.WithHitVfxNode((Creature _) => NGaseousImpactVfx.Create(CombatSide.Player, CombatState, new Color("#402f45")))
 			.Execute(null);
-		await CreatureCmd.Kill(Creature);
+		if (!Creature.IsDead)
+		{
+			await CreatureCmd.Kill(Creature);
+		}
 	}
 
 	public override CreatureAnimator GenerateAnimator(MegaSprite controller)

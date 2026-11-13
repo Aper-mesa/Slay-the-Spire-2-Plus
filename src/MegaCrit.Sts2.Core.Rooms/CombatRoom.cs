@@ -80,7 +80,7 @@ public class CombatRoom : AbstractRoom, ICombatRoomVisuals
 	public CombatRoom(EncounterModel encounter, IRunState? runState)
 	{
 		encounter.AssertMutable();
-		CombatState = new CombatState(encounter, runState, runState?.Modifiers, runState?.BadgeModels, runState?.MultiplayerScalingModel);
+		CombatState = new CombatState(encounter, runState, runState?.Modifiers, runState?.BadgeModels, runState?.RunModels, runState?.Dominion);
 	}
 
 	public CombatRoom(CombatState combatState)

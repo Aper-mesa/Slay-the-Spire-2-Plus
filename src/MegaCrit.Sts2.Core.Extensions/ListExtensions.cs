@@ -44,11 +44,12 @@ public static class ListExtensions
 	/// <returns>Self.</returns>
 	public static List<T> UnstableShuffle<T>(this List<T> list, Rng rng)
 	{
+		Rng rng2 = new Rng(rng.NextUnsignedLong());
 		int num = list.Count;
 		while (num > 1)
 		{
 			num--;
-			int num2 = rng.NextInt(num + 1);
+			int num2 = rng2.NextInt(num + 1);
 			int index = num2;
 			int index2 = num;
 			T value = list[num];

@@ -34,6 +34,11 @@ public sealed class HellraiserPower : PowerModel
 		return new Data();
 	}
 
+	/// <summary>
+	/// The Early variant is deliberate: it plays the Strike before the hooks that afflict a newly drawn card run, so a
+	/// Strike played here ignores the one-Bound-card-per-turn limit. See ChainsOfBindingPower.AfterCardDrawn for the
+	/// ordering. Closed as designed in PRG-6544.
+	/// </summary>
 	public override async Task AfterCardDrawnEarly(PlayerChoiceContext choiceContext, CardModel card, bool fromHandDraw)
 	{
 		if (card.Owner.Creature != Owner || !card.Tags.Contains(CardTag.Strike))

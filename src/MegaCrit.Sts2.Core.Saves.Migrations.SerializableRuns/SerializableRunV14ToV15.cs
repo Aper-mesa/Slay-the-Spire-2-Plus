@@ -24,7 +24,8 @@ public class SerializableRunV14ToV15 : MigrationBase<SerializableRun>
 		}
 		else if (list != null && list.Count > 0)
 		{
-			saveData.Set("game_mode", GameMode.Custom);
+			saveData.Set("game_mode", GameMode.Standard);
+			saveData.Set("is_custom_game", value: true);
 		}
 		else
 		{

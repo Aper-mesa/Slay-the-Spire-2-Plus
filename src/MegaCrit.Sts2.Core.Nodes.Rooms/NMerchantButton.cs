@@ -90,14 +90,14 @@ public class NMerchantButton : NButton
 		public static readonly StringName MerchantOpened = "MerchantOpened";
 	}
 
-	private MegaSkeleton? _merchantSkeleton;
+	protected MegaSkeleton? _merchantSkeleton;
 
-	private NSelectionReticle _merchantSelectionReticle;
+	protected NSelectionReticle _merchantSelectionReticle;
 
 	/// <summary>
 	/// Used to determine if the merchant was focused while in targeting mode, for things like <see cref="T:MegaCrit.Sts2.Core.Models.Potions.FoulPotion" />.
 	/// </summary>
-	private bool _focusedWhileTargeting;
+	protected bool _focusedWhileTargeting;
 
 	private MerchantOpenedEventHandler backing_MerchantOpened;
 

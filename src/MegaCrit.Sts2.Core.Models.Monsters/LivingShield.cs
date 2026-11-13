@@ -15,6 +15,10 @@ namespace MegaCrit.Sts2.Core.Models.Monsters;
 
 public sealed class LivingShield : MonsterModel
 {
+	private const string _slamSfx = "event:/sfx/enemy/enemy_attacks/barricade/living_shield_slam";
+
+	private const string _smashSfx = "event:/sfx/enemy/enemy_attacks/barricade/living_shield_smash";
+
 	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 65, 55);
 
 	public override int MaxInitialHp => MinInitialHp;
@@ -54,7 +58,7 @@ public sealed class LivingShield : MonsterModel
 	private async Task ShieldSlamMove(IReadOnlyList<Creature> targets)
 	{
 		await DamageCmd.Attack(ShieldSlamDamage).FromMonster(this).WithAttackerAnim("Attack", 0.3f)
-			.WithAttackerFx(null, AttackSfx)
+			.WithAttackerFx(null, "event:/sfx/enemy/enemy_attacks/barricade/living_shield_slam")
 			.WithHitFx("vfx/vfx_attack_slash")
 			.Execute(null);
 	}
@@ -62,7 +66,7 @@ public sealed class LivingShield : MonsterModel
 	private async Task SmashMove(IReadOnlyList<Creature> targets)
 	{
 		await DamageCmd.Attack(SmashDamage).FromMonster(this).WithAttackerAnim("Attack", 0.3f)
-			.WithAttackerFx(null, AttackSfx)
+			.WithAttackerFx(null, "event:/sfx/enemy/enemy_attacks/barricade/living_shield_smash")
 			.WithHitFx("vfx/vfx_attack_slash")
 			.Execute(null);
 		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, EnrageStr, Creature, null);

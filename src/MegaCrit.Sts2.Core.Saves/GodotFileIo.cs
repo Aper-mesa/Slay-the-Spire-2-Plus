@@ -167,7 +167,7 @@ public class GodotFileIo : ISaveStore
 	public void DeleteFile(string path)
 	{
 		Error error = DirAccess.RemoveAbsolute(GetFullPath(path));
-		if (error != Error.Ok && error != Error.FileNotFound)
+		if (error != Error.Ok && (FileExists(path) || DirectoryExists(path)))
 		{
 			Log.Error($"Error deleting path {path}: {error}");
 		}
@@ -287,7 +287,9 @@ public class GodotFileIo : ISaveStore
 	/// Copies the current save to a .backup file using temp+rename for crash safety.
 	/// The .backup serves as a fallback for the non-atomic rename on Windows and for
 	/// recovery when the primary save is corrupted. Writing to a .tmp file first ensures
-	/// the old .backup is preserved if a crash occurs mid-write.
+	/// the old .backup is preserved if a crash occurs mid-write. A primary that isn't a whole
+	/// save is not copied: a run left broken by an interrupted write stays in place when it
+	/// loads from its .backup, and copying it would replace the only whole copy.
 	/// </summary>
 	private void CopyBackup(string fullPath)
 	{
@@ -301,6 +303,11 @@ public class GodotFileIo : ISaveStore
 		if (fileAccess == null)
 		{
 			Log.Warn($"Failed to open source for backup copy. path={fullPath} error={Godot.FileAccess.GetOpenError()}");
+			return;
+		}
+		if (!SaveContent.IsWhole(fileAccess.GetAsText()))
+		{
+			Log.Warn("Not copying " + fullPath.GetFile() + " to .backup, it is not a whole save");
 			return;
 		}
 		byte[] buffer = fileAccess.GetBuffer((long)fileAccess.GetLength());

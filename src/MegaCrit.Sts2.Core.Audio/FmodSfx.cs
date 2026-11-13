@@ -95,4 +95,10 @@ public static class FmodSfx
 	public const string cardMovementPlayIntoDiscard = "event:/sfx/ui/cards/card_movement_B_play_into_discard";
 
 	public const string cardMovementIntoPower = "event:/sfx/ui/cards/card_movement_B_power";
+
+	public const string foolWah = "event:/sfx/characters/fugitive/fugitive_wa";
+
+	public const string foolCho = "event:/sfx/characters/fugitive/fugitive_cho";
+
+	public const string foolKi = "event:/sfx/characters/fugitive/fugitive_ki";
 }

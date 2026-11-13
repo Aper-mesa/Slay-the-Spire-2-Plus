@@ -25,6 +25,10 @@ public class SerializableExtraPlayerFields : IPacketSerializable
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 	public int DebuffsApplied { get; set; }
 
+	[JsonPropertyName("is_playing_rotating_character")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool IsPlayingRotatingCharacter { get; set; }
+
 	public void Serialize(PacketWriter writer)
 	{
 		writer.WriteInt(CardShopRemovalsUsed);
@@ -32,6 +36,7 @@ public class SerializableExtraPlayerFields : IPacketSerializable
 		writer.WriteBool(CccomboBadgeUnlocked);
 		writer.WriteInt(DamageDealt);
 		writer.WriteInt(DebuffsApplied);
+		writer.WriteBool(IsPlayingRotatingCharacter);
 	}
 
 	public void Deserialize(PacketReader reader)
@@ -41,5 +46,6 @@ public class SerializableExtraPlayerFields : IPacketSerializable
 		CccomboBadgeUnlocked = reader.ReadBool();
 		DamageDealt = reader.ReadInt();
 		DebuffsApplied = reader.ReadInt();
+		IsPlayingRotatingCharacter = reader.ReadBool();
 	}
 }

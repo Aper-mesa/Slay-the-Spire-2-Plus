@@ -12,6 +12,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
+using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Models.Monsters;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
 using MegaCrit.Sts2.Core.Odds;
@@ -157,12 +158,6 @@ public class Player
 		}
 	}
 
-	/// <summary>
-	/// The player's character's max ascension level when the run started.
-	/// We need to keep track of this in order to properly show the "ascension unlocked" message when winning a run.
-	/// </summary>
-	public int MaxAscensionWhenRunStarted { get; }
-
 	public bool HasOpenPotionSlots => _potionSlots.Any((PotionModel p) => p == null);
 
 	/// <summary>
@@ -274,7 +269,6 @@ public class Player
 		DiscoveredPotions = discoveredPotions ?? new List<ModelId>();
 		DiscoveredRelics = discoveredRelics ?? new List<ModelId>();
 		IsActiveForHooks = Creature.IsAlive;
-		MaxAscensionWhenRunStarted = (SaveManager.Instance?.Progress.GetStatsForCharacter(Character.Id))?.MaxAscension ?? 0;
 	}
 
 	/// <summary>
@@ -304,6 +298,10 @@ public class Player
 	/// <returns>A new player with an empty inventory.</returns>
 	public static Player CreateForNewRun(CharacterModel character, UnlockState unlockState, ulong netId)
 	{
+		if ((character is RandomCharacter || character is RotatingCharacter) ? true : false)
+		{
+			throw new InvalidOperationException("The random character should be resolved to a real character before the player is created!");
+		}
 		Player player = new Player(character, netId, character.StartingHp, character.StartingHp, character.MaxEnergy, character.StartingGold, 3, character.BaseOrbSlotCount, new RelicGrabBag(), unlockState);
 		player.PopulateStartingInventory();
 		return player;
@@ -370,6 +368,15 @@ public class Player
 		{
 			RelicGrabBag.Populate(this, rng);
 		}
+	}
+
+	public void PopulateRelicGrabBagDebug(List<RelicModel> relics, Rng rng)
+	{
+		if (RelicGrabBag.IsPopulated)
+		{
+			throw new InvalidOperationException("Relic grab bag already populated!");
+		}
+		RelicGrabBag.Populate(relics, rng);
 	}
 
 	public SerializablePlayer ToSerializable()
@@ -791,7 +798,7 @@ public class Player
 
 	/// <summary>
 	/// Resets the player's combat state to an empty state.
-	/// This will leave the player with no cards in combat, so you should usually call <see cref="M:MegaCrit.Sts2.Core.Entities.Players.Player.PopulateCombatState(MegaCrit.Sts2.Core.Random.Rng,MegaCrit.Sts2.Core.Combat.CombatState)" />
+	/// This will leave the player with no cards in combat, so you should usually call <see cref="M:MegaCrit.Sts2.Core.Entities.Players.Player.PopulateCombatState(MegaCrit.Sts2.Core.Random.Rng,MegaCrit.Sts2.Core.Combat.ICombatState)" />
 	/// after.
 	/// </summary>
 	public void ResetCombatState()
@@ -803,7 +810,7 @@ public class Player
 	/// Populates the player's combat state with everything they should get at the start of combat.
 	/// For example, this clones all the cards from their deck into their draw pile in a random order.
 	/// </summary>
-	public void PopulateCombatState(Rng rng, CombatState state)
+	public void PopulateCombatState(Rng rng, ICombatState state)
 	{
 		foreach (CardModel item in Deck.Cards.ToList())
 		{
@@ -856,7 +863,7 @@ public class Player
 
 	/// <summary>
 	/// Called from Creature when the player reaches zero health, after all hooks that prevent death are called, as well
-	/// as <see cref="M:MegaCrit.Sts2.Core.Hooks.Hook.AfterDeath(MegaCrit.Sts2.Core.Runs.IRunState,MegaCrit.Sts2.Core.Combat.ICombatState,MegaCrit.Sts2.Core.Entities.Creatures.Creature,System.Boolean,System.Single)" />.
+	/// as <see cref="M:MegaCrit.Sts2.Core.Hooks.Hook.AfterDeath(MegaCrit.Sts2.Core.Runs.IRunState,MegaCrit.Sts2.Core.Combat.ICombatState,MegaCrit.Sts2.Core.Entities.Creatures.Creature,MegaCrit.Sts2.Core.Models.CardModel,System.Boolean,System.Single)" />.
 	/// </summary>
 	public void DeactivateHooks()
 	{

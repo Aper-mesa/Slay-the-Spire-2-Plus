@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Singleton;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace MegaCrit.Sts2.Core.Combat;
@@ -27,7 +26,7 @@ public class NullCombatState : ICombatState
 
 	public IReadOnlyList<ModifierModel> Modifiers { get; } = Array.Empty<ModifierModel>();
 
-	public MultiplayerScalingModel? MultiplayerScalingModel => null;
+	public IReadOnlyList<RunModel> RunModels { get; } = Array.Empty<RunModel>();
 
 	public int RoundNumber { get; set; } = 1;
 

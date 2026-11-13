@@ -17,9 +17,11 @@ using MegaCrit.Sts2.Core.Multiplayer.Connection;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.Screens.Blitz;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Nodes.Screens.CustomRun;
 using MegaCrit.Sts2.Core.Nodes.Screens.DailyRun;
+using MegaCrit.Sts2.Core.Nodes.Screens.Dread;
 using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 using MegaCrit.Sts2.Core.Platform;
 using MegaCrit.Sts2.Core.Platform.Steam;
@@ -103,6 +105,11 @@ public class NJoinFriendScreen : NSubmenu
 		/// Cached name for the '_refreshButton' field.
 		/// </summary>
 		public static readonly StringName _refreshButton = "_refreshButton";
+
+		/// <summary>
+		/// Cached name for the '_isJoining' field.
+		/// </summary>
+		public static readonly StringName _isJoining = "_isJoining";
 	}
 
 	/// <summary>
@@ -125,6 +132,8 @@ public class NJoinFriendScreen : NSubmenu
 	private NJoinFriendRefreshButton _refreshButton;
 
 	private Task? _refreshTask;
+
+	private bool _isJoining;
 
 	private JoinFlow? _currentJoinFlow;
 
@@ -269,7 +278,10 @@ public class NJoinFriendScreen : NSubmenu
 
 	private void JoinGame(IClientConnectionInitializer connInitializer)
 	{
-		TaskHelper.RunSafely(JoinGameAsync(connInitializer));
+		if (!_isJoining)
+		{
+			TaskHelper.RunSafely(JoinGameAsync(connInitializer));
+		}
 	}
 
 	public async Task JoinGameAsync(IClientConnectionInitializer connInitializer)
@@ -280,55 +292,73 @@ public class NJoinFriendScreen : NSubmenu
 			return;
 		}
 		_loadingOverlay.Visible = true;
-		_currentJoinFlow = new JoinFlow(new NetClientGameService(PeerVersionInfo.LocalDefault()));
+		JoinFlow joinFlow = (_currentJoinFlow = new JoinFlow(new NetClientGameService(PeerVersionInfo.LocalDefault()), connInitializer));
+		_isJoining = true;
 		try
 		{
 			Log.Info($"Attempting to join game with connection initializer {connInitializer}");
-			JoinResult joinResult = await _currentJoinFlow.Begin(connInitializer, GetTree());
+			JoinResult joinResult = await joinFlow.Begin(GetTree());
 			if (joinResult.sessionState == RunSessionState.InLobby)
 			{
+				if (joinResult.isCustom)
+				{
+					NCustomRunScreen submenuType = _stack.GetSubmenuType<NCustomRunScreen>();
+					submenuType.InitializeMultiplayerAsClient(joinFlow.NetService, joinResult.joinResponse.Value);
+					_stack.Push(submenuType);
+					return;
+				}
 				if (joinResult.gameMode == GameMode.Standard)
 				{
-					NCharacterSelectScreen submenuType = _stack.GetSubmenuType<NCharacterSelectScreen>();
-					submenuType.InitializeMultiplayerAsClient(_currentJoinFlow.NetService, joinResult.joinResponse.Value);
-					_stack.Push(submenuType);
+					NCharacterSelectScreen submenuType2 = _stack.GetSubmenuType<NCharacterSelectScreen>();
+					submenuType2.InitializeMultiplayerAsClient(joinFlow.NetService, joinResult.joinResponse.Value);
+					_stack.Push(submenuType2);
 					return;
 				}
 				if (joinResult.gameMode == GameMode.Daily)
 				{
-					NDailyRunScreen submenuType2 = _stack.GetSubmenuType<NDailyRunScreen>();
-					submenuType2.InitializeMultiplayerAsClient(_currentJoinFlow.NetService, joinResult.joinResponse.Value);
-					_stack.Push(submenuType2);
+					NDailyRunScreen submenuType3 = _stack.GetSubmenuType<NDailyRunScreen>();
+					submenuType3.InitializeMultiplayerAsClient(joinFlow.NetService, joinResult.joinResponse.Value);
+					_stack.Push(submenuType3);
 					return;
 				}
-				if (joinResult.gameMode != GameMode.Custom)
+				if (joinResult.gameMode == GameMode.Blitz)
+				{
+					NBlitzScreen submenuType4 = _stack.GetSubmenuType<NBlitzScreen>();
+					submenuType4.InitializeMultiplayerAsClient(joinFlow.NetService, joinResult.joinResponse.Value);
+					_stack.Push(submenuType4);
+					return;
+				}
+				if (joinResult.gameMode != GameMode.Dread)
 				{
 					throw new ArgumentOutOfRangeException("gameMode", joinResult.gameMode, "Invalid game mode!");
 				}
-				NCustomRunScreen submenuType3 = _stack.GetSubmenuType<NCustomRunScreen>();
-				submenuType3.InitializeMultiplayerAsClient(_currentJoinFlow.NetService, joinResult.joinResponse.Value);
-				_stack.Push(submenuType3);
+				NDreadScreen submenuType5 = _stack.GetSubmenuType<NDreadScreen>();
+				submenuType5.InitializeMultiplayerAsClient(joinFlow.NetService, joinResult.joinResponse.Value);
+				_stack.Push(submenuType5);
 			}
 			else if (joinResult.sessionState == RunSessionState.InLoadedLobby)
 			{
-				if (joinResult.gameMode == GameMode.Standard)
-				{
-					NMultiplayerLoadGameScreen submenuType4 = _stack.GetSubmenuType<NMultiplayerLoadGameScreen>();
-					submenuType4.InitializeAsClient(_currentJoinFlow.NetService, joinResult.loadJoinResponse.Value);
-					_stack.Push(submenuType4);
-				}
-				else if (joinResult.gameMode == GameMode.Daily)
-				{
-					NDailyRunLoadScreen submenuType5 = _stack.GetSubmenuType<NDailyRunLoadScreen>();
-					submenuType5.InitializeAsClient(_currentJoinFlow.NetService, joinResult.loadJoinResponse.Value);
-					_stack.Push(submenuType5);
-				}
-				else if (joinResult.gameMode == GameMode.Custom)
+				if (joinResult.isCustom)
 				{
 					NCustomRunLoadScreen submenuType6 = _stack.GetSubmenuType<NCustomRunLoadScreen>();
-					submenuType6.InitializeAsClient(_currentJoinFlow.NetService, joinResult.loadJoinResponse.Value);
+					submenuType6.InitializeAsClient(joinFlow.NetService, joinResult.loadJoinResponse.Value);
 					_stack.Push(submenuType6);
+					return;
 				}
+				if (joinResult.gameMode == GameMode.Standard || joinResult.gameMode == GameMode.Blitz || joinResult.gameMode == GameMode.Dread)
+				{
+					NMultiplayerLoadGameScreen submenuType7 = _stack.GetSubmenuType<NMultiplayerLoadGameScreen>();
+					submenuType7.InitializeAsClient(joinFlow.NetService, joinResult.loadJoinResponse.Value);
+					_stack.Push(submenuType7);
+					return;
+				}
+				if (joinResult.gameMode != GameMode.Daily)
+				{
+					throw new ArgumentOutOfRangeException("gameMode", joinResult.gameMode, "Invalid game mode!");
+				}
+				NDailyRunLoadScreen submenuType8 = _stack.GetSubmenuType<NDailyRunLoadScreen>();
+				submenuType8.InitializeAsClient(joinFlow.NetService, joinResult.loadJoinResponse.Value);
+				_stack.Push(submenuType8);
 			}
 			else if (joinResult.sessionState == RunSessionState.Running)
 			{
@@ -337,7 +367,7 @@ public class NJoinFriendScreen : NSubmenu
 				{
 					NModalContainer.Instance.Add(nErrorPopup);
 				}
-				_currentJoinFlow.NetService.Disconnect(NetError.RunInProgress);
+				joinFlow.NetService.Disconnect(NetError.RunInProgress);
 			}
 		}
 		catch (OperationCanceledException)
@@ -354,7 +384,7 @@ public class NJoinFriendScreen : NSubmenu
 			}
 			else
 			{
-				Log.Error($"Received unexpected exception {ex2.GetType()} while joining game! Disconnecting with InternalError");
+				Log.Error($"Received unexpected exception while joining game! Disconnecting with InternalError: {ex2}");
 				info = new NetErrorInfo(NetError.InternalError, selfInitiated: false);
 			}
 			NErrorPopup nErrorPopup2 = NErrorPopup.Create(info);
@@ -369,9 +399,13 @@ public class NJoinFriendScreen : NSubmenu
 		}
 		finally
 		{
-			if (GodotObject.IsInstanceValid(this))
+			if (_currentJoinFlow == joinFlow)
 			{
-				_loadingOverlay.Visible = false;
+				_isJoining = false;
+				if (GodotObject.IsInstanceValid(this))
+				{
+					_loadingOverlay.Visible = false;
+				}
 			}
 		}
 	}
@@ -497,6 +531,11 @@ public class NJoinFriendScreen : NSubmenu
 			_refreshButton = VariantUtils.ConvertTo<NJoinFriendRefreshButton>(in value);
 			return true;
 		}
+		if (name == PropertyName._isJoining)
+		{
+			_isJoining = VariantUtils.ConvertTo<bool>(in value);
+			return true;
+		}
 		return base.SetGodotClassPropertyValue(in name, in value);
 	}
 
@@ -539,6 +578,11 @@ public class NJoinFriendScreen : NSubmenu
 			value = VariantUtils.CreateFrom(in _refreshButton);
 			return true;
 		}
+		if (name == PropertyName._isJoining)
+		{
+			value = VariantUtils.CreateFrom(in _isJoining);
+			return true;
+		}
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
@@ -557,6 +601,7 @@ public class NJoinFriendScreen : NSubmenu
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._loadingFriendsIndicator, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._noFriendsLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._refreshButton, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._isJoining, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName.DebugFriendsButtons, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
@@ -571,6 +616,7 @@ public class NJoinFriendScreen : NSubmenu
 		info.AddProperty(PropertyName._loadingFriendsIndicator, Variant.From(in _loadingFriendsIndicator));
 		info.AddProperty(PropertyName._noFriendsLabel, Variant.From(in _noFriendsLabel));
 		info.AddProperty(PropertyName._refreshButton, Variant.From(in _refreshButton));
+		info.AddProperty(PropertyName._isJoining, Variant.From(in _isJoining));
 	}
 
 	/// <inheritdoc />
@@ -597,6 +643,10 @@ public class NJoinFriendScreen : NSubmenu
 		if (info.TryGetProperty(PropertyName._refreshButton, out var value5))
 		{
 			_refreshButton = value5.As<NJoinFriendRefreshButton>();
+		}
+		if (info.TryGetProperty(PropertyName._isJoining, out var value6))
+		{
+			_isJoining = value6.As<bool>();
 		}
 	}
 }

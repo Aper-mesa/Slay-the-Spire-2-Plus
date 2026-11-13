@@ -19,10 +19,11 @@ public sealed class Refract : CardModel
 		HoverTipFactory.FromOrb<GlassOrb>()
 	});
 
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[2]
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[3]
 	{
 		new RepeatVar(2),
-		new DamageVar(10m, ValueProp.Move)
+		new DamageVar(10m, ValueProp.Move),
+		new HitCountVar(2)
 	});
 
 	public Refract()
@@ -33,7 +34,7 @@ public sealed class Refract : CardModel
 	protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay.Target, "cardPlay.Target");
-		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(2).FromCard(this, cardPlay)
+		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(DynamicVars.HitCount.IntValue).FromCard(this, cardPlay)
 			.OnlyPlayAnimOnce()
 			.Targeting(cardPlay.Target)
 			.WithHitFx("vfx/vfx_attack_slash")

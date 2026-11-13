@@ -32,286 +32,120 @@ namespace MegaCrit.Sts2.Core.Nodes.Screens.CardLibrary;
 [ScriptPath("res://src/Core/Nodes/Screens/CardLibrary/NCardLibrary.cs")]
 public sealed class NCardLibrary : NSubmenu
 {
-	/// <summary>
-	/// Cached StringNames for the methods contained in this class, for fast lookup.
-	/// </summary>
 	public new class MethodName : NSubmenu.MethodName
 	{
-		/// <summary>
-		/// Cached name for the 'Create' method.
-		/// </summary>
 		public static readonly StringName Create = "Create";
 
-		/// <summary>
-		/// Cached name for the '_Ready' method.
-		/// </summary>
 		public new static readonly StringName _Ready = "_Ready";
 
-		/// <summary>
-		/// Cached name for the 'OnCardTypeSort' method.
-		/// </summary>
 		public static readonly StringName OnCardTypeSort = "OnCardTypeSort";
 
-		/// <summary>
-		/// Cached name for the 'OnRaritySort' method.
-		/// </summary>
 		public static readonly StringName OnRaritySort = "OnRaritySort";
 
-		/// <summary>
-		/// Cached name for the 'OnCostSort' method.
-		/// </summary>
 		public static readonly StringName OnCostSort = "OnCostSort";
 
-		/// <summary>
-		/// Cached name for the 'OnAlphabetSort' method.
-		/// </summary>
 		public static readonly StringName OnAlphabetSort = "OnAlphabetSort";
 
-		/// <summary>
-		/// Cached name for the 'OnSubmenuOpened' method.
-		/// </summary>
 		public new static readonly StringName OnSubmenuOpened = "OnSubmenuOpened";
 
-		/// <summary>
-		/// Cached name for the 'OnSubmenuClosed' method.
-		/// </summary>
 		public new static readonly StringName OnSubmenuClosed = "OnSubmenuClosed";
 
-		/// <summary>
-		/// Cached name for the 'ToggleShowStats' method.
-		/// </summary>
 		public static readonly StringName ToggleShowStats = "ToggleShowStats";
 
-		/// <summary>
-		/// Cached name for the 'ToggleShowUpgrades' method.
-		/// </summary>
 		public static readonly StringName ToggleShowUpgrades = "ToggleShowUpgrades";
 
-		/// <summary>
-		/// Cached name for the 'ToggleFilterMultiplayerCards' method.
-		/// </summary>
 		public static readonly StringName ToggleFilterMultiplayerCards = "ToggleFilterMultiplayerCards";
 
-		/// <summary>
-		/// Cached name for the 'UpdateCardPoolFilter' method.
-		/// </summary>
 		public static readonly StringName UpdateCardPoolFilter = "UpdateCardPoolFilter";
 
-		/// <summary>
-		/// Cached name for the 'UpdateTypeFilter' method.
-		/// </summary>
 		public static readonly StringName UpdateTypeFilter = "UpdateTypeFilter";
 
-		/// <summary>
-		/// Cached name for the 'UpdateRarityFilter' method.
-		/// </summary>
 		public static readonly StringName UpdateRarityFilter = "UpdateRarityFilter";
 
-		/// <summary>
-		/// Cached name for the 'UpdateCostFilter' method.
-		/// </summary>
 		public static readonly StringName UpdateCostFilter = "UpdateCostFilter";
 
-		/// <summary>
-		/// Cached name for the 'SearchBarQueryChanged' method.
-		/// </summary>
 		public static readonly StringName SearchBarQueryChanged = "SearchBarQueryChanged";
 
-		/// <summary>
-		/// Cached name for the 'SearchBarQuerySubmitted' method.
-		/// </summary>
 		public static readonly StringName SearchBarQuerySubmitted = "SearchBarQuerySubmitted";
 
-		/// <summary>
-		/// Cached name for the 'UpdateFilter' method.
-		/// </summary>
 		public static readonly StringName UpdateFilter = "UpdateFilter";
 
-		/// <summary>
-		/// Cached name for the 'ShowCardDetail' method.
-		/// </summary>
 		public static readonly StringName ShowCardDetail = "ShowCardDetail";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the properties and fields contained in this class, for fast lookup.
-	/// </summary>
 	public new class PropertyName : NSubmenu.PropertyName
 	{
-		/// <summary>
-		/// Cached name for the 'InitialFocusedControl' property.
-		/// </summary>
 		public new static readonly StringName InitialFocusedControl = "InitialFocusedControl";
 
-		/// <summary>
-		/// Cached name for the '_grid' field.
-		/// </summary>
 		public static readonly StringName _grid = "_grid";
 
-		/// <summary>
-		/// Cached name for the '_searchBar' field.
-		/// </summary>
 		public static readonly StringName _searchBar = "_searchBar";
 
-		/// <summary>
-		/// Cached name for the '_ironcladFilter' field.
-		/// </summary>
 		public static readonly StringName _ironcladFilter = "_ironcladFilter";
 
-		/// <summary>
-		/// Cached name for the '_silentFilter' field.
-		/// </summary>
 		public static readonly StringName _silentFilter = "_silentFilter";
 
-		/// <summary>
-		/// Cached name for the '_defectFilter' field.
-		/// </summary>
 		public static readonly StringName _defectFilter = "_defectFilter";
 
-		/// <summary>
-		/// Cached name for the '_regentFilter' field.
-		/// </summary>
 		public static readonly StringName _regentFilter = "_regentFilter";
 
-		/// <summary>
-		/// Cached name for the '_necrobinderFilter' field.
-		/// </summary>
 		public static readonly StringName _necrobinderFilter = "_necrobinderFilter";
 
-		/// <summary>
-		/// Cached name for the '_colorlessFilter' field.
-		/// </summary>
+		public static readonly StringName _foolFilter = "_foolFilter";
+
 		public static readonly StringName _colorlessFilter = "_colorlessFilter";
 
-		/// <summary>
-		/// Cached name for the '_ancientsFilter' field.
-		/// </summary>
 		public static readonly StringName _ancientsFilter = "_ancientsFilter";
 
-		/// <summary>
-		/// Cached name for the '_miscPoolFilter' field.
-		/// </summary>
 		public static readonly StringName _miscPoolFilter = "_miscPoolFilter";
 
-		/// <summary>
-		/// Cached name for the '_typeSorter' field.
-		/// </summary>
 		public static readonly StringName _typeSorter = "_typeSorter";
 
-		/// <summary>
-		/// Cached name for the '_attackFilter' field.
-		/// </summary>
 		public static readonly StringName _attackFilter = "_attackFilter";
 
-		/// <summary>
-		/// Cached name for the '_skillFilter' field.
-		/// </summary>
 		public static readonly StringName _skillFilter = "_skillFilter";
 
-		/// <summary>
-		/// Cached name for the '_powerFilter' field.
-		/// </summary>
 		public static readonly StringName _powerFilter = "_powerFilter";
 
-		/// <summary>
-		/// Cached name for the '_otherTypeFilter' field.
-		/// </summary>
 		public static readonly StringName _otherTypeFilter = "_otherTypeFilter";
 
-		/// <summary>
-		/// Cached name for the '_raritySorter' field.
-		/// </summary>
 		public static readonly StringName _raritySorter = "_raritySorter";
 
-		/// <summary>
-		/// Cached name for the '_commonFilter' field.
-		/// </summary>
 		public static readonly StringName _commonFilter = "_commonFilter";
 
-		/// <summary>
-		/// Cached name for the '_uncommonFilter' field.
-		/// </summary>
 		public static readonly StringName _uncommonFilter = "_uncommonFilter";
 
-		/// <summary>
-		/// Cached name for the '_rareFilter' field.
-		/// </summary>
 		public static readonly StringName _rareFilter = "_rareFilter";
 
-		/// <summary>
-		/// Cached name for the '_otherFilter' field.
-		/// </summary>
 		public static readonly StringName _otherFilter = "_otherFilter";
 
-		/// <summary>
-		/// Cached name for the '_costSorter' field.
-		/// </summary>
 		public static readonly StringName _costSorter = "_costSorter";
 
-		/// <summary>
-		/// Cached name for the '_zeroFilter' field.
-		/// </summary>
 		public static readonly StringName _zeroFilter = "_zeroFilter";
 
-		/// <summary>
-		/// Cached name for the '_oneFilter' field.
-		/// </summary>
 		public static readonly StringName _oneFilter = "_oneFilter";
 
-		/// <summary>
-		/// Cached name for the '_twoFilter' field.
-		/// </summary>
 		public static readonly StringName _twoFilter = "_twoFilter";
 
-		/// <summary>
-		/// Cached name for the '_threePlusFilter' field.
-		/// </summary>
 		public static readonly StringName _threePlusFilter = "_threePlusFilter";
 
-		/// <summary>
-		/// Cached name for the '_xFilter' field.
-		/// </summary>
 		public static readonly StringName _xFilter = "_xFilter";
 
-		/// <summary>
-		/// Cached name for the '_alphabetSorter' field.
-		/// </summary>
 		public static readonly StringName _alphabetSorter = "_alphabetSorter";
 
-		/// <summary>
-		/// Cached name for the '_viewMultiplayerCards' field.
-		/// </summary>
 		public static readonly StringName _viewMultiplayerCards = "_viewMultiplayerCards";
 
-		/// <summary>
-		/// Cached name for the '_viewStats' field.
-		/// </summary>
 		public static readonly StringName _viewStats = "_viewStats";
 
-		/// <summary>
-		/// Cached name for the '_viewUpgrades' field.
-		/// </summary>
 		public static readonly StringName _viewUpgrades = "_viewUpgrades";
 
-		/// <summary>
-		/// Cached name for the '_cardCountLabel' field.
-		/// </summary>
 		public static readonly StringName _cardCountLabel = "_cardCountLabel";
 
-		/// <summary>
-		/// Cached name for the '_noResultsLabel' field.
-		/// </summary>
 		public static readonly StringName _noResultsLabel = "_noResultsLabel";
 
-		/// <summary>
-		/// Cached name for the '_lastHoveredControl' field.
-		/// </summary>
 		public static readonly StringName _lastHoveredControl = "_lastHoveredControl";
 	}
 
-	/// <summary>
-	/// Cached StringNames for the signals contained in this class, for fast lookup.
-	/// </summary>
 	public new class SignalName : NSubmenu.SignalName
 	{
 	}
@@ -343,6 +177,8 @@ public sealed class NCardLibrary : NSubmenu
 	private NCardPoolFilter _regentFilter;
 
 	private NCardPoolFilter _necrobinderFilter;
+
+	private NCardPoolFilter _foolFilter;
 
 	private NCardPoolFilter _colorlessFilter;
 
@@ -440,6 +276,7 @@ public sealed class NCardLibrary : NSubmenu
 		_defectFilter = GetNode<NCardPoolFilter>("%DefectPool");
 		_regentFilter = GetNode<NCardPoolFilter>("%RegentPool");
 		_necrobinderFilter = GetNode<NCardPoolFilter>("%NecrobinderPool");
+		_foolFilter = GetNode<NCardPoolFilter>("%FoolPool");
 		_colorlessFilter = GetNode<NCardPoolFilter>("%ColorlessPool");
 		_ancientsFilter = GetNode<NCardPoolFilter>("%AncientsPool");
 		_miscPoolFilter = GetNode<NCardPoolFilter>("%MiscPool");
@@ -449,6 +286,7 @@ public sealed class NCardLibrary : NSubmenu
 		_defectFilter.Connect(NCardPoolFilter.SignalName.Toggled, callable);
 		_regentFilter.Connect(NCardPoolFilter.SignalName.Toggled, callable);
 		_necrobinderFilter.Connect(NCardPoolFilter.SignalName.Toggled, callable);
+		_foolFilter.Connect(NCardPoolFilter.SignalName.Toggled, callable);
 		_colorlessFilter.Connect(NCardPoolFilter.SignalName.Toggled, callable);
 		_ancientsFilter.Connect(NCardPoolFilter.SignalName.Toggled, callable);
 		_miscPoolFilter.Connect(NCardPoolFilter.SignalName.Toggled, callable);
@@ -457,6 +295,7 @@ public sealed class NCardLibrary : NSubmenu
 		_poolFilters.Add(_defectFilter, (CardModel c) => c.Pool is DefectCardPool || c.Pool is ClassicDefectCardPool);
 		_poolFilters.Add(_regentFilter, (CardModel c) => c.Pool is RegentCardPool);
 		_poolFilters.Add(_necrobinderFilter, (CardModel c) => c.Pool is NecrobinderCardPool || c.Pool is ClassicWatcherCardPool);
+		_poolFilters.Add(_foolFilter, (CardModel c) => c.Pool is FoolCardPool);
 		_poolFilters.Add(_colorlessFilter, (CardModel c) => c.Pool is ColorlessCardPool);
 		_poolFilters.Add(_ancientsFilter, (CardModel c) => c.Rarity == CardRarity.Ancient);
 		_poolFilters.Add(_miscPoolFilter, (CardModel c) =>
@@ -570,6 +409,7 @@ public sealed class NCardLibrary : NSubmenu
 		_cardPoolFilters.Add(ModelDb.Character<Necrobinder>(), _necrobinderFilter);
 		_cardPoolFilters.Add(ModelDb.Character<ClassicWatcher>(), _necrobinderFilter);
 		_cardPoolFilters.Add(ModelDb.Character<Regent>(), _regentFilter);
+		_cardPoolFilters.Add(ModelDb.Character<Fool>(), _foolFilter);
 		UnlockState unlockState = SaveManager.Instance.GenerateUnlockStateFromProgress();
 		foreach (KeyValuePair<CharacterModel, NCardPoolFilter> cardPoolFilter in _cardPoolFilters)
 		{
@@ -600,6 +440,10 @@ public sealed class NCardLibrary : NSubmenu
 		_necrobinderFilter.Connect(Control.SignalName.FocusEntered, Callable.From(() =>
 		{
 			_lastHoveredControl = _necrobinderFilter;
+		}));
+		_foolFilter.Connect(Control.SignalName.FocusEntered, Callable.From(() =>
+		{
+			_lastHoveredControl = _foolFilter;
 		}));
 		_colorlessFilter.Connect(Control.SignalName.FocusEntered, Callable.From(() =>
 		{
@@ -785,10 +629,6 @@ public sealed class NCardLibrary : NSubmenu
 		_grid.ClearGrid();
 	}
 
-	/// <summary>
-	/// Called when the player changes the text in the search box.
-	/// If this was already called recently, then the previous one is cancelled and a new delay starts.
-	/// </summary>
 	private async Task DisplayCardsAfterShortDelay()
 	{
 		if (_displayCardsShortDelayCancelToken != null)
@@ -839,10 +679,6 @@ public sealed class NCardLibrary : NSubmenu
 		UpdateFilter();
 	}
 
-	/// <summary>
-	/// The only filter in this screen that acts like radio buttons rather than tickboxes.
-	/// </summary>
-	/// <param name="filter"></param>
 	private void UpdateCardPoolFilter(NCardPoolFilter filter)
 	{
 		if (filter.IsSelected)
@@ -1031,11 +867,6 @@ public sealed class NCardLibrary : NSubmenu
 		}
 	}
 
-	/// <summary>
-	/// Get the method information for all the methods declared in this class.
-	/// This method is used by Godot to register the available methods in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
@@ -1107,7 +938,6 @@ public sealed class NCardLibrary : NSubmenu
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool InvokeGodotClassMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
 	{
@@ -1239,7 +1069,6 @@ public sealed class NCardLibrary : NSubmenu
 		return false;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
@@ -1322,7 +1151,6 @@ public sealed class NCardLibrary : NSubmenu
 		return base.HasGodotClassMethod(in method);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool SetGodotClassPropertyValue(in godot_string_name name, in godot_variant value)
 	{
@@ -1359,6 +1187,11 @@ public sealed class NCardLibrary : NSubmenu
 		if (name == PropertyName._necrobinderFilter)
 		{
 			_necrobinderFilter = VariantUtils.ConvertTo<NCardPoolFilter>(in value);
+			return true;
+		}
+		if (name == PropertyName._foolFilter)
+		{
+			_foolFilter = VariantUtils.ConvertTo<NCardPoolFilter>(in value);
 			return true;
 		}
 		if (name == PropertyName._colorlessFilter)
@@ -1494,7 +1327,6 @@ public sealed class NCardLibrary : NSubmenu
 		return base.SetGodotClassPropertyValue(in name, in value);
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
@@ -1536,6 +1368,11 @@ public sealed class NCardLibrary : NSubmenu
 		if (name == PropertyName._necrobinderFilter)
 		{
 			value = VariantUtils.CreateFrom(in _necrobinderFilter);
+			return true;
+		}
+		if (name == PropertyName._foolFilter)
+		{
+			value = VariantUtils.CreateFrom(in _foolFilter);
 			return true;
 		}
 		if (name == PropertyName._colorlessFilter)
@@ -1671,11 +1508,6 @@ public sealed class NCardLibrary : NSubmenu
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
-	/// <summary>
-	/// Get the property information for all the properties declared in this class.
-	/// This method is used by Godot to register the available properties in the editor.
-	/// Do not call this method.
-	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<PropertyInfo> GetGodotPropertyList()
 	{
@@ -1687,6 +1519,7 @@ public sealed class NCardLibrary : NSubmenu
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._defectFilter, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._regentFilter, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._necrobinderFilter, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._foolFilter, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._colorlessFilter, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._ancientsFilter, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._miscPoolFilter, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -1717,7 +1550,6 @@ public sealed class NCardLibrary : NSubmenu
 		return list;
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void SaveGodotObjectData(GodotSerializationInfo info)
 	{
@@ -1729,6 +1561,7 @@ public sealed class NCardLibrary : NSubmenu
 		info.AddProperty(PropertyName._defectFilter, Variant.From(in _defectFilter));
 		info.AddProperty(PropertyName._regentFilter, Variant.From(in _regentFilter));
 		info.AddProperty(PropertyName._necrobinderFilter, Variant.From(in _necrobinderFilter));
+		info.AddProperty(PropertyName._foolFilter, Variant.From(in _foolFilter));
 		info.AddProperty(PropertyName._colorlessFilter, Variant.From(in _colorlessFilter));
 		info.AddProperty(PropertyName._ancientsFilter, Variant.From(in _ancientsFilter));
 		info.AddProperty(PropertyName._miscPoolFilter, Variant.From(in _miscPoolFilter));
@@ -1757,7 +1590,6 @@ public sealed class NCardLibrary : NSubmenu
 		info.AddProperty(PropertyName._lastHoveredControl, Variant.From(in _lastHoveredControl));
 	}
 
-	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void RestoreGodotObjectData(GodotSerializationInfo info)
 	{
@@ -1790,109 +1622,113 @@ public sealed class NCardLibrary : NSubmenu
 		{
 			_necrobinderFilter = value7.As<NCardPoolFilter>();
 		}
-		if (info.TryGetProperty(PropertyName._colorlessFilter, out var value8))
+		if (info.TryGetProperty(PropertyName._foolFilter, out var value8))
 		{
-			_colorlessFilter = value8.As<NCardPoolFilter>();
+			_foolFilter = value8.As<NCardPoolFilter>();
 		}
-		if (info.TryGetProperty(PropertyName._ancientsFilter, out var value9))
+		if (info.TryGetProperty(PropertyName._colorlessFilter, out var value9))
 		{
-			_ancientsFilter = value9.As<NCardPoolFilter>();
+			_colorlessFilter = value9.As<NCardPoolFilter>();
 		}
-		if (info.TryGetProperty(PropertyName._miscPoolFilter, out var value10))
+		if (info.TryGetProperty(PropertyName._ancientsFilter, out var value10))
 		{
-			_miscPoolFilter = value10.As<NCardPoolFilter>();
+			_ancientsFilter = value10.As<NCardPoolFilter>();
 		}
-		if (info.TryGetProperty(PropertyName._typeSorter, out var value11))
+		if (info.TryGetProperty(PropertyName._miscPoolFilter, out var value11))
 		{
-			_typeSorter = value11.As<NCardViewSortButton>();
+			_miscPoolFilter = value11.As<NCardPoolFilter>();
 		}
-		if (info.TryGetProperty(PropertyName._attackFilter, out var value12))
+		if (info.TryGetProperty(PropertyName._typeSorter, out var value12))
 		{
-			_attackFilter = value12.As<NCardTypeTickbox>();
+			_typeSorter = value12.As<NCardViewSortButton>();
 		}
-		if (info.TryGetProperty(PropertyName._skillFilter, out var value13))
+		if (info.TryGetProperty(PropertyName._attackFilter, out var value13))
 		{
-			_skillFilter = value13.As<NCardTypeTickbox>();
+			_attackFilter = value13.As<NCardTypeTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._powerFilter, out var value14))
+		if (info.TryGetProperty(PropertyName._skillFilter, out var value14))
 		{
-			_powerFilter = value14.As<NCardTypeTickbox>();
+			_skillFilter = value14.As<NCardTypeTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._otherTypeFilter, out var value15))
+		if (info.TryGetProperty(PropertyName._powerFilter, out var value15))
 		{
-			_otherTypeFilter = value15.As<NCardTypeTickbox>();
+			_powerFilter = value15.As<NCardTypeTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._raritySorter, out var value16))
+		if (info.TryGetProperty(PropertyName._otherTypeFilter, out var value16))
 		{
-			_raritySorter = value16.As<NCardViewSortButton>();
+			_otherTypeFilter = value16.As<NCardTypeTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._commonFilter, out var value17))
+		if (info.TryGetProperty(PropertyName._raritySorter, out var value17))
 		{
-			_commonFilter = value17.As<NCardRarityTickbox>();
+			_raritySorter = value17.As<NCardViewSortButton>();
 		}
-		if (info.TryGetProperty(PropertyName._uncommonFilter, out var value18))
+		if (info.TryGetProperty(PropertyName._commonFilter, out var value18))
 		{
-			_uncommonFilter = value18.As<NCardRarityTickbox>();
+			_commonFilter = value18.As<NCardRarityTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._rareFilter, out var value19))
+		if (info.TryGetProperty(PropertyName._uncommonFilter, out var value19))
 		{
-			_rareFilter = value19.As<NCardRarityTickbox>();
+			_uncommonFilter = value19.As<NCardRarityTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._otherFilter, out var value20))
+		if (info.TryGetProperty(PropertyName._rareFilter, out var value20))
 		{
-			_otherFilter = value20.As<NCardRarityTickbox>();
+			_rareFilter = value20.As<NCardRarityTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._costSorter, out var value21))
+		if (info.TryGetProperty(PropertyName._otherFilter, out var value21))
 		{
-			_costSorter = value21.As<NCardViewSortButton>();
+			_otherFilter = value21.As<NCardRarityTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._zeroFilter, out var value22))
+		if (info.TryGetProperty(PropertyName._costSorter, out var value22))
 		{
-			_zeroFilter = value22.As<NCardCostTickbox>();
+			_costSorter = value22.As<NCardViewSortButton>();
 		}
-		if (info.TryGetProperty(PropertyName._oneFilter, out var value23))
+		if (info.TryGetProperty(PropertyName._zeroFilter, out var value23))
 		{
-			_oneFilter = value23.As<NCardCostTickbox>();
+			_zeroFilter = value23.As<NCardCostTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._twoFilter, out var value24))
+		if (info.TryGetProperty(PropertyName._oneFilter, out var value24))
 		{
-			_twoFilter = value24.As<NCardCostTickbox>();
+			_oneFilter = value24.As<NCardCostTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._threePlusFilter, out var value25))
+		if (info.TryGetProperty(PropertyName._twoFilter, out var value25))
 		{
-			_threePlusFilter = value25.As<NCardCostTickbox>();
+			_twoFilter = value25.As<NCardCostTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._xFilter, out var value26))
+		if (info.TryGetProperty(PropertyName._threePlusFilter, out var value26))
 		{
-			_xFilter = value26.As<NCardCostTickbox>();
+			_threePlusFilter = value26.As<NCardCostTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._alphabetSorter, out var value27))
+		if (info.TryGetProperty(PropertyName._xFilter, out var value27))
 		{
-			_alphabetSorter = value27.As<NCardViewSortButton>();
+			_xFilter = value27.As<NCardCostTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._viewMultiplayerCards, out var value28))
+		if (info.TryGetProperty(PropertyName._alphabetSorter, out var value28))
 		{
-			_viewMultiplayerCards = value28.As<NLibraryStatTickbox>();
+			_alphabetSorter = value28.As<NCardViewSortButton>();
 		}
-		if (info.TryGetProperty(PropertyName._viewStats, out var value29))
+		if (info.TryGetProperty(PropertyName._viewMultiplayerCards, out var value29))
 		{
-			_viewStats = value29.As<NLibraryStatTickbox>();
+			_viewMultiplayerCards = value29.As<NLibraryStatTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._viewUpgrades, out var value30))
+		if (info.TryGetProperty(PropertyName._viewStats, out var value30))
 		{
-			_viewUpgrades = value30.As<NLibraryStatTickbox>();
+			_viewStats = value30.As<NLibraryStatTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._cardCountLabel, out var value31))
+		if (info.TryGetProperty(PropertyName._viewUpgrades, out var value31))
 		{
-			_cardCountLabel = value31.As<MegaRichTextLabel>();
+			_viewUpgrades = value31.As<NLibraryStatTickbox>();
 		}
-		if (info.TryGetProperty(PropertyName._noResultsLabel, out var value32))
+		if (info.TryGetProperty(PropertyName._cardCountLabel, out var value32))
 		{
-			_noResultsLabel = value32.As<MegaRichTextLabel>();
+			_cardCountLabel = value32.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._lastHoveredControl, out var value33))
+		if (info.TryGetProperty(PropertyName._noResultsLabel, out var value33))
 		{
-			_lastHoveredControl = value33.As<Control>();
+			_noResultsLabel = value33.As<MegaRichTextLabel>();
+		}
+		if (info.TryGetProperty(PropertyName._lastHoveredControl, out var value34))
+		{
+			_lastHoveredControl = value34.As<Control>();
 		}
 	}
 

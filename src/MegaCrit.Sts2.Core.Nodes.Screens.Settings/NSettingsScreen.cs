@@ -41,6 +41,11 @@ public class NSettingsScreen : NSubmenu
 		public static readonly StringName SetIsInRun = "SetIsInRun";
 
 		/// <summary>
+		/// Cached name for the 'GetSettingTipPosition' method.
+		/// </summary>
+		public static readonly StringName GetSettingTipPosition = "GetSettingTipPosition";
+
+		/// <summary>
 		/// Cached name for the '_Ready' method.
 		/// </summary>
 		public new static readonly StringName _Ready = "_Ready";
@@ -150,7 +155,7 @@ public class NSettingsScreen : NSubmenu
 
 	private bool _isInRun;
 
-	public static readonly Vector2 settingTipsOffset = new Vector2(1012f, -60f);
+	private static readonly Vector2 _settingTipsOffset = new Vector2(1012f, -60f);
 
 	private SettingsClosedEventHandler backing_SettingsClosed;
 
@@ -194,9 +199,23 @@ public class NSettingsScreen : NSubmenu
 		_isInRun = isInRun;
 	}
 
+	/// <summary>
+	/// Where to put the hover tip for a settings line: just past the end of the line, which is its left side when the
+	/// screen is mirrored for a right-to-left language.
+	/// </summary>
+	public static Vector2 GetSettingTipPosition(Control settingsLine)
+	{
+		if (settingsLine.IsLayoutRtl())
+		{
+			return settingsLine.GlobalPosition + new Vector2(-360f, _settingTipsOffset.Y);
+		}
+		return settingsLine.GlobalPosition + _settingTipsOffset;
+	}
+
 	public override void _Ready()
 	{
 		ConnectSignals();
+		this.ApplyRtlLayout();
 		_settingsTabManager = GetNode<NSettingsTabManager>("%SettingsTabManager");
 		_feedbackScreenButton = GetNode<NOpenFeedbackScreenButton>("%FeedbackButton");
 		_moddingScreenButton = GetNode<NOpenModdingScreenButton>("%ModdingButton");
@@ -355,10 +374,14 @@ public class NSettingsScreen : NSubmenu
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(10);
+		List<MethodInfo> list = new List<MethodInfo>(11);
 		list.Add(new MethodInfo(MethodName.SetIsInRun, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Bool, "isInRun", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName.GetSettingTipPosition, new PropertyInfo(Variant.Type.Vector2, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Object, "settingsLine", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnSettingsTabChanged, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -386,6 +409,11 @@ public class NSettingsScreen : NSubmenu
 		{
 			SetIsInRun(VariantUtils.ConvertTo<bool>(in args[0]));
 			ret = default;
+			return true;
+		}
+		if (method == MethodName.GetSettingTipPosition && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<Vector2>(GetSettingTipPosition(VariantUtils.ConvertTo<Control>(in args[0])));
 			return true;
 		}
 		if (method == MethodName._Ready && args.Count == 0)
@@ -445,11 +473,27 @@ public class NSettingsScreen : NSubmenu
 		return base.InvokeGodotClassMethod(in method, args, out ret);
 	}
 
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	internal static bool InvokeGodotClassStaticMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
+	{
+		if (method == MethodName.GetSettingTipPosition && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<Vector2>(GetSettingTipPosition(VariantUtils.ConvertTo<Control>(in args[0])));
+			return true;
+		}
+		ret = default;
+		return false;
+	}
+
 	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
 		if (method == MethodName.SetIsInRun)
+		{
+			return true;
+		}
+		if (method == MethodName.GetSettingTipPosition)
 		{
 			return true;
 		}

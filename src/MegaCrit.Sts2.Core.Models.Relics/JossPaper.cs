@@ -128,8 +128,9 @@ public sealed class JossPaper : RelicModel
 		if (!((decimal)CardsExhausted < DynamicVars["ExhaustAmount"].BaseValue))
 		{
 			TaskHelper.RunSafely(DoActivateVisuals());
-			await CardPileCmd.Draw(choiceContext, (int)((decimal)CardsExhausted / DynamicVars["ExhaustAmount"].BaseValue), Owner);
+			int cardsExhausted = CardsExhausted;
 			CardsExhausted %= DynamicVars["ExhaustAmount"].IntValue;
+			await CardPileCmd.Draw(choiceContext, (int)((decimal)cardsExhausted / DynamicVars["ExhaustAmount"].BaseValue), Owner);
 		}
 	}
 

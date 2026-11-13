@@ -33,6 +33,11 @@ public sealed class ChainsOfBindingPower : PowerModel
 		return new Data();
 	}
 
+	/// <summary>
+	/// Bound is applied here. A card played from AfterCardDrawnEarly is played before this runs, so it is unafflicted
+	/// at play time: it skips <see cref="M:MegaCrit.Sts2.Core.Models.Powers.ChainsOfBindingPower.ShouldPlay(MegaCrit.Sts2.Core.Models.CardModel,MegaCrit.Sts2.Core.Entities.Cards.AutoPlayType)" /> and is not counted by <see cref="M:MegaCrit.Sts2.Core.Models.Powers.ChainsOfBindingPower.BeforeCardPlayed(MegaCrit.Sts2.Core.Entities.Cards.CardPlay)" />. It still
+	/// becomes Bound straight afterwards. Hellraiser relies on this; closed as designed in PRG-6544.
+	/// </summary>
 	public override async Task AfterCardDrawn(PlayerChoiceContext choiceContext, CardModel card, bool fromHandDraw)
 	{
 		if (card.Owner == Owner.Player && CombatState.CurrentSide == Owner.Side && ModelDb.Affliction<Bound>().CanAfflict(card))
@@ -45,6 +50,10 @@ public sealed class ChainsOfBindingPower : PowerModel
 		}
 	}
 
+	/// <summary>
+	/// This runs for automatic plays as well as manual ones, so a Bound card played by Sly uses up the player's one
+	/// Bound card for the turn. Confirmed as designed in PRG-2503.
+	/// </summary>
 	public override Task BeforeCardPlayed(CardPlay cardPlay)
 	{
 		CardModel card = cardPlay.Card;

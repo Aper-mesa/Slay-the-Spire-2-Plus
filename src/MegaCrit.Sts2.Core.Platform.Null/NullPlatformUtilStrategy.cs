@@ -16,7 +16,7 @@ public class NullPlatformUtilStrategy : IPlatformUtilStrategy
 {
 	private const string _multiplayerNamesFile = "mp_names.json";
 
-	private List<NullMultiplayerName>? _mpNames;
+	private readonly List<NullMultiplayerName>? _mpNames;
 
 	public ulong LocalPlayerId { get; } = 1uL;
 
@@ -52,11 +52,11 @@ public class NullPlatformUtilStrategy : IPlatformUtilStrategy
 		}
 		return playerId switch
 		{
-			1uL => "Test Host", 
-			1000uL => "Test Client 1", 
-			2000uL => "Test Client 2", 
-			3000uL => "Test Client 3", 
-			_ => playerId.ToString(), 
+			1uL => "Test Host",
+			1000uL => "Test Client 1",
+			2000uL => "Test Client 2",
+			3000uL => "Test Client 3",
+			_ => playerId.ToString(),
 		};
 	}
 

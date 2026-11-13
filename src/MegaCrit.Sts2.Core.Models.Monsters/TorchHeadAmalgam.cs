@@ -29,7 +29,7 @@ public sealed class TorchHeadAmalgam : MonsterModel
 
 	public override int MaxInitialHp => MinInitialHp;
 
-	private int StrongTackleDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 32, 26);
+	private int StrongTackleDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 32, 26) + (AscensionHelper.IsDread() ? 5 : 0);
 
 	private int TackleDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 22, 18);
 

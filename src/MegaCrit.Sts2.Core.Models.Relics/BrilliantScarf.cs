@@ -31,7 +31,7 @@ public sealed class BrilliantScarf : RelicModel
 
 	public override int DisplayAmount => CardsPlayedThisTurn;
 
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new CardsVar(5));
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new CardsVar(6));
 
 	private int CardsPlayedThisTurn
 	{

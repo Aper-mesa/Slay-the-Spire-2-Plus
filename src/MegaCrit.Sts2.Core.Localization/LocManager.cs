@@ -39,10 +39,6 @@ public class LocManager
 
 	private Dictionary<string, LocTable> _tables = new Dictionary<string, LocTable>();
 
-	/// <summary>
-	/// [apermesa] Strings registered at runtime (for features that do not ship their own loc tables).
-	/// Keyed by language, then table, then entry.
-	/// </summary>
 	private static readonly Dictionary<string, Dictionary<string, Dictionary<string, string>>> _runtimeStrings = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
 
 	private Dictionary<string, LocTable>? _engTables;
@@ -51,15 +47,8 @@ public class LocManager
 
 	private static SmartFormatter _smartFormatter = null;
 
-	/// <summary>
-	/// Weblate project slug used in nested export structure.
-	/// </summary>
 	private const string _weblateProjectSlug = "slaythespire2";
 
-	/// <summary>
-	/// Maps Weblate language codes to game's 3-letter language codes.
-	/// Keep in sync with ci/scripts/weblate.py LANGUAGES dictionary.
-	/// </summary>
 	private static readonly Dictionary<string, string> _weblateToGameLanguage = new Dictionary<string, string>
 	{
 		{ "de", "deu" },
@@ -79,34 +68,18 @@ public class LocManager
 		{ "zh_Hant", "zht" }
 	};
 
-	/// <summary>
-	/// Maps game's 3-letter language codes to Weblate language codes.
-	/// </summary>
 	private static readonly Dictionary<string, string> _gameToWeblateLanguage = _weblateToGameLanguage.ToDictionary((KeyValuePair<string, string> kvp) => kvp.Value, (KeyValuePair<string, string> kvp) => kvp.Key);
 
-	/// <summary>
-	/// Dictionary counting the number of keys in each language set.
-	/// We don't want to calculate this dynamically, as it would involve loading a large number of JSON tables, so this
-	/// is loaded from a pre-computed JSON file. Re-generate it with the script 'localization/gen_completion.py'.
-	/// </summary>
 	private Dictionary<string, int> _languageKeyCount = new Dictionary<string, int>();
 
-	/// <summary>
-	/// User-accessible directory for localization overrides.
-	/// Translators can place modified JSON files here to test their translations without rebuilding the game.
-	/// Path resolves to: %AppData%/SlayTheSpire2/localization_override/ on Windows.
-	///
-	/// Override files are validated for SmartFormat syntax errors during load.
-	/// Invalid entries are logged to console and skipped (game uses base localization as fallback).
-	/// Check console output or game logs for validation errors.
-	/// </summary>
 	public const string locOverrideDir = "user://localization_override";
 
 	private readonly List<LocaleChangeCallback> _localeChangeCallbacks = new List<LocaleChangeCallback>();
 
-	private static readonly (string Language, string CultureCode)[] _supportedLanguages = new (string, string)[16]
+	private static readonly (string Language, string CultureCode)[] _supportedLanguages = new (string, string)[17]
 	{
 		("eng", "en"),
+		("ara", "ar"),
 		("zhs", "zh-hans"),
 		("zht", "zh-hant"),
 		("deu", "de"),
@@ -126,31 +99,39 @@ public class LocManager
 
 	private static readonly Dictionary<string, string> _cultureCodeByLanguage = _supportedLanguages.ToDictionary(((string Language, string CultureCode) entry) => entry.Language, ((string Language, string CultureCode) entry) => entry.CultureCode);
 
+	private static readonly HashSet<string> _rtlLanguages = new HashSet<string> { "ara" };
+
+	private static readonly HashSet<string> _hiddenLanguages = new HashSet<string> { "ara" };
+
 	private static readonly CultureInfo _englishCultureInfo = GetCultureInfoSafe("en");
 
 	public static LocManager Instance { get; private set; } = null;
 
 	private static string LocalizationAssetDir => "res://localization";
 
-	/// <summary>
-	/// Indicates whether any localization override files were loaded from the user override directory.
-	/// Useful for debugging and UI indicators.
-	/// </summary>
 	public bool OverridesActive { get; private set; }
 
-	/// <summary>
-	/// List of validation errors found in localization override files.
-	/// Populated during LoadTablesFromPath() when override files contain JSON parsing errors or invalid SmartFormat syntax.
-	/// </summary>
 	public IReadOnlyList<LocValidationError> ValidationErrors { get; private set; } = Array.Empty<LocValidationError>();
 
 	public string Language { get; private set; }
 
 	public static List<string> Languages { get; } = _supportedLanguages.Select(((string Language, string CultureCode) entry) => entry.Language).ToList();
 
+	public bool IsRtl => IsRtlLanguage(Language);
+
 	public CultureInfo CultureInfo { get; private set; }
 
 	public StringComparer StringComparer { get; private set; }
+
+	public static bool IsHiddenLanguage(string language)
+	{
+		return _hiddenLanguages.Contains(language);
+	}
+
+	public static bool IsRtlLanguage(string language)
+	{
+		return _rtlLanguages.Contains(language);
+	}
 
 	private static CultureInfo GetCultureInfoSafe(string name)
 	{
@@ -164,11 +145,6 @@ public class LocManager
 		}
 	}
 
-	/// <summary>
-	/// Initialize the singleton LocManager.
-	/// This is favored over a static constructor so that we can precisely control the initialization time relative to
-	/// other steps (mods must be initialized before this).
-	/// </summary>
 	public static void Initialize()
 	{
 		Instance = new LocManager();
@@ -190,7 +166,7 @@ public class LocManager
 		{
 			string rawLanguage = PlatformUtil.GetRawLanguage();
 			text = PlatformUtil.GetThreeLetterLanguageCode();
-			if (text == null || !Languages.Contains(text))
+			if (text == null || !Languages.Contains(text) || IsHiddenLanguage(text))
 			{
 				Log.Warn($"Could not initialize language from platform language: {rawLanguage} (resolved: {text}). Defaulting to english");
 				text = "eng";
@@ -212,10 +188,6 @@ public class LocManager
 		LoadLocCompletionFile();
 	}
 
-	/// <summary>
-	/// Converts our three-letter code to a CultureInfo.
-	/// Most of our language codes are ISO 639-2 language codes, but not all of them.
-	/// </summary>
 	private CultureInfo CultureInfoFromThreeLetterCode(string language)
 	{
 		string valueOrDefault = _cultureCodeByLanguage.GetValueOrDefault(language);
@@ -229,11 +201,9 @@ public class LocManager
 		return GetCultureInfoSafe(valueOrDefault);
 	}
 
-	/// <summary>
-	/// This is where we explicitly load the localization formatters we need and only the ones we need.
-	/// </summary>
 	private void LoadLocFormatters()
 	{
+		ArabicPluralRule.Register();
 		_smartFormatter = new SmartFormatter();
 		ListFormatter listFormatter = new ListFormatter();
 		_smartFormatter.AddExtensions(listFormatter, new DictionarySource(), new ValueTupleSource(), new ReflectionSource(), new DefaultSource());
@@ -287,10 +257,6 @@ public class LocManager
 		}
 	}
 
-	/// <summary>
-	/// Converts text to W/w characters for localization debugging while preserving
-	/// template expressions {like:this} and BBCode [tags].
-	/// </summary>
 	private static string ConvertToW(string input)
 	{
 		int num = 0;
@@ -331,12 +297,6 @@ public class LocManager
 		return "{" + string.Join(",", variables.Select((KeyValuePair<string, object> kp) => $"{kp.Key}:{kp.Value}")) + "}";
 	}
 
-	/// <summary>
-	/// Updates what language is being used for translation.
-	/// Note that, since this is called temporarily sometimes, that it does not update the settings save file.
-	/// </summary>
-	/// <param name="language">The three-letter code of the language to load. These are based on ISO 639-2, but are not
-	/// all actual 639-2 codes because they don't map exactly to what we need.</param>
 	[MemberNotNull(new string[] { "CultureInfo", "StringComparer", "Language" })]
 	public void SetLanguage(string language)
 	{
@@ -368,12 +328,6 @@ public class LocManager
 		}
 	}
 
-	/// <summary>
-	/// Overrides the current language with english.
-	/// When we upload metrics, we always want to use the english locale. Importantly, we also don't allow overriding of
-	/// any sort in this mode (no localization override).
-	/// This method also caches the english tables so that we don't have to re-load them the next time we do this.
-	/// </summary>
 	public void StartOverridingLanguageAsEnglish()
 	{
 		if (_engTables == null)
@@ -487,10 +441,6 @@ public class LocManager
 		return (tables: dictionary2, overridesActive: item, validationErrors: list);
 	}
 
-	/// <summary>
-	/// [apermesa] Registers strings that are not present in the shipped loc files.
-	/// They are re-applied on every language change.
-	/// </summary>
 	public static void RegisterRuntimeStrings(string language, string table, Dictionary<string, string> entries)
 	{
 		if (!_runtimeStrings.TryGetValue(language, out Dictionary<string, Dictionary<string, string>> value))
@@ -577,13 +527,6 @@ public class LocManager
 			select s).ToArray();
 	}
 
-	/// <summary>
-	/// Tries to load and validate an override file, merging valid entries into the LocTable.
-	/// </summary>
-	/// <param name="overrideFilePath">Absolute path to the override JSON file.</param>
-	/// <param name="locTable">The LocTable to merge validated entries into.</param>
-	/// <param name="validationErrors">List to append any validation errors to.</param>
-	/// <returns>True if the file was found and at least partially loaded, false if not found.</returns>
 	private static bool TryLoadOverrideFile(string overrideFilePath, LocTable locTable, List<LocValidationError> validationErrors)
 	{
 		if (!Godot.FileAccess.FileExists(overrideFilePath))
@@ -619,17 +562,6 @@ public class LocManager
 		}
 	}
 
-	/// <summary>
-	/// Tries to load overrides from Weblate's nested export structure.
-	/// Weblate exports as: {overrideDir}/{project}/{component}/{weblateCode}/{filename}
-	/// Example: localization_override/slaythespire2/cards/de/cards.json
-	/// </summary>
-	/// <param name="globalizedOverrideDir">The globalized path to the override directory.</param>
-	/// <param name="language">The game's 3-letter language code (e.g., "deu").</param>
-	/// <param name="filename">The localization filename (e.g., "cards.json").</param>
-	/// <param name="locTable">The LocTable to merge validated entries into.</param>
-	/// <param name="validationErrors">List to append any validation errors to.</param>
-	/// <returns>True if a nested override was found and loaded, false otherwise.</returns>
 	private static bool TryLoadWeblateNestedOverrides(string globalizedOverrideDir, string language, string filename, LocTable locTable, List<LocValidationError> validationErrors)
 	{
 		if (!_gameToWeblateLanguage.TryGetValue(language, out string value))

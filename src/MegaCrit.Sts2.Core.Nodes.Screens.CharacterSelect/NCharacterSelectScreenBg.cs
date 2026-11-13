@@ -50,9 +50,9 @@ public class NCharacterSelectScreenBg : Control
 
 	private const float _fourByThree = 1.3333334f;
 
-	private static readonly float _defaultBgScale = 1.1f;
+	private const float _defaultBgScale = 1.1f;
 
-	private static readonly float _narrowBgScale = 1.153f;
+	private const float _narrowBgScale = 1.153f;
 
 	public override void _Ready()
 	{
@@ -66,11 +66,11 @@ public class NCharacterSelectScreenBg : Control
 		if (num < 1.7777778f)
 		{
 			float p = (num - 1.3333334f) / 0.44444442f;
-			Scale = Vector2.One * Mathf.Remap(Ease.CubicOut(p), 0f, 1f, _defaultBgScale * _narrowBgScale, _defaultBgScale);
+			Scale = Vector2.One * Mathf.Remap(Ease.CubicOut(p), 0f, 1f, 1.2683f, 1.1f);
 		}
 		else
 		{
-			Scale = Vector2.One * _defaultBgScale;
+			Scale = Vector2.One * 1.1f;
 		}
 	}
 

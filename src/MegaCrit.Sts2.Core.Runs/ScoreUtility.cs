@@ -28,7 +28,7 @@ public static class ScoreUtility
 	/// <returns>The final score for the run.</returns>
 	public static int CalculateScore(IRunState runState, bool won)
 	{
-		return CalculateScore(runState.MapPointHistory, runState.AscensionLevel, won, runState.Players.Count);
+		return CalculateScore(runState.MapPointHistory, runState.AscensionLevel, runState.GameMode, won, runState.Players.Count);
 	}
 
 	/// <summary>
@@ -39,16 +39,20 @@ public static class ScoreUtility
 	/// <returns>The final score for the run.</returns>
 	public static int CalculateScore(SerializableRun run, bool won)
 	{
-		return CalculateScore(run.MapPointHistory, run.Ascension, won, run.Players.Count);
+		return CalculateScore(run.MapPointHistory, run.Ascension, run.GameMode, won, run.Players.Count);
 	}
 
-	private static int CalculateScore(IReadOnlyList<IReadOnlyList<MapPointHistoryEntry>> history, int ascension, bool won, int playerCount)
+	private static int CalculateScore(IReadOnlyList<IReadOnlyList<MapPointHistoryEntry>> history, int ascension, GameMode gameMode, bool won, int playerCount)
 	{
 		int num = 0;
 		num += GetScoreForFloor(history);
 		num += GetScoreForGoldGained(history, playerCount);
 		num += GetScoreForElitesKilled(GetElitesKilledCount(history));
 		num += GetScoreForBossesSlain(GetBossesSlainCount(history, won));
+		if (gameMode == GameMode.Dread)
+		{
+			return num * 3;
+		}
 		return (int)((double)num * (1.0 + (double)ascension * 0.1));
 	}
 

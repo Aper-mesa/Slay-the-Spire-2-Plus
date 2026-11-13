@@ -250,6 +250,7 @@ public class NCardRewardSelectionScreen : Control, IOverlayScreen, IScreenContex
 		_banner = GetNode<NCommonBanner>("UI/Banner");
 		_rewardAlternativesContainer = GetNode<Control>("UI/RewardAlternatives");
 		_inspectPrompt = GetNode<Control>("%InspectPrompt");
+		_rewardAlternativesContainer.ApplyRtlLayout();
 		_banner.label.SetTextAutoSize(new LocString("gameplay_ui", "CHOOSE_CARD_HEADER").GetRawText());
 		_banner.AnimateIn();
 		RefreshOptions(_options, _extraOptions);

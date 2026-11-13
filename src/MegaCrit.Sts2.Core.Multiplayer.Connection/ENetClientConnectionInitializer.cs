@@ -16,11 +16,18 @@ public class ENetClientConnectionInitializer : IClientConnectionInitializer
 
 	private readonly ushort _port;
 
+	public PlatformType Platform => PlatformType.None;
+
 	public ENetClientConnectionInitializer(ulong netId, string ip, ushort port)
 	{
 		_netId = netId;
 		_ip = ip;
 		_port = port;
+	}
+
+	public ulong? GetHostId()
+	{
+		return 1uL;
 	}
 
 	public async Task<NetErrorInfo?> Connect(INetClientGameService netService, CancellationToken cancelToken = default(CancellationToken))

@@ -197,8 +197,7 @@ public class RunLobby
 		_logger.Info($"Player {playerId} connected to host.");
 		InitialGameInfoMessage message = new InitialGameInfoMessage
 		{
-			sessionState = RunSessionState.Running,
-			gameMode = GameMode
+			sessionState = RunSessionState.Running
 		};
 		if (_playerCollection.GetPlayer(playerId) == null)
 		{

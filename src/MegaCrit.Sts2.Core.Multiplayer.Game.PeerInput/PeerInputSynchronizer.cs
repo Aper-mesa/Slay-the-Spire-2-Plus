@@ -62,7 +62,7 @@ public class PeerInputSynchronizer : IDisposable
 
 	private INetCursorPositionTranslator? _cursorTranslator;
 
-	private MegaCrit.Sts2.Core.Logging.Logger _logger = new MegaCrit.Sts2.Core.Logging.Logger("PeerInputSynchronizer", LogType.VisualSync);
+	private readonly MegaCrit.Sts2.Core.Logging.Logger _logger = new MegaCrit.Sts2.Core.Logging.Logger("PeerInputSynchronizer", LogType.VisualSync);
 
 	/// <summary>
 	/// If this is unset, Time.GetTicksMsec is used to check how much time has passed.

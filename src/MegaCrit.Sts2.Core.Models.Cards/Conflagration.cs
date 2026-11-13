@@ -19,7 +19,7 @@ public sealed class Conflagration : CardModel
 	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlyArray<DynamicVar>(new DynamicVar[2]
 	{
 		new DamageVar(2m, ValueProp.Move),
-		new RepeatVar(4)
+		new HitCountVar(4)
 	});
 
 	public Conflagration()
@@ -34,7 +34,7 @@ public sealed class Conflagration : CardModel
 		{
 			NCombatRoom.Instance?.CombatVfxContainer.AddChildSafely(NGroundFireVfx.Create(item));
 		}
-		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(DynamicVars.Repeat.IntValue).FromCard(this, cardPlay)
+		await DamageCmd.Attack(DynamicVars.Damage.BaseValue).WithHitCount(DynamicVars.HitCount.IntValue).FromCard(this, cardPlay)
 			.TargetingAllOpponents(CombatState)
 			.WithHitFx("vfx/vfx_attack_blunt", null, "heavy_attack.mp3")
 			.Execute(choiceContext);
@@ -42,6 +42,6 @@ public sealed class Conflagration : CardModel
 
 	protected override void OnUpgrade()
 	{
-		DynamicVars.Repeat.UpgradeValueBy(1m);
+		DynamicVars.HitCount.UpgradeValueBy(1m);
 	}
 }

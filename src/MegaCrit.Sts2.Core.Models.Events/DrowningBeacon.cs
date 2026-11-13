@@ -50,7 +50,7 @@ public sealed class DrowningBeacon : EventModel
 	/// </summary>
 	private async Task ClimbOption()
 	{
-		await CreatureCmd.LoseMaxHp(new ThrowingPlayerChoiceContext(), Owner.Creature, DynamicVars.HpLoss.BaseValue, isFromCard: false);
+		await CreatureCmd.LoseMaxHp(new ThrowingPlayerChoiceContext(), Owner.Creature, DynamicVars.HpLoss.BaseValue, null);
 		await RelicCmd.Obtain(ModelDb.Relic<FresnelLens>().ToMutable(), Owner);
 		SetEventFinished(L10NLookup("DROWNING_BEACON.pages.CLIMB.description"));
 	}

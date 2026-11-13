@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Ancients;
+using MegaCrit.Sts2.Core.Entities.Characters;
 using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.Extensions;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -21,6 +22,8 @@ public class Nonupeipe : AncientEventModel
 	private const string _sfxGrossedOut = "event:/sfx/npcs/nonupeipe/nonupeipe_grossed_out";
 
 	private const string _sfxGiggle = "event:/sfx/npcs/nonupeipe/nonupeipe_giggle";
+
+	public override FoolPronounGuess FoolPronounGuess => FoolPronounGuess.Feminine;
 
 	public override Color ButtonColor => new Color(0f, 0.1f, 0.16f, 0.75f);
 
@@ -145,6 +148,7 @@ public class Nonupeipe : AncientEventModel
 		{
 			list.Add(BeautifulBraceletEventOption);
 		}
+		list = AllowedOptions(list);
 		list.UnstableShuffle(Rng);
 		return list.Take(3).ToList();
 	}

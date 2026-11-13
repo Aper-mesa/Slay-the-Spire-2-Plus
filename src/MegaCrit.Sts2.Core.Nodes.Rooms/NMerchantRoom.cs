@@ -21,9 +21,8 @@ using MegaCrit.Sts2.Core.Nodes.Screens.Shops;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
 using MegaCrit.Sts2.Core.Nodes.Vfx.Utilities;
 using MegaCrit.Sts2.Core.Random;
-using MegaCrit.Sts2.Core.Rooms;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
-using MegaCrit.Sts2.Core.TestSupport;
 
 namespace MegaCrit.Sts2.Core.Nodes.Rooms;
 
@@ -32,7 +31,7 @@ namespace MegaCrit.Sts2.Core.Nodes.Rooms;
 /// This does not include the merchant items themselves. Those are handled by <see cref="T:MegaCrit.Sts2.Core.Nodes.Screens.Shops.NMerchantInventory" />.
 /// </summary>
 [ScriptPath("res://src/Core/Nodes/Rooms/NMerchantRoom.cs")]
-public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
+public abstract class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 {
 	/// <summary>
 	/// Cached StringNames for the methods contained in this class, for fast lookup.
@@ -65,9 +64,9 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 		public static readonly StringName AfterRoomIsLoaded = "AfterRoomIsLoaded";
 
 		/// <summary>
-		/// Cached name for the 'HideScreen' method.
+		/// Cached name for the 'OnProceedButtonReleased' method.
 		/// </summary>
-		public static readonly StringName HideScreen = "HideScreen";
+		public static readonly StringName OnProceedButtonReleased = "OnProceedButtonReleased";
 
 		/// <summary>
 		/// Cached name for the 'MerchantFtueCheck' method.
@@ -133,13 +132,11 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 	{
 	}
 
-	private const float _animVariance = 0.5f;
-
 	private static readonly string _scenePath = SceneHelper.GetScenePath("rooms/merchant_room");
 
-	private readonly List<Player> _players = new List<Player>();
+	protected readonly List<Player> _players = new List<Player>();
 
-	private MerchantDialogueSet _dialogue;
+	protected MerchantDialogueSet _dialogue;
 
 	private NProceedButton _proceedButton;
 
@@ -147,49 +144,29 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 
 	private readonly List<NMerchantCharacter> _playerVisuals = new List<NMerchantCharacter>();
 
-	public static IEnumerable<string> AssetPaths => new _003C_003Ez__ReadOnlySingleElementList<string>(_scenePath);
-
 	public static NMerchantRoom? Instance => NRun.Instance?.MerchantRoom;
 
 	public NProceedButton ProceedButton => _proceedButton;
 
-	public MerchantRoom Room { get; private set; }
-
 	public NMerchantInventory Inventory { get; private set; }
 
-	public NMerchantButton MerchantButton { get; private set; }
+	public abstract NMerchantButton MerchantButton { get; }
 
 	public IReadOnlyList<NMerchantCharacter> PlayerVisuals => _playerVisuals;
 
 	public Control DefaultFocusedControl => this;
 
-	public static NMerchantRoom? Create(MerchantRoom room, IReadOnlyList<Player> players)
-	{
-		if (TestMode.IsOn)
-		{
-			return null;
-		}
-		NMerchantRoom nMerchantRoom = PreloadManager.Cache.GetScene(_scenePath).Instantiate<NMerchantRoom>(PackedScene.GenEditState.Disabled);
-		nMerchantRoom.Room = room;
-		nMerchantRoom._players.AddRange(players);
-		nMerchantRoom._dialogue = MerchantRoom.Dialogue;
-		return nMerchantRoom;
-	}
-
 	public override void _Ready()
 	{
 		_proceedButton = GetNode<NProceedButton>("%ProceedButton");
-		_proceedButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(HideScreen));
+		_proceedButton.Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(OnProceedButtonReleased));
 		_proceedButton.UpdateText(NProceedButton.ProceedLoc);
 		_proceedButton.SetPulseState(isPulsing: false);
+		_proceedButton.Initialize(_players[0].RunState);
 		_proceedButton.Enable();
-		MerchantButton = GetNode<NMerchantButton>("%MerchantButton");
-		MerchantButton.IsLocalPlayerDead = LocalContext.GetMe(_players).Creature.IsDead;
-		MerchantButton.PlayerDeadLines = _dialogue.PlayerDeadLines;
-		MerchantButton.Connect(NMerchantButton.SignalName.MerchantOpened, Callable.From<NMerchantButton>(OnMerchantOpened));
 		Inventory = GetNode<NMerchantInventory>("%Inventory");
 		Inventory.MouseFilter = MouseFilterEnum.Ignore;
-		Inventory.Initialize(Room.GetLocalInventory(), _dialogue);
+		Inventory.Initialize(RunManager.Instance.MerchantSynchronizer.GetLocalInventory(), _dialogue);
 		_characterContainer = GetNode<Control>("%CharacterContainer");
 		NMapScreen.Instance.SetTravelEnabled(enabled: true);
 		NGame.Instance.SetScreenShakeTarget(this);
@@ -260,11 +237,11 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 		}
 	}
 
-	private void HideScreen(NButton _)
+	private void OnProceedButtonReleased(NButton _)
 	{
 		if (!MerchantFtueCheck())
 		{
-			NMapScreen.Instance.Open();
+			RunManager.Instance.Proceed();
 		}
 	}
 
@@ -279,26 +256,12 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 		return false;
 	}
 
-	private void OnMerchantOpened(NMerchantButton _)
+	protected void OnMerchantOpened(NMerchantButton _)
 	{
 		OpenInventory();
 	}
 
-	public void OpenInventory()
-	{
-		if (!Inventory.IsOpen)
-		{
-			_proceedButton.Disable();
-			Inventory.Open();
-			MerchantButton.Disable();
-			Inventory.Connect(NMerchantInventory.SignalName.InventoryClosed, Callable.From(() =>
-			{
-				MerchantButton.Enable();
-				_proceedButton.Enable();
-				_proceedButton.SetPulseState(isPulsing: true);
-			}), 4u);
-		}
-	}
+	public abstract void OpenInventory();
 
 	private void OnActiveScreenUpdated()
 	{
@@ -329,7 +292,7 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.ToggleMerchantTrack, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.AfterRoomIsLoaded, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName.HideScreen, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		list.Add(new MethodInfo(MethodName.OnProceedButtonReleased, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "_", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
 		}, null));
@@ -377,9 +340,9 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.HideScreen && args.Count == 1)
+		if (method == MethodName.OnProceedButtonReleased && args.Count == 1)
 		{
-			HideScreen(VariantUtils.ConvertTo<NButton>(in args[0]));
+			OnProceedButtonReleased(VariantUtils.ConvertTo<NButton>(in args[0]));
 			ret = default;
 			return true;
 		}
@@ -433,7 +396,7 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 		{
 			return true;
 		}
-		if (method == MethodName.HideScreen)
+		if (method == MethodName.OnProceedButtonReleased)
 		{
 			return true;
 		}
@@ -463,11 +426,6 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 		if (name == PropertyName.Inventory)
 		{
 			Inventory = VariantUtils.ConvertTo<NMerchantInventory>(in value);
-			return true;
-		}
-		if (name == PropertyName.MerchantButton)
-		{
-			MerchantButton = VariantUtils.ConvertTo<NMerchantButton>(in value);
 			return true;
 		}
 		if (name == PropertyName._proceedButton)
@@ -544,7 +502,6 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 	{
 		base.SaveGodotObjectData(info);
 		info.AddProperty(PropertyName.Inventory, Variant.From<NMerchantInventory>(Inventory));
-		info.AddProperty(PropertyName.MerchantButton, Variant.From<NMerchantButton>(MerchantButton));
 		info.AddProperty(PropertyName._proceedButton, Variant.From(in _proceedButton));
 		info.AddProperty(PropertyName._characterContainer, Variant.From(in _characterContainer));
 	}
@@ -558,17 +515,13 @@ public class NMerchantRoom : Control, IScreenContext, IRoomWithProceedButton
 		{
 			Inventory = value.As<NMerchantInventory>();
 		}
-		if (info.TryGetProperty(PropertyName.MerchantButton, out var value2))
+		if (info.TryGetProperty(PropertyName._proceedButton, out var value2))
 		{
-			MerchantButton = value2.As<NMerchantButton>();
+			_proceedButton = value2.As<NProceedButton>();
 		}
-		if (info.TryGetProperty(PropertyName._proceedButton, out var value3))
+		if (info.TryGetProperty(PropertyName._characterContainer, out var value3))
 		{
-			_proceedButton = value3.As<NProceedButton>();
-		}
-		if (info.TryGetProperty(PropertyName._characterContainer, out var value4))
-		{
-			_characterContainer = value4.As<Control>();
+			_characterContainer = value3.As<Control>();
 		}
 	}
 }

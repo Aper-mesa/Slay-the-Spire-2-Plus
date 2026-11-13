@@ -256,7 +256,7 @@ public class NCustomRunLoadScreen : NSubmenu, ILoadRunLobbyListener
 		base.OnSubmenuOpened();
 		_confirmButton.Enable();
 		_remotePlayerContainer.Initialize(_lobby, displayLocalPlayer: true);
-		_ascensionPanel.Initialize(MultiplayerUiMode.Load);
+		_ascensionPanel.Initialize(MultiplayerUiMode.Load, _lobby.Run.GameMode);
 		_ascensionPanel.SetAscensionLevel(_lobby.Run.Ascension);
 		_modifiersList.Initialize(MultiplayerUiMode.Load);
 		_modifiersList.SyncModifierList(_lobby.Run.Modifiers.Select(ModifierModel.FromSerializable).ToList());

@@ -10,6 +10,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.addons.mega_text;
 
@@ -35,6 +36,11 @@ public class NAscensionPanel : Control
 		/// Cached name for the 'Initialize' method.
 		/// </summary>
 		public static readonly StringName Initialize = "Initialize";
+
+		/// <summary>
+		/// Cached name for the 'SwitchGameMode' method.
+		/// </summary>
+		public static readonly StringName SwitchGameMode = "SwitchGameMode";
 
 		/// <summary>
 		/// Cached name for the 'SetFireBlue' method.
@@ -143,9 +149,19 @@ public class NAscensionPanel : Control
 		public static readonly StringName _rightTabIcon = "_rightTabIcon";
 
 		/// <summary>
-		/// Cached name for the '_iconHsv' field.
+		/// Cached name for the '_standardIcon' field.
 		/// </summary>
-		public static readonly StringName _iconHsv = "_iconHsv";
+		public static readonly StringName _standardIcon = "_standardIcon";
+
+		/// <summary>
+		/// Cached name for the '_blitzIcon' field.
+		/// </summary>
+		public static readonly StringName _blitzIcon = "_blitzIcon";
+
+		/// <summary>
+		/// Cached name for the '_standardIconHsv' field.
+		/// </summary>
+		public static readonly StringName _standardIconHsv = "_standardIconHsv";
 
 		/// <summary>
 		/// Cached name for the '_arrowsVisible' field.
@@ -153,9 +169,14 @@ public class NAscensionPanel : Control
 		public static readonly StringName _arrowsVisible = "_arrowsVisible";
 
 		/// <summary>
-		/// Cached name for the '_mode' field.
+		/// Cached name for the '_gameMode' field.
 		/// </summary>
-		public static readonly StringName _mode = "_mode";
+		public static readonly StringName _gameMode = "_gameMode";
+
+		/// <summary>
+		/// Cached name for the '_uiMode' field.
+		/// </summary>
+		public static readonly StringName _uiMode = "_uiMode";
 
 		/// <summary>
 		/// Cached name for the '_tween' field.
@@ -202,11 +223,17 @@ public class NAscensionPanel : Control
 
 	private NHotkeyIcon _rightTabIcon;
 
-	private ShaderMaterial _iconHsv;
+	private TextureRect _standardIcon;
+
+	private TextureRect _blitzIcon;
+
+	private ShaderMaterial _standardIconHsv;
 
 	private bool _arrowsVisible = true;
 
-	private MultiplayerUiMode _mode = MultiplayerUiMode.Singleplayer;
+	private GameMode _gameMode = GameMode.Standard;
+
+	private MultiplayerUiMode _uiMode = MultiplayerUiMode.Singleplayer;
 
 	private Tween? _tween;
 
@@ -233,9 +260,11 @@ public class NAscensionPanel : Control
 		_rightTabIcon = GetNode<NHotkeyIcon>("%RightTabIcon");
 		_leftArrow = GetNode<NButton>("HBoxContainer/LeftArrowContainer/LeftArrow");
 		_rightArrow = GetNode<NButton>("HBoxContainer/RightArrowContainer/RightArrow");
-		_ascensionLevel = GetNode<MegaLabel>("HBoxContainer/AscensionIconContainer/AscensionIcon/AscensionLevel");
+		_ascensionLevel = GetNode<MegaLabel>("HBoxContainer/AscensionContainer/AscensionLevel");
 		_info = GetNode<MegaRichTextLabel>("HBoxContainer/AscensionDescription/Description");
-		_iconHsv = (ShaderMaterial)GetNode<Control>("%AscensionIcon").Material;
+		_standardIcon = GetNode<TextureRect>("%AscensionIconStandard");
+		_blitzIcon = GetNode<TextureRect>("%AscensionIconBlitz");
+		_standardIconHsv = (ShaderMaterial)_standardIcon.Material;
 		_leftArrow.Connect(NClickableControl.SignalName.Released, Callable.From((NButton _) =>
 		{
 			DecrementAscension();
@@ -250,31 +279,48 @@ public class NAscensionPanel : Control
 		UpdateControllerButton();
 	}
 
-	public void Initialize(MultiplayerUiMode mode)
+	public void Initialize(MultiplayerUiMode mode, GameMode gameMode)
 	{
-		_mode = mode;
-		if (_mode == MultiplayerUiMode.Host)
+		_uiMode = mode;
+		SwitchGameMode(gameMode);
+		if (_uiMode == MultiplayerUiMode.Host)
 		{
 			SetFireBlue();
 			_arrowsVisible = true;
-			SetMaxAscension(SaveManager.Instance.Progress.MaxMultiplayerAscension);
-			SetAscensionLevel(Math.Min(_maxAscension, SaveManager.Instance.Progress.PreferredMultiplayerAscension));
-			NHotkeyManager.Instance.PushHotkeyPressedBinding(_tabLeftHotkey, DecrementAscension);
-			NHotkeyManager.Instance.PushHotkeyPressedBinding(_tabRightHotkey, IncrementAscension);
+			if (_gameMode != GameMode.Blitz)
+			{
+				SetMaxAscension(SaveManager.Instance.Progress.MaxMultiplayerAscension);
+				SetAscensionLevel(Math.Min(_maxAscension, SaveManager.Instance.Progress.PreferredMultiplayerAscension));
+			}
+			else
+			{
+				SetMaxAscension(SaveManager.Instance.Progress.MaxBlitzAscension);
+				SetAscensionLevel(Math.Min(_maxAscension, SaveManager.Instance.Progress.PreferredBlitzAscension));
+			}
+			NHotkeyManager.Instance.PushHotkeyPressedBinding(_tabLeftHotkey, DecrementAscension, 0L);
+			NHotkeyManager.Instance.PushHotkeyPressedBinding(_tabRightHotkey, IncrementAscension, 0L);
 		}
-		else if (_mode == MultiplayerUiMode.Singleplayer)
+		else if (_uiMode == MultiplayerUiMode.Singleplayer)
 		{
 			SetFireRed();
 			_arrowsVisible = true;
-			SetMaxAscension(0);
-			SetAscensionLevel(0);
-			NHotkeyManager.Instance.PushHotkeyPressedBinding(_tabLeftHotkey, DecrementAscension);
-			NHotkeyManager.Instance.PushHotkeyPressedBinding(_tabRightHotkey, IncrementAscension);
+			if (_gameMode != GameMode.Blitz)
+			{
+				SetMaxAscension(0);
+				SetAscensionLevel(0);
+			}
+			else
+			{
+				SetMaxAscension(SaveManager.Instance.Progress.MaxBlitzAscension);
+				SetAscensionLevel(Math.Min(_maxAscension, SaveManager.Instance.Progress.PreferredBlitzAscension));
+			}
+			NHotkeyManager.Instance.PushHotkeyPressedBinding(_tabLeftHotkey, DecrementAscension, 0L);
+			NHotkeyManager.Instance.PushHotkeyPressedBinding(_tabRightHotkey, IncrementAscension, 0L);
 		}
 		else
 		{
-			MultiplayerUiMode mode2 = _mode;
-			if ((uint)(mode2 - 3) <= 1u)
+			MultiplayerUiMode uiMode = _uiMode;
+			if ((uint)(uiMode - 3) <= 1u)
 			{
 				SetFireBlue();
 				_arrowsVisible = false;
@@ -283,24 +329,31 @@ public class NAscensionPanel : Control
 		}
 	}
 
+	public void SwitchGameMode(GameMode gameMode)
+	{
+		_gameMode = gameMode;
+		_blitzIcon.Visible = gameMode == GameMode.Blitz;
+		_standardIcon.Visible = gameMode != GameMode.Blitz;
+	}
+
 	private void SetFireBlue()
 	{
-		_iconHsv.SetShaderParameter(_h, 0.52f);
-		_iconHsv.SetShaderParameter(_v, 1.2f);
+		_standardIconHsv.SetShaderParameter(_h, 0.52f);
+		_standardIconHsv.SetShaderParameter(_v, 1.2f);
 		_ascensionLevel.AddThemeColorOverride(_fontOutlineTheme, _blueLabelOutline);
 	}
 
 	private void SetFireRed()
 	{
-		_iconHsv.SetShaderParameter(_h, 1f);
-		_iconHsv.SetShaderParameter(_v, 1f);
+		_standardIconHsv.SetShaderParameter(_h, 1f);
+		_standardIconHsv.SetShaderParameter(_v, 1f);
 		_ascensionLevel.AddThemeColorOverride(_fontOutlineTheme, _redLabelOutline);
 	}
 
 	public void Cleanup()
 	{
-		MultiplayerUiMode mode = _mode;
-		if ((uint)(mode - 1) <= 1u)
+		MultiplayerUiMode uiMode = _uiMode;
+		if ((uint)(uiMode - 1) <= 1u)
 		{
 			NHotkeyManager.Instance.RemoveHotkeyPressedBinding(_tabLeftHotkey, DecrementAscension);
 			NHotkeyManager.Instance.RemoveHotkeyPressedBinding(_tabRightHotkey, IncrementAscension);
@@ -336,8 +389,8 @@ public class NAscensionPanel : Control
 
 	private void RefreshArrowVisibility()
 	{
-		_leftArrow.Visible = _arrowsVisible && Ascension != 0;
-		_rightArrow.Visible = _arrowsVisible && Ascension != _maxAscension;
+		_leftArrow.Visible = _arrowsVisible && Ascension != 0 && _gameMode != GameMode.Dread;
+		_rightArrow.Visible = _arrowsVisible && Ascension != _maxAscension && _gameMode != GameMode.Dread;
 	}
 
 	public void SetMaxAscension(int maxAscension)
@@ -355,8 +408,8 @@ public class NAscensionPanel : Control
 	private void RefreshAscensionText()
 	{
 		_ascensionLevel.SetTextAutoSize(Ascension.ToString());
-		string formattedText = AscensionHelper.GetTitle(Ascension).GetFormattedText();
-		string formattedText2 = AscensionHelper.GetDescription(Ascension).GetFormattedText();
+		string formattedText = AscensionHelper.GetTitle(Ascension, _gameMode).GetFormattedText();
+		string formattedText2 = AscensionHelper.GetDescription(Ascension, _gameMode).GetFormattedText();
 		_info.Text = "[b][gold]" + formattedText + "[/gold][/b]\n" + formattedText2;
 	}
 
@@ -377,8 +430,8 @@ public class NAscensionPanel : Control
 
 	private void UpdateControllerButton()
 	{
-		MultiplayerUiMode mode = _mode;
-		if ((uint)(mode - 1) <= 1u)
+		MultiplayerUiMode uiMode = _uiMode;
+		if ((uint)(uiMode - 1) <= 1u)
 		{
 			_leftTabIcon.Visible = NControllerManager.Instance.IsUsingDirectionalNavigation;
 			_rightTabIcon.Visible = NControllerManager.Instance.IsUsingDirectionalNavigation;
@@ -408,11 +461,16 @@ public class NAscensionPanel : Control
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(14);
+		List<MethodInfo> list = new List<MethodInfo>(15);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.Initialize, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
-			new PropertyInfo(Variant.Type.Int, "mode", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+			new PropertyInfo(Variant.Type.Int, "mode", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false),
+			new PropertyInfo(Variant.Type.Int, "gameMode", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName.SwitchGameMode, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Int, "gameMode", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.SetFireBlue, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.SetFireRed, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -445,9 +503,15 @@ public class NAscensionPanel : Control
 			ret = default;
 			return true;
 		}
-		if (method == MethodName.Initialize && args.Count == 1)
+		if (method == MethodName.Initialize && args.Count == 2)
 		{
-			Initialize(VariantUtils.ConvertTo<MultiplayerUiMode>(in args[0]));
+			Initialize(VariantUtils.ConvertTo<MultiplayerUiMode>(in args[0]), VariantUtils.ConvertTo<GameMode>(in args[1]));
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.SwitchGameMode && args.Count == 1)
+		{
+			SwitchGameMode(VariantUtils.ConvertTo<GameMode>(in args[0]));
 			ret = default;
 			return true;
 		}
@@ -535,6 +599,10 @@ public class NAscensionPanel : Control
 			return true;
 		}
 		if (method == MethodName.Initialize)
+		{
+			return true;
+		}
+		if (method == MethodName.SwitchGameMode)
 		{
 			return true;
 		}
@@ -633,9 +701,19 @@ public class NAscensionPanel : Control
 			_rightTabIcon = VariantUtils.ConvertTo<NHotkeyIcon>(in value);
 			return true;
 		}
-		if (name == PropertyName._iconHsv)
+		if (name == PropertyName._standardIcon)
 		{
-			_iconHsv = VariantUtils.ConvertTo<ShaderMaterial>(in value);
+			_standardIcon = VariantUtils.ConvertTo<TextureRect>(in value);
+			return true;
+		}
+		if (name == PropertyName._blitzIcon)
+		{
+			_blitzIcon = VariantUtils.ConvertTo<TextureRect>(in value);
+			return true;
+		}
+		if (name == PropertyName._standardIconHsv)
+		{
+			_standardIconHsv = VariantUtils.ConvertTo<ShaderMaterial>(in value);
 			return true;
 		}
 		if (name == PropertyName._arrowsVisible)
@@ -643,9 +721,14 @@ public class NAscensionPanel : Control
 			_arrowsVisible = VariantUtils.ConvertTo<bool>(in value);
 			return true;
 		}
-		if (name == PropertyName._mode)
+		if (name == PropertyName._gameMode)
 		{
-			_mode = VariantUtils.ConvertTo<MultiplayerUiMode>(in value);
+			_gameMode = VariantUtils.ConvertTo<GameMode>(in value);
+			return true;
+		}
+		if (name == PropertyName._uiMode)
+		{
+			_uiMode = VariantUtils.ConvertTo<MultiplayerUiMode>(in value);
 			return true;
 		}
 		if (name == PropertyName._tween)
@@ -700,9 +783,19 @@ public class NAscensionPanel : Control
 			value = VariantUtils.CreateFrom(in _rightTabIcon);
 			return true;
 		}
-		if (name == PropertyName._iconHsv)
+		if (name == PropertyName._standardIcon)
 		{
-			value = VariantUtils.CreateFrom(in _iconHsv);
+			value = VariantUtils.CreateFrom(in _standardIcon);
+			return true;
+		}
+		if (name == PropertyName._blitzIcon)
+		{
+			value = VariantUtils.CreateFrom(in _blitzIcon);
+			return true;
+		}
+		if (name == PropertyName._standardIconHsv)
+		{
+			value = VariantUtils.CreateFrom(in _standardIconHsv);
 			return true;
 		}
 		if (name == PropertyName._arrowsVisible)
@@ -710,9 +803,14 @@ public class NAscensionPanel : Control
 			value = VariantUtils.CreateFrom(in _arrowsVisible);
 			return true;
 		}
-		if (name == PropertyName._mode)
+		if (name == PropertyName._gameMode)
 		{
-			value = VariantUtils.CreateFrom(in _mode);
+			value = VariantUtils.CreateFrom(in _gameMode);
+			return true;
+		}
+		if (name == PropertyName._uiMode)
+		{
+			value = VariantUtils.CreateFrom(in _uiMode);
 			return true;
 		}
 		if (name == PropertyName._tween)
@@ -740,9 +838,12 @@ public class NAscensionPanel : Control
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._info, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._leftTabIcon, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._rightTabIcon, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._iconHsv, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._standardIcon, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._blitzIcon, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._standardIconHsv, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._arrowsVisible, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._mode, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._gameMode, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._uiMode, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._tween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
@@ -760,9 +861,12 @@ public class NAscensionPanel : Control
 		info.AddProperty(PropertyName._info, Variant.From(in _info));
 		info.AddProperty(PropertyName._leftTabIcon, Variant.From(in _leftTabIcon));
 		info.AddProperty(PropertyName._rightTabIcon, Variant.From(in _rightTabIcon));
-		info.AddProperty(PropertyName._iconHsv, Variant.From(in _iconHsv));
+		info.AddProperty(PropertyName._standardIcon, Variant.From(in _standardIcon));
+		info.AddProperty(PropertyName._blitzIcon, Variant.From(in _blitzIcon));
+		info.AddProperty(PropertyName._standardIconHsv, Variant.From(in _standardIconHsv));
 		info.AddProperty(PropertyName._arrowsVisible, Variant.From(in _arrowsVisible));
-		info.AddProperty(PropertyName._mode, Variant.From(in _mode));
+		info.AddProperty(PropertyName._gameMode, Variant.From(in _gameMode));
+		info.AddProperty(PropertyName._uiMode, Variant.From(in _uiMode));
 		info.AddProperty(PropertyName._tween, Variant.From(in _tween));
 		info.AddSignalEventDelegate(SignalName.AscensionLevelChanged, backing_AscensionLevelChanged);
 	}
@@ -804,25 +908,37 @@ public class NAscensionPanel : Control
 		{
 			_rightTabIcon = value8.As<NHotkeyIcon>();
 		}
-		if (info.TryGetProperty(PropertyName._iconHsv, out var value9))
+		if (info.TryGetProperty(PropertyName._standardIcon, out var value9))
 		{
-			_iconHsv = value9.As<ShaderMaterial>();
+			_standardIcon = value9.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._arrowsVisible, out var value10))
+		if (info.TryGetProperty(PropertyName._blitzIcon, out var value10))
 		{
-			_arrowsVisible = value10.As<bool>();
+			_blitzIcon = value10.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._mode, out var value11))
+		if (info.TryGetProperty(PropertyName._standardIconHsv, out var value11))
 		{
-			_mode = value11.As<MultiplayerUiMode>();
+			_standardIconHsv = value11.As<ShaderMaterial>();
 		}
-		if (info.TryGetProperty(PropertyName._tween, out var value12))
+		if (info.TryGetProperty(PropertyName._arrowsVisible, out var value12))
 		{
-			_tween = value12.As<Tween>();
+			_arrowsVisible = value12.As<bool>();
 		}
-		if (info.TryGetSignalEventDelegate<AscensionLevelChangedEventHandler>(SignalName.AscensionLevelChanged, out var value13))
+		if (info.TryGetProperty(PropertyName._gameMode, out var value13))
 		{
-			backing_AscensionLevelChanged = value13;
+			_gameMode = value13.As<GameMode>();
+		}
+		if (info.TryGetProperty(PropertyName._uiMode, out var value14))
+		{
+			_uiMode = value14.As<MultiplayerUiMode>();
+		}
+		if (info.TryGetProperty(PropertyName._tween, out var value15))
+		{
+			_tween = value15.As<Tween>();
+		}
+		if (info.TryGetSignalEventDelegate<AscensionLevelChangedEventHandler>(SignalName.AscensionLevelChanged, out var value16))
+		{
+			backing_AscensionLevelChanged = value16;
 		}
 	}
 

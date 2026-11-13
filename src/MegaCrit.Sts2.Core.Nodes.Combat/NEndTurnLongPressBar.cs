@@ -190,7 +190,7 @@ public class NEndTurnLongPressBar : ColorRect
 		_tween?.Kill();
 		_tween = CreateTween();
 		_tween.TweenProperty(this, "modulate:a", 0f, 0.25);
-		if (await _tween.AwaitFinished(this))
+		if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			Color = new Color(1f, 0.85f, 0.36f);
 			_isPressed = false;

@@ -47,7 +47,7 @@ public class GameOverScreenHandler : IScreenHandler, IHandler
 				bool value2 = mainMenuButton?.Visible ?? false;
 				bool value3 = mainMenuButton?.IsEnabled ?? false;
 				AutoSlayLog.Info($"Waiting for main menu button: found={value}, visible={value2}, enabled={value3}");
-				AutoSlayer.CurrentWatchdog?.Reset("Waiting for game over summary animation");
+				Watchdog.Current?.Reset("Waiting for game over summary animation");
 			}
 			NReturnToMainMenuButton nReturnToMainMenuButton = mainMenuButton;
 			return nReturnToMainMenuButton != null && nReturnToMainMenuButton.Visible && mainMenuButton.IsEnabled;

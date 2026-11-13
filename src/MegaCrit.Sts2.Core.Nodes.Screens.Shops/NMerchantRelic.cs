@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
@@ -158,11 +157,6 @@ public class NMerchantRelic : NMerchantSlot
 		_costLabel.Modulate = (_relicEntry.EnoughGold ? StsColors.cream : StsColors.red);
 	}
 
-	protected override async Task OnTryPurchase(MerchantInventory? inventory)
-	{
-		await _relicEntry.OnTryPurchaseWrapper(inventory);
-	}
-
 	private void OnSuccessfulPurchase(PurchaseStatus _, MerchantEntry __)
 	{
 		TriggerMerchantHandToPointHere();
@@ -177,16 +171,8 @@ public class NMerchantRelic : NMerchantSlot
 		nHoverTipSet?.SetGlobalPosition(GlobalPosition);
 		if (nHoverTipSet != null)
 		{
-			if (GlobalPosition.X > GetViewport().GetVisibleRect().Size.X * 0.5f)
-			{
-				nHoverTipSet.SetAlignment(this, HoverTipAlignment.Left);
-				nHoverTipSet.GlobalPosition -= Size * 0.5f * Scale;
-			}
-			else
-			{
-				nHoverTipSet.SetAlignment(this, HoverTipAlignment.Right);
-				nHoverTipSet.GlobalPosition += Vector2.Right * Size.X * 0.5f * Scale + Vector2.Up * Size.Y * 0.5f * Scale;
-			}
+			bool flag = GlobalPosition.X > GetViewport().GetVisibleRect().Size.X * 0.5f;
+			nHoverTipSet.SetAlignment(GetHoveredHitboxGlobalRect(), flag ? HoverTipAlignment.Left : HoverTipAlignment.Right);
 		}
 	}
 
@@ -206,9 +192,12 @@ public class NMerchantRelic : NMerchantSlot
 	public override void _ExitTree()
 	{
 		base._ExitTree();
-		_relicEntry.EntryUpdated -= UpdateVisual;
-		_relicEntry.PurchaseFailed -= OnPurchaseFailed;
-		_relicEntry.PurchaseCompleted -= OnSuccessfulPurchase;
+		if (IsInitialized)
+		{
+			_relicEntry.EntryUpdated -= UpdateVisual;
+			_relicEntry.PurchaseFailed -= OnPurchaseFailed;
+			_relicEntry.PurchaseCompleted -= OnSuccessfulPurchase;
+		}
 	}
 
 	/// <summary>

@@ -3,7 +3,6 @@ using System.ComponentModel;
 using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
-using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
@@ -44,10 +43,6 @@ public class NTopBarPortraitTip : NClickableControl
 	/// </summary>
 	public new class PropertyName : NClickableControl.PropertyName
 	{
-		/// <summary>
-		/// Cached name for the 'ShowTip' property.
-		/// </summary>
-		public static readonly StringName ShowTip = "ShowTip";
 	}
 
 	/// <summary>
@@ -59,8 +54,6 @@ public class NTopBarPortraitTip : NClickableControl
 
 	private IHoverTip _hoverTip;
 
-	public bool ShowTip { get; private set; }
-
 	public override void _Ready()
 	{
 		ConnectSignals();
@@ -68,22 +61,13 @@ public class NTopBarPortraitTip : NClickableControl
 
 	public void Initialize(IRunState runState)
 	{
-		int ascensionLevel = runState.AscensionLevel;
-		bool flag = runState.GameMode.AreAchievementsAndEpochsLocked();
-		ShowTip = (ascensionLevel > 0) | flag;
-		if (ShowTip)
-		{
-			_hoverTip = AscensionHelper.GetHoverTip(LocalContext.GetMe(runState).Character, ascensionLevel, flag);
-		}
-		FocusMode = (FocusModeEnum)(ShowTip ? 2 : 0);
+		_hoverTip = AscensionHelper.GetPortraitHoverTip(runState);
+		FocusMode = FocusModeEnum.All;
 	}
 
 	protected override void OnFocus()
 	{
-		if (ShowTip)
-		{
-			NHoverTipSet.CreateAndShow(this, _hoverTip)?.SetGlobalPosition(GlobalPosition + new Vector2(0f, Size.Y + 20f));
-		}
+		NHoverTipSet.CreateAndShow(this, _hoverTip)?.SetGlobalPosition(GlobalPosition + new Vector2(0f, Size.Y + 20f));
 	}
 
 	protected override void OnUnfocus()
@@ -152,47 +136,9 @@ public class NTopBarPortraitTip : NClickableControl
 
 	/// <inheritdoc />
 	[EditorBrowsable(EditorBrowsableState.Never)]
-	protected override bool SetGodotClassPropertyValue(in godot_string_name name, in godot_variant value)
-	{
-		if (name == PropertyName.ShowTip)
-		{
-			ShowTip = VariantUtils.ConvertTo<bool>(in value);
-			return true;
-		}
-		return base.SetGodotClassPropertyValue(in name, in value);
-	}
-
-	/// <inheritdoc />
-	[EditorBrowsable(EditorBrowsableState.Never)]
-	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
-	{
-		if (name == PropertyName.ShowTip)
-		{
-			value = VariantUtils.CreateFrom<bool>(ShowTip);
-			return true;
-		}
-		return base.GetGodotClassPropertyValue(in name, out value);
-	}
-
-	/// <summary>
-	/// Get the property information for all the properties declared in this class.
-	/// This method is used by Godot to register the available properties in the editor.
-	/// Do not call this method.
-	/// </summary>
-	[EditorBrowsable(EditorBrowsableState.Never)]
-	internal new static List<PropertyInfo> GetGodotPropertyList()
-	{
-		List<PropertyInfo> list = new List<PropertyInfo>();
-		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName.ShowTip, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
-		return list;
-	}
-
-	/// <inheritdoc />
-	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override void SaveGodotObjectData(GodotSerializationInfo info)
 	{
 		base.SaveGodotObjectData(info);
-		info.AddProperty(PropertyName.ShowTip, Variant.From<bool>(ShowTip));
 	}
 
 	/// <inheritdoc />
@@ -200,9 +146,5 @@ public class NTopBarPortraitTip : NClickableControl
 	protected override void RestoreGodotObjectData(GodotSerializationInfo info)
 	{
 		base.RestoreGodotObjectData(info);
-		if (info.TryGetProperty(PropertyName.ShowTip, out var value))
-		{
-			ShowTip = value.As<bool>();
-		}
 	}
 }

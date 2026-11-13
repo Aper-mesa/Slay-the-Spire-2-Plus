@@ -41,14 +41,15 @@ public sealed class ReattachPower : PowerModel
 	{
 		if (!AreAllOtherSegmentsDead())
 		{
-			(NCombatRoom.Instance?.GetCreatureNode(Owner))?.GetSpecialNode<NDecimillipedeSegmentVfx>("%NDecimillipedeSegmentVfx")?.Regenerate();
+			NCreature nCreature = NCombatRoom.Instance?.GetCreatureNode(Owner);
+			nCreature?.GetSpecialNode<NDecimillipedeSegmentVfx>("%NDecimillipedeSegmentVfx")?.Regenerate();
 			GetInternalData<Data>().isReviving = false;
-			NCombatRoom.Instance?.SetCreatureIsInteractable(Owner, on: true);
+			nCreature?.SetIsInteractable(on: true, changeVisibilityImmediately: true);
 			await CreatureCmd.Heal(Owner, Amount);
 		}
 	}
 
-	public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (wasRemovalPrevented || Owner != creature)
 		{
@@ -61,7 +62,9 @@ public sealed class ReattachPower : PowerModel
 			{
 				Owner.Monster.SetMoveImmediate(decimillipedeSegment.DeadState);
 			}
-			NCombatRoom.Instance?.SetCreatureIsInteractable(Owner, on: false);
+			NCreature creatureNode = Owner.GetCreatureNode();
+			creatureNode?.SetIsInteractable(on: false, changeVisibilityImmediately: false);
+			creatureNode?.AnimateOutStateDisplay();
 		}
 		else
 		{
@@ -102,6 +105,8 @@ public sealed class ReattachPower : PowerModel
 
 	/// <summary>
 	/// Killing Decimillipede Segment shouldn't trigger fatal unless all other segments are dead too.
+	/// Segments die and revive repeatedly, so without this a Fatal effect could trigger on the same segment once per
+	/// round for the whole fight. Closed as designed in PRG-3034. ReattachPowerTest pins both directions.
 	/// </summary>
 	public override bool ShouldOwnerDeathTriggerFatal()
 	{

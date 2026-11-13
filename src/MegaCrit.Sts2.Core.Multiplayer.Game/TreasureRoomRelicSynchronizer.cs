@@ -42,7 +42,7 @@ public class TreasureRoomRelicSynchronizer
 		public bool voteReceived;
 	}
 
-	private readonly IPlayerCollection _playerCollection;
+	private readonly IRunState _runState;
 
 	private readonly ulong _localPlayerId;
 
@@ -65,17 +65,24 @@ public class TreasureRoomRelicSynchronizer
 	/// </summary>
 	private bool _singleplayerSkipped;
 
+	/// <summary>
+	/// How many more rounds there are of relic picking.
+	/// This is currently only intended to be used in singleplayer.
+	/// Multiple rounds are completely untested in multiplayer.
+	/// </summary>
+	private int _roundsLeft;
+
 	public IReadOnlyList<RelicModel>? CurrentRelics => _currentRelics;
 
-	private Player LocalPlayer => _playerCollection.GetPlayer(_localPlayerId);
+	private Player LocalPlayer => _runState.GetPlayer(_localPlayerId);
 
 	public event Action? VotesChanged;
 
-	public event Action<List<RelicPickingResult>>? RelicsAwarded;
+	public event Action<List<RelicPickingResult>, bool>? RelicsAwarded;
 
-	public TreasureRoomRelicSynchronizer(IPlayerCollection playerCollection, ulong localPlayerId, ActionQueueSynchronizer actionQueueSynchronizer, RelicGrabBag sharedGrabBag, Rng rng)
+	public TreasureRoomRelicSynchronizer(IRunState runState, ulong localPlayerId, ActionQueueSynchronizer actionQueueSynchronizer, RelicGrabBag sharedGrabBag, Rng rng)
 	{
-		_playerCollection = playerCollection;
+		_runState = runState;
 		_localPlayerId = localPlayerId;
 		_actionQueueSynchronizer = actionQueueSynchronizer;
 		_sharedGrabBag = sharedGrabBag;
@@ -95,29 +102,48 @@ public class TreasureRoomRelicSynchronizer
 		_currentRelics = new List<RelicModel>();
 		_votes.Clear();
 		_predictedVote = null;
-		foreach (Player player in _playerCollection.Players)
+		foreach (Player player in _runState.Players)
 		{
 			_votes.Add(new PlayerVote
 			{
 				voteReceived = false
 			});
-			IRunState runState = player.RunState;
-			if (Hook.ShouldGenerateTreasure(runState, player))
+			if (Hook.ShouldGenerateTreasure(_runState, player))
 			{
 				RelicRarity rarity = RelicFactory.RollRarity(_rng);
-				RelicModel item = TryGetRelicForTutorial(player) ?? _sharedGrabBag.PullFromFront(rarity, runState) ?? RelicFactory.FallbackRelic;
+				RelicModel item = TryGetRelicForTutorial(player) ?? _sharedGrabBag.PullFromFront(rarity, _runState) ?? RelicFactory.FallbackRelic;
 				_currentRelics.Add(item);
+			}
+		}
+		_roundsLeft = 1;
+		if (_runState.GameMode == GameMode.Blitz)
+		{
+			int num;
+			if (_runState.Players.Count > 1)
+			{
+				num = 2;
+			}
+			else
+			{
+				num = 1;
+				_roundsLeft = 2;
+			}
+			for (int i = 0; i < num; i++)
+			{
+				RelicRarity rarity2 = RelicFactory.RollRarity(_rng);
+				RelicModel item2 = _sharedGrabBag.PullFromFront(rarity2, _runState) ?? RelicFactory.FallbackRelic;
+				_currentRelics.Add(item2);
 			}
 		}
 		if (_currentRelics.Count > 0)
 		{
-			if (RunManager.Instance.IsSingleplayerOrFakeMultiplayer && _playerCollection.Players.Count > 1)
+			if (RunManager.Instance.IsSingleplayerOrFakeMultiplayer && _runState.Players.Count > 1)
 			{
-				foreach (Player player2 in _playerCollection.Players)
+				foreach (Player player2 in _runState.Players)
 				{
 					if (player2 != LocalPlayer)
 					{
-						PlayerVote playerVote = _votes[_playerCollection.GetPlayerSlotIndex(player2)];
+						PlayerVote playerVote = _votes[_runState.GetPlayerSlotIndex(player2)];
 						playerVote.index = _rng.NextInt(_currentRelics.Count);
 						playerVote.voteReceived = true;
 					}
@@ -194,12 +220,12 @@ public class TreasureRoomRelicSynchronizer
 		{
 			throw new IndexOutOfRangeException($"Attempted to pick relic at index {index}, but there are only {_currentRelics.Count} to choose from!");
 		}
-		if (!index.HasValue && _playerCollection.Players.Count == 1)
+		if (!index.HasValue && _runState.Players.Count == 1)
 		{
 			_singleplayerSkipped = true;
 			return;
 		}
-		PlayerVote playerVote = _votes[_playerCollection.GetPlayerSlotIndex(player)];
+		PlayerVote playerVote = _votes[_runState.GetPlayerSlotIndex(player)];
 		playerVote.index = index;
 		playerVote.voteReceived = true;
 		VotesChanged?.Invoke();
@@ -211,13 +237,17 @@ public class TreasureRoomRelicSynchronizer
 		{
 			PlayerVote predictedVote = _predictedVote;
 			_predictedVote = null;
-			if (_votes[_playerCollection.GetPlayerSlotIndex(LocalPlayer)].index != predictedVote.index)
+			if (_votes[_runState.GetPlayerSlotIndex(LocalPlayer)].index != predictedVote.index)
 			{
 				VotesChanged?.Invoke();
 			}
 		}
 		AwardRelics();
-		EndRelicVoting();
+		_roundsLeft--;
+		if (_roundsLeft <= 0)
+		{
+			EndRelicVoting();
+		}
 	}
 
 	private void AwardRelics()
@@ -229,7 +259,7 @@ public class TreasureRoomRelicSynchronizer
 		}
 		for (int j = 0; j < _votes.Count; j++)
 		{
-			Player item = _playerCollection.Players[j];
+			Player item = _runState.Players[j];
 			PlayerVote playerVote = _votes[j];
 			if (playerVote.index.HasValue)
 			{
@@ -239,59 +269,68 @@ public class TreasureRoomRelicSynchronizer
 			}
 		}
 		List<RelicPickingResult> results = new List<RelicPickingResult>();
-		List<RelicModel> list = new List<RelicModel>();
+		List<int> list = new List<int>();
 		foreach (KeyValuePair<int, List<Player>> item2 in dictionary)
 		{
-			RelicModel relicModel = _currentRelics[item2.Key];
+			RelicModel relic = _currentRelics[item2.Key];
 			if (item2.Value.Count == 0)
 			{
-				list.Add(relicModel);
+				list.Add(item2.Key);
 			}
 			else if (item2.Value.Count == 1)
 			{
 				results.Add(new RelicPickingResult
 				{
 					type = RelicPickingResultType.OnlyOnePlayerVoted,
-					relic = relicModel,
+					relic = relic,
+					relicIndex = item2.Key,
 					player = item2.Value[0]
 				});
 			}
 			else if (item2.Value.Count > 1)
 			{
 				RelicPickingFightMove[] possibleMoves = Enum.GetValues<RelicPickingFightMove>();
-				results.Add(RelicPickingResult.GenerateRelicFight(item2.Value, relicModel, () => _rng.NextItem(possibleMoves)));
+				results.Add(RelicPickingResult.GenerateRelicFight(item2.Value, relic, item2.Key, () => _rng.NextItem(possibleMoves)));
 			}
 		}
-		List<Player> list2 = _playerCollection.Players.Where((Player p) =>
+		List<Player> list2 = _runState.Players.Where((Player p) =>
 		{
 			bool flag = results.Find((RelicPickingResult r) => r.player == p) != null;
-			PlayerVote playerVote2 = _votes[_playerCollection.GetPlayerSlotIndex(p)];
+			PlayerVote playerVote2 = _votes[_runState.GetPlayerSlotIndex(p)];
 			bool flag2 = playerVote2.voteReceived && !playerVote2.index.HasValue;
 			return !flag && !flag2;
 		}).ToList();
 		list.StableShuffle(_rng);
 		for (int num = 0; num < list.Count; num++)
 		{
+			int num2 = list[num];
+			RelicModel relic2 = _currentRelics[num2];
 			if (num < list2.Count)
 			{
 				results.Add(new RelicPickingResult
 				{
 					type = RelicPickingResultType.ConsolationPrize,
 					player = list2[num],
-					relic = list[num]
+					relicIndex = num2,
+					relic = relic2
 				});
 			}
-			else
+			else if (_roundsLeft <= 1)
 			{
 				results.Add(new RelicPickingResult
 				{
 					type = RelicPickingResultType.Skipped,
 					player = null,
-					relic = list[num]
+					relicIndex = num2,
+					relic = relic2
 				});
 			}
 		}
-		RelicsAwarded?.Invoke(results);
+		foreach (RelicPickingResult item3 in results)
+		{
+			_currentRelics.Remove(item3.relic);
+		}
+		RelicsAwarded?.Invoke(results, _roundsLeft == 1);
 	}
 
 	/// <summary>
@@ -322,7 +361,7 @@ public class TreasureRoomRelicSynchronizer
 		{
 			return _predictedVote;
 		}
-		return _votes[_playerCollection.GetPlayerSlotIndex(player)];
+		return _votes[_runState.GetPlayerSlotIndex(player)];
 	}
 
 	/// <summary>
@@ -332,7 +371,7 @@ public class TreasureRoomRelicSynchronizer
 	public void CompleteWithNoRelics()
 	{
 		_logger.Debug("Completing relic picking with no relics (empty chest)");
-		RelicsAwarded?.Invoke(new List<RelicPickingResult>());
+		RelicsAwarded?.Invoke(new List<RelicPickingResult>(), arg2: true);
 		_currentRelics = null;
 	}
 
@@ -342,7 +381,7 @@ public class TreasureRoomRelicSynchronizer
 	/// </summary>
 	private RelicModel? TryGetRelicForTutorial(Player player)
 	{
-		if (_playerCollection.Players.Count == 1 && player.UnlockState.NumberOfRuns == 0 && player.RunState.MapPointHistory.SelectMany((IReadOnlyList<MapPointHistoryEntry> l) => l).Count((MapPointHistoryEntry p) => p.HasRoomOfType(RoomType.Treasure)) == 1 && player.RelicGrabBag.Contains(ModelDb.Relic<Gorget>()))
+		if (_runState.Players.Count == 1 && player.UnlockState.NumberOfRuns == 0 && player.RunState.MapPointHistory.SelectMany((IReadOnlyList<MapPointHistoryEntry> l) => l).Count((MapPointHistoryEntry p) => p.HasRoomOfType(RoomType.Treasure)) <= 1 && player.RelicGrabBag.Contains(ModelDb.Relic<Gorget>()))
 		{
 			Log.Info("Forcing specific relic because it's the player's first treasure chest ever");
 			player.RelicGrabBag.Remove<Gorget>();

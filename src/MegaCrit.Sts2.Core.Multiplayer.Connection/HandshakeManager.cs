@@ -22,6 +22,13 @@ public class HandshakeManager
 
 	private const int _handshakeTimeoutMsec = 10000;
 
+	/// <summary>
+	/// Shown in the version-mismatch error in place of a version we could not read, which happens when the peer
+	/// predates the handshake packet. It goes into the {remoteVersion} slot of a localized sentence, so it stays a
+	/// version-shaped token rather than English prose, which would show up untranslated in the other 15 languages.
+	/// </summary>
+	private const string _unreadableVersionName = "< v0.111.0";
+
 	public static TaskCompletionSource? skipTimeoutTcs;
 
 	public static readonly byte[] magicBytes = "STS2"u8.ToArray();
@@ -34,7 +41,7 @@ public class HandshakeManager
 
 	private PeerVersionInfo _localVersionInfo;
 
-	private List<HandshakeInProgress> _handshakesInProgress = new List<HandshakeInProgress>();
+	private readonly List<HandshakeInProgress> _handshakesInProgress = new List<HandshakeInProgress>();
 
 	public HandshakeManager(IHandshakeHandler handler, PeerVersionInfo localVersionInfo, PacketWriter writer)
 	{
@@ -80,18 +87,6 @@ public class HandshakeManager
 
 	private HandshakeResult TryReadHandshakeMessage(ulong senderId, PacketReader reader)
 	{
-		if (reader.Buffer.Length < magicBytes.Length)
-		{
-			return new HandshakeResult(HandshakeStatus.InvalidHandshake);
-		}
-		byte[] array = magicBytes;
-		foreach (byte b in array)
-		{
-			if (reader.ReadByte() != b)
-			{
-				return new HandshakeResult(HandshakeStatus.InvalidHandshake);
-			}
-		}
 		HandshakeInProgress handshakeInProgress = _handshakesInProgress.Find((HandshakeInProgress h) => h.peerId == senderId);
 		if (handshakeInProgress == null)
 		{
@@ -99,6 +94,11 @@ public class HandshakeManager
 			return new HandshakeResult(HandshakeStatus.InvalidHandshake);
 		}
 		handshakeInProgress.cts.Cancel();
+		if (!ReadMagicBytes(reader))
+		{
+			Log.Error($"Peer {senderId} did not send a readable handshake. Treating it as a version mismatch.");
+			return new HandshakeResult(HandshakeStatus.VersionMismatch, UnreadableRemoteVersion(), UnreadableExtraInfo());
+		}
 		PeerVersionInfo peerVersionInfo = default;
 		if (!peerVersionInfo.TryDeserialize(reader))
 		{
@@ -135,6 +135,47 @@ public class HandshakeManager
 			_logger.Warn($"Mismatch in non-gameplay relevant mods. This is allowed, but it's up to the mod authors to guarantee that it doesn't break anything.\nNon-gameplay relevant mods that remote has that local does not: {string.Join(",", missingModsOnLocal2)}.\nNon-gameplay relevant mods that local has that remote does not: {string.Join(",", missingModsOnRemote2)}.");
 		}
 		return new HandshakeResult(HandshakeStatus.Success, peerVersionInfo, connectionFailureExtraInfo);
+	}
+
+	private static bool ReadMagicBytes(PacketReader reader)
+	{
+		if (reader.Buffer.Length < magicBytes.Length)
+		{
+			return false;
+		}
+		byte[] array = magicBytes;
+		foreach (byte b in array)
+		{
+			if (reader.ReadByte() != b)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/// <summary>
+	/// Stand-in version info for a peer whose handshake we could not read at all. The branch is copied from the
+	/// local peer on purpose: once the versions differ, the error text picks its wording from the branch, so a
+	/// defaulted branch would claim a Steam branch mismatch we have no evidence for.
+	/// </summary>
+	private PeerVersionInfo UnreadableRemoteVersion()
+	{
+		return new PeerVersionInfo
+		{
+			version = "< v0.111.0",
+			branch = _localVersionInfo.branch
+		};
+	}
+
+	private ConnectionFailureExtraInfo UnreadableExtraInfo()
+	{
+		return new ConnectionFailureExtraInfo
+		{
+			localInfo = _localVersionInfo,
+			remoteInfo = UnreadableRemoteVersion(),
+			localIsHost = (_handler.Type != NetGameType.Client)
+		};
 	}
 
 	public void WriteHandshakeMessage(ulong peerId)

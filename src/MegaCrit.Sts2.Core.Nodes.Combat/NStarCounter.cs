@@ -259,11 +259,11 @@ public class NStarCounter : Control
 		{
 			_hsvTween?.Kill();
 			_hsvTween = CreateTween();
-			_hsvTween.TweenMethod(Callable.From<float>(UpdateShaderV), 2f, 1f, 0.20000000298023224);
+			_hsvTween.TweenMethod(Callable.From<float>(UpdateShaderV), 2f, 1f, 0.2);
 			Node2D node2D = PreloadManager.Cache.GetAsset<PackedScene>(_starGainVfxPath).Instantiate<Node2D>(PackedScene.GenEditState.Disabled);
 			this.AddChildSafely(node2D);
 			this.MoveChildSafely(node2D, 0);
-			node2D.Position = Size / 2f;
+			node2D.Position = Size * 0.5f;
 		}
 	}
 

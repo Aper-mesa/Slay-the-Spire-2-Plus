@@ -10,6 +10,7 @@ using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
@@ -25,7 +26,7 @@ public class RelicReward : Reward
 	/// For randomly-rolled relic rewards (like from Elite combats), this is null.
 	/// For predetermined relic rewards (like from <see cref="T:MegaCrit.Sts2.Core.Models.Events.FakeMerchant" />), this is set to the predetermined relic.
 	/// </summary>
-	private RelicModel? _predeterminedRelic;
+	private readonly RelicModel? _predeterminedRelic;
 
 	/// <summary>
 	/// The relic that this reward gives.
@@ -58,18 +59,20 @@ public class RelicReward : Reward
 	{
 	}
 
-	public RelicReward(RelicModel relic, Player player)
+	public RelicReward(RelicModel relic, Player player, Rng? rngOverride = null)
 		: base(player)
 	{
 		relic.AssertMutable();
 		_predeterminedRelic = relic;
 		_relic = relic;
+		_rngOverride = rngOverride;
 	}
 
-	public RelicReward(RelicRarity rarity, Player player)
+	public RelicReward(RelicRarity rarity, Player player, Rng? rngOverride = null)
 		: base(player)
 	{
 		_rarity = rarity;
+		_rngOverride = rngOverride;
 	}
 
 	public override void Populate()
@@ -86,7 +89,7 @@ public class RelicReward : Reward
 			}
 			else
 			{
-				_relic = RelicFactory.PullNextRelicFromFront(Player).ToMutable();
+				_relic = RelicFactory.PullNextRelicForRewardFromFront(Player).ToMutable();
 			}
 		}
 		else

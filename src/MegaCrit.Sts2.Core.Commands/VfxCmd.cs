@@ -12,6 +12,7 @@ using MegaCrit.Sts2.Core.Nodes.Screens.Bestiary;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
 using MegaCrit.Sts2.Core.Nodes.Vfx.Cards;
 using MegaCrit.Sts2.Core.Nodes.Vfx.Ui;
+using MegaCrit.Sts2.Core.Nodes.Vfx.Utilities;
 using MegaCrit.Sts2.Core.TestSupport;
 
 namespace MegaCrit.Sts2.Core.Commands;
@@ -79,7 +80,7 @@ public static class VfxCmd
 		"vfx/vfx_block", "vfx/vfx_attack_slash", "vfx/vfx_attack_blunt", "vfx/vfx_gaze", "vfx/vfx_bloody_impact", "vfx/vfx_bite", "vfx/vfx_chain", "vfx/vfx_flying_slash", "vfx/vfx_coin_explosion_small", "vfx/vfx_coin_explosion_regular",
 		"vfx/vfx_coin_explosion_jumbo", "vfx/vfx_adrenaline", "vfx/vfx_rock_shatter", "vfx/vfx_scratch", "vfx/vfx_sandy_impact", "vfx/vfx_attack_lightning", "vfx/vfx_giant_horizontal_slash", "vfx/vfx_dagger_throw", "vfx/vfx_dagger_spray", "vfx/vfx_dramatic_stab",
 		"vfx/vfx_slime_impact", "vfx/vfx_thrash", "vfx/vfx_cross_heal", "vfx/vfx_heavy_blunt", "vfx/vfx_starry_impact", "vfx/vfx_scream", "vfx/vfx_spooky_scream"
-	}.Select(SceneHelper.GetScenePath).Concat(new _003C_003Ez__ReadOnlyArray<string>(new string[28]
+	}.Select(SceneHelper.GetScenePath).Concat(new _003C_003Ez__ReadOnlyArray<string>(new string[29]
 	{
 		NBigSlashImpactVfx.scenePath,
 		NBigSlashVfx.scenePath,
@@ -108,7 +109,8 @@ public static class VfxCmd
 		NSporeImpactVfx.scenePath,
 		NSweepingBeamImpactVfx.scenePath,
 		NSweepingBeamVfx.scenePath,
-		NWormyImpactVfx.scenePath
+		NWormyImpactVfx.scenePath,
+		NByrdineAttackVfx.scenePath
 	})).Concat(NHealNumVfx.AssetPaths);
 
 	public static void PlayFullScreenInCombat(string path, Creature? spawner)
@@ -209,9 +211,9 @@ public static class VfxCmd
 		}
 	}
 
-	public static void PlayOnCreatureCenter(Creature target, string path)
+	public static void PlayOnCreatureCenter(Creature target, string path, bool forceIfDead = false)
 	{
-		if (!TestMode.IsOn && !target.IsDead)
+		if (!TestMode.IsOn && (!target.IsDead || forceIfDead))
 		{
 			NCreature creatureNode = target.GetCreatureNode();
 			if (creatureNode != null)
@@ -229,9 +231,9 @@ public static class VfxCmd
 		}
 	}
 
-	public static void PlayOnCreature(Creature target, string path)
+	public static void PlayOnCreature(Creature target, string path, bool forceIfDead = false)
 	{
-		if (!TestMode.IsOn && !target.IsDead)
+		if (!TestMode.IsOn && (!target.IsDead || forceIfDead))
 		{
 			NCreature creatureNode = target.GetCreatureNode();
 			if (creatureNode != null)

@@ -28,8 +28,7 @@ public enum ModifyDamageHookType
 	/// <summary>
 	/// Damage-capping hooks from effects like <see cref="T:MegaCrit.Sts2.Core.Models.Powers.IntangiblePower" />.
 	/// Including this will cause <see cref="M:MegaCrit.Sts2.Core.Models.AbstractModel.ModifyDamageCap(MegaCrit.Sts2.Core.Entities.Creatures.Creature,MegaCrit.Sts2.Core.ValueProps.ValueProp,MegaCrit.Sts2.Core.Entities.Creatures.Creature,MegaCrit.Sts2.Core.Models.CardModel,MegaCrit.Sts2.Core.Entities.Cards.CardPlay)" /> to be called.
-	/// At the time of this writing (5/15/2026), we never use this type alone.
-	/// If that changes, please update this comment.
+	/// Used alone for already-calculated damage that should still respect damage caps.
 	/// </summary>
 	Cap = 8,
 	/// <summary>

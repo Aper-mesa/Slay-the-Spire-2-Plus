@@ -44,7 +44,7 @@ public class NResolutionDropdownItem : NDropdownItem
 	public void Init(Vector2I setResolution)
 	{
 		resolution = setResolution;
-		string textAutoSize = $"{resolution.X} x {resolution.Y}";
+		string textAutoSize = NResolutionDropdown.FormatResolution(resolution);
 		_label.SetTextAutoSize(textAutoSize);
 	}
 

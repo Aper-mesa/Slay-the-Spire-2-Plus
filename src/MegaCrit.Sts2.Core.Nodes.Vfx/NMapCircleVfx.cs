@@ -43,6 +43,16 @@ public class NMapCircleVfx : Control
 		/// Cached name for the '_playAnim' field.
 		/// </summary>
 		public static readonly StringName _playAnim = "_playAnim";
+
+		/// <summary>
+		/// Cached name for the '_minScale' field.
+		/// </summary>
+		public static readonly StringName _minScale = "_minScale";
+
+		/// <summary>
+		/// Cached name for the '_maxScale' field.
+		/// </summary>
+		public static readonly StringName _maxScale = "_maxScale";
 	}
 
 	/// <summary>
@@ -56,11 +66,15 @@ public class NMapCircleVfx : Control
 
 	private const string _path = "res://scenes/vfx/map_circle_vfx.tscn";
 
-	private static readonly string[] _textures = new string[5] { "res://images/atlases/compressed.sprites/map/map_circle_0.tres", "res://images/atlases/compressed.sprites/map/map_circle_1.tres", "res://images/atlases/compressed.sprites/map/map_circle_2.tres", "res://images/atlases/compressed.sprites/map/map_circle_3.tres", "res://images/atlases/compressed.sprites/map/map_circle_4.tres" };
+	private static readonly string[] _textures = new string[5] { "res://images/atlases/compressed_atlas.sprites/map_circle_0.tres", "res://images/atlases/compressed_atlas.sprites/map_circle_1.tres", "res://images/atlases/compressed_atlas.sprites/map_circle_2.tres", "res://images/atlases/compressed_atlas.sprites/map_circle_3.tres", "res://images/atlases/compressed_atlas.sprites/map_circle_4.tres" };
 
 	private const double _animInterval = 1.0 / 24.0;
 
 	private bool _playAnim;
+
+	private float _minScale;
+
+	private float _maxScale;
 
 	private MapCoord _mapCoord;
 
@@ -74,7 +88,7 @@ public class NMapCircleVfx : Control
 		_image.Texture = PreloadManager.Cache.GetTexture2D(_textures[0]);
 		Rng rng = new Rng((ulong)((long)_runState.Rng.Seed + (long)_mapCoord.row + 131L * (long)_mapCoord.row));
 		RotationDegrees = rng.NextFloat(360f);
-		Vector2 vector = Vector2.One * rng.NextFloat(0.85f, 0.9f);
+		Vector2 vector = Vector2.One * rng.NextFloat(_minScale, _maxScale);
 		if (_playAnim)
 		{
 			Tween tween = CreateTween().SetParallel();
@@ -104,7 +118,7 @@ public class NMapCircleVfx : Control
 		}
 	}
 
-	public static NMapCircleVfx? Create(IRunState runState, MapCoord mapCoord, bool playAnim)
+	public static NMapCircleVfx? Create(IRunState runState, MapCoord mapCoord, bool playAnim, float minScale = 0.85f, float maxScale = 0.9f)
 	{
 		if (TestMode.IsOn)
 		{
@@ -114,6 +128,8 @@ public class NMapCircleVfx : Control
 		nMapCircleVfx._playAnim = playAnim;
 		nMapCircleVfx._mapCoord = mapCoord;
 		nMapCircleVfx._runState = runState;
+		nMapCircleVfx._minScale = minScale;
+		nMapCircleVfx._maxScale = maxScale;
 		return nMapCircleVfx;
 	}
 
@@ -168,6 +184,16 @@ public class NMapCircleVfx : Control
 			_playAnim = VariantUtils.ConvertTo<bool>(in value);
 			return true;
 		}
+		if (name == PropertyName._minScale)
+		{
+			_minScale = VariantUtils.ConvertTo<float>(in value);
+			return true;
+		}
+		if (name == PropertyName._maxScale)
+		{
+			_maxScale = VariantUtils.ConvertTo<float>(in value);
+			return true;
+		}
 		return base.SetGodotClassPropertyValue(in name, in value);
 	}
 
@@ -185,6 +211,16 @@ public class NMapCircleVfx : Control
 			value = VariantUtils.CreateFrom(in _playAnim);
 			return true;
 		}
+		if (name == PropertyName._minScale)
+		{
+			value = VariantUtils.CreateFrom(in _minScale);
+			return true;
+		}
+		if (name == PropertyName._maxScale)
+		{
+			value = VariantUtils.CreateFrom(in _maxScale);
+			return true;
+		}
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
@@ -199,6 +235,8 @@ public class NMapCircleVfx : Control
 		List<PropertyInfo> list = new List<PropertyInfo>();
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._image, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName._playAnim, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Float, PropertyName._minScale, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Float, PropertyName._maxScale, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
 
@@ -209,6 +247,8 @@ public class NMapCircleVfx : Control
 		base.SaveGodotObjectData(info);
 		info.AddProperty(PropertyName._image, Variant.From(in _image));
 		info.AddProperty(PropertyName._playAnim, Variant.From(in _playAnim));
+		info.AddProperty(PropertyName._minScale, Variant.From(in _minScale));
+		info.AddProperty(PropertyName._maxScale, Variant.From(in _maxScale));
 	}
 
 	/// <inheritdoc />
@@ -223,6 +263,14 @@ public class NMapCircleVfx : Control
 		if (info.TryGetProperty(PropertyName._playAnim, out var value2))
 		{
 			_playAnim = value2.As<bool>();
+		}
+		if (info.TryGetProperty(PropertyName._minScale, out var value3))
+		{
+			_minScale = value3.As<float>();
+		}
+		if (info.TryGetProperty(PropertyName._maxScale, out var value4))
+		{
+			_maxScale = value4.As<float>();
 		}
 	}
 }

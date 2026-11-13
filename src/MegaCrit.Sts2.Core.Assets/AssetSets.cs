@@ -86,7 +86,7 @@ public static class AssetSets
 		list2.AddRange(NTransition.AssetPaths);
 		list2.AddRange(NLogoAnimation.AssetPaths);
 		IntroLogoAssets = new HashSet<string>(new _003C_003Ez__ReadOnlyList<string>(list2));
-		CommonAssets = new HashSet<string>(new IEnumerable<string>[99]
+		CommonAssets = new HashSet<string>(new IEnumerable<string>[100]
 		{
 			NActBanner.AssetPaths,
 			NActHistoryEntry.AssetPaths,
@@ -173,6 +173,7 @@ public static class AssetSets
 			NPowerUpVfx.AssetPaths,
 			NPreviewCardHolder.AssetPaths,
 			NRelicFlashVfx.AssetPaths,
+			NRelicRareGlow.AssetPaths,
 			NSmokyVignetteVfx.AssetPaths,
 			NStunnedVfx.AssetPaths,
 			NUiFlashVfx.AssetPaths,
@@ -188,10 +189,14 @@ public static class AssetSets
 			NThinSliceVfx.AssetPaths,
 			new _003C_003Ez__ReadOnlySingleElementList<string>("res://materials/vfx/hsv.tres")
 		}.SelectMany((IEnumerable<string> s) => s).Concat(CardMaterialPaths));
-		MainMenuSet = new HashSet<string>(new IEnumerable<string>[23]
+		MainMenuSet = new HashSet<string>(new IEnumerable<string>[27]
 		{
 			NCharacterSelectScreen.AssetPaths,
 			NMainMenu.AssetPaths,
+			NSingleplayerSubmenu.AssetPaths,
+			NMultiplayerSubmenu.AssetPaths,
+			NMultiplayerHostSubmenu.AssetPaths,
+			NCompendiumSubmenu.AssetPaths,
 			NAbandonRunConfirmPopup.AssetPaths,
 			NGenericPopup.AssetPaths,
 			NMultiplayerWarningPopup.AssetPaths,

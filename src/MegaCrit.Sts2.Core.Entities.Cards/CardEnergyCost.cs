@@ -269,7 +269,9 @@ public sealed class CardEnergyCost
 	/// Note that the text of these effects will just say "this turn"; the "or until played" part is left implicit
 	/// because it's wordy and rarely relevant.
 	/// </summary>
-	/// <example>None yet. Update this if we add one!</example>
+	/// <example>
+	/// <see cref="T:MegaCrit.Sts2.Core.Models.Cards.TheHierophant" /> says "Add 3 random Colorless cards into your Hand. They cost 1 less this turn."
+	/// </example>
 	/// <param name="amount">Amount to add to the cost.</param>
 	/// <param name="reduceOnly">
 	/// Whether this modifier should only be included in the cost calculation if it would lower the current cost.

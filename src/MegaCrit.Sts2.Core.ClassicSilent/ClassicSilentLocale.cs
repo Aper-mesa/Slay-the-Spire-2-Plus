@@ -224,6 +224,7 @@ public static class ClassicSilentLocale
         LocManager.RegisterRuntimeStrings("zhs", "characters", new Dictionary<string, string>
         {
             ["CLASSIC_SILENT.title"] = "静默猎手（经典）",
+            ["CLASSIC_SILENT.shortTitle"] = "静默猎手（经典）",
             ["CLASSIC_SILENT.titleObject"] = "静默猎手（经典）",
             ["CLASSIC_SILENT.description"] = "来自雾霾之地的致命女猎手。\n以匕首和毒药消灭敌人。",
             ["CLASSIC_SILENT.unlockText"] = "进行一局游戏以解锁。",
@@ -455,6 +456,7 @@ public static class ClassicSilentLocale
         LocManager.RegisterRuntimeStrings("eng", "characters", new Dictionary<string, string>
         {
             ["CLASSIC_SILENT.title"] = "Silent (Classic)",
+            ["CLASSIC_SILENT.shortTitle"] = "Silent (Classic)",
             ["CLASSIC_SILENT.titleObject"] = "Silent (Classic)",
             ["CLASSIC_SILENT.description"] = "A deadly huntress from the foglands.\nEradicates foes with daggers and poisons.",
             ["CLASSIC_SILENT.unlockText"] = "Play a run to unlock.",

@@ -41,12 +41,29 @@ public record ModelId : IComparable<ModelId>
 
 	public int CompareTo(ModelId? other)
 	{
-		int num = string.Compare(Category, other?.Category, StringComparison.Ordinal);
+		return Compare(this, other);
+	}
+
+	public static int Compare(ModelId? a, ModelId? b)
+	{
+		if ((object)a == b)
+		{
+			return 0;
+		}
+		if ((object)a == null)
+		{
+			return -1;
+		}
+		if ((object)b == null)
+		{
+			return 1;
+		}
+		int num = string.Compare(a.Category, b.Category, StringComparison.Ordinal);
 		if (num != 0)
 		{
 			return num;
 		}
-		return string.Compare(Entry, other?.Entry, StringComparison.Ordinal);
+		return string.Compare(a.Entry, b.Entry, StringComparison.Ordinal);
 	}
 
 	public static string SlugifyCategory<T>()

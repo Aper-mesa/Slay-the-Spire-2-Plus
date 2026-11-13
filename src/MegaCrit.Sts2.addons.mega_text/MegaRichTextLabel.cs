@@ -36,6 +36,11 @@ public class MegaRichTextLabel : RichTextLabel
 		public static readonly StringName RefreshFont = "RefreshFont";
 
 		/// <summary>
+		/// Cached name for the 'RefreshTextDirection' method.
+		/// </summary>
+		public static readonly StringName RefreshTextDirection = "RefreshTextDirection";
+
+		/// <summary>
 		/// Cached name for the '_Notification' method.
 		/// </summary>
 		public new static readonly StringName _Notification = "_Notification";
@@ -181,7 +186,7 @@ public class MegaRichTextLabel : RichTextLabel
 
 	private Vector2 _lastAdjustedSize;
 
-	private static readonly AbstractMegaRichTextEffect[] _textEffects = new AbstractMegaRichTextEffect[14]
+	private static readonly AbstractMegaRichTextEffect[] _textEffects = new AbstractMegaRichTextEffect[15]
 	{
 		new RichTextAqua(),
 		new RichTextBlue(),
@@ -196,7 +201,8 @@ public class MegaRichTextLabel : RichTextLabel
 		new RichTextRed(),
 		new RichTextScramble(),
 		new RichTextSine(),
-		new RichTextThinkyDots()
+		new RichTextThinkyDots(),
+		new RichTextYellow()
 	};
 
 	private bool _isAutoSizing;
@@ -327,6 +333,7 @@ public class MegaRichTextLabel : RichTextLabel
 	{
 		MegaLabelHelper.AssertThemeFontOverride(this, ThemeConstants.RichTextLabel.NormalFont);
 		RefreshFont();
+		RefreshTextDirection();
 		InstallEffectsIfNeeded();
 		AdjustFontSize();
 		ParseBbcode(Text);
@@ -337,6 +344,17 @@ public class MegaRichTextLabel : RichTextLabel
 		this.ApplyLocaleFontSubstitution(FontType.Regular, ThemeConstants.RichTextLabel.NormalFont);
 		this.ApplyLocaleFontSubstitution(FontType.Bold, ThemeConstants.RichTextLabel.BoldFont);
 		this.ApplyLocaleFontSubstitution(FontType.Italic, ThemeConstants.RichTextLabel.ItalicsFont);
+	}
+
+	/// <summary>
+	/// For right-to-left languages.
+	/// </summary>
+	private void RefreshTextDirection()
+	{
+		if (!Engine.IsEditorHint() && IsLayoutRtl())
+		{
+			TextDirection = TextDirection.Rtl;
+		}
 	}
 
 	public override void _Notification(int what)
@@ -355,6 +373,9 @@ public class MegaRichTextLabel : RichTextLabel
 			break;
 		case 9002:
 			InstallEffectsIfNeeded();
+			break;
+		case 49:
+			RefreshTextDirection();
 			break;
 		}
 	}
@@ -472,10 +493,11 @@ public class MegaRichTextLabel : RichTextLabel
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(9);
+		List<MethodInfo> list = new List<MethodInfo>(10);
 		list.Add(new MethodInfo(MethodName.DisposeCachedParagraph, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal | MethodFlags.Static, null, null));
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.RefreshFont, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
+		list.Add(new MethodInfo(MethodName.RefreshTextDirection, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._Notification, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Int, "what", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
@@ -516,6 +538,12 @@ public class MegaRichTextLabel : RichTextLabel
 		if (method == MethodName.RefreshFont && args.Count == 0)
 		{
 			RefreshFont();
+			ret = default;
+			return true;
+		}
+		if (method == MethodName.RefreshTextDirection && args.Count == 0)
+		{
+			RefreshTextDirection();
 			ret = default;
 			return true;
 		}
@@ -583,6 +611,10 @@ public class MegaRichTextLabel : RichTextLabel
 			return true;
 		}
 		if (method == MethodName.RefreshFont)
+		{
+			return true;
+		}
+		if (method == MethodName.RefreshTextDirection)
 		{
 			return true;
 		}

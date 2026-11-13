@@ -58,7 +58,7 @@ public class NMsaaHoverTip : Control
 
 	private void OnHovered()
 	{
-		NHoverTipSet.CreateAndShow(this, _hoverTip)?.SetGlobalPosition(GlobalPosition + NSettingsScreen.settingTipsOffset);
+		NHoverTipSet.CreateAndShow(this, _hoverTip)?.SetGlobalPosition(NSettingsScreen.GetSettingTipPosition(this));
 	}
 
 	private void OnUnhovered()

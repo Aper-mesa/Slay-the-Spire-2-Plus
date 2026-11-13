@@ -39,7 +39,7 @@ public sealed class KinFollower : MonsterModel
 
 	private const int _boomerangRepeat = 2;
 
-	private bool _startsWithDance;
+	private int _index;
 
 	public override IEnumerable<string> AssetPaths
 	{
@@ -70,16 +70,16 @@ public sealed class KinFollower : MonsterModel
 
 	private int DanceStrength => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 3, 2);
 
-	public bool StartsWithDance
+	public int Index
 	{
 		get
 		{
-			return _startsWithDance;
+			return _index;
 		}
 		set
 		{
 			AssertMutable();
-			_startsWithDance = value;
+			_index = value;
 		}
 	}
 
@@ -113,8 +113,13 @@ public sealed class KinFollower : MonsterModel
 		list.Add(moveState);
 		list.Add(moveState2);
 		list.Add(moveState3);
-		MoveState initialState = (StartsWithDance ? moveState3 : moveState);
-		return new MonsterMoveStateMachine(list, initialState);
+		return new MonsterMoveStateMachine(list, Index switch
+		{
+			0 => (MonsterState)moveState3,
+			1 => moveState,
+			2 => moveState2,
+			_ => throw new IndexOutOfRangeException(),
+		});
 	}
 
 	private async Task QuickSlashMove(IReadOnlyList<Creature> targets)

@@ -12,6 +12,8 @@ public sealed class Debt : CardModel
 {
 	public override int MaxUpgradeLevel => 0;
 
+	public override bool IsAllowedInBlitz => false;
+
 	public override IEnumerable<CardKeyword> CanonicalKeywords => new _003C_003Ez__ReadOnlySingleElementList<CardKeyword>(CardKeyword.Unplayable);
 
 	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new GoldVar(10));

@@ -392,12 +392,13 @@ public class NCreatureVisuals : Node2D
 			_currentLiquidOverlayMaterial.SetShaderParameter(_overlayInfluence, 1f);
 			SpineBody.SetNormalMaterial(_currentLiquidOverlayMaterial);
 			_liquidOverlayTimer = 1.0;
+			CancellationToken ct = _cts.Token;
 			while (_liquidOverlayTimer > 0.0)
 			{
 				double num = (1.0 - _liquidOverlayTimer) / 1.0;
 				_currentLiquidOverlayMaterial.SetShaderParameter(_overlayInfluence, 1.0 - num);
 				_liquidOverlayTimer -= GetProcessDeltaTime();
-				await this.AwaitProcessFrame(_cts.Token);
+				await this.AwaitProcessFrame(ct);
 			}
 			SpineBody.SetNormalMaterial(_savedNormalMaterial);
 			_currentLiquidOverlayMaterial = null;

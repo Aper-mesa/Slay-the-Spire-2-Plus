@@ -19,7 +19,7 @@ public sealed class PhantomBlades : CardModel
 		HoverTipFactory.FromKeyword(CardKeyword.Retain)
 	});
 
-	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new PowerVar<PhantomBladesPower>(9m));
+	protected override IEnumerable<DynamicVar> CanonicalVars => new _003C_003Ez__ReadOnlySingleElementList<DynamicVar>(new PowerVar<PhantomBladesPower>(8m));
 
 	public PhantomBlades()
 		: base(1, CardType.Power, CardRarity.Uncommon, TargetType.Self)

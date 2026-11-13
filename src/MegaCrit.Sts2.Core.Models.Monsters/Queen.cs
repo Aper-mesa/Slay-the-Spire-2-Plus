@@ -25,6 +25,8 @@ public sealed class Queen : MonsterModel
 
 	private const string _burnBrightForMeMove = "BURN_BRIGHT_FOR_ME_MOVE";
 
+	private const string _dreadInitialMove = "DREAD_INITIAL_MOVE";
+
 	private const string _executionMove = "EXECUTION_MOVE";
 
 	private const string _enrageMove = "ENRAGE_MOVE";
@@ -56,6 +58,8 @@ public sealed class Queen : MonsterModel
 	private int OffWithYourHeadDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 4, 3);
 
 	private int ExecutionDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 18, 15);
+
+	private int ChainsOfBindingAmount => 3;
 
 	private bool HasAmalgamDied
 	{
@@ -134,38 +138,41 @@ public sealed class Queen : MonsterModel
 		List<MonsterState> list = new List<MonsterState>();
 		MoveState moveState = new MoveState("PUPPET_STRINGS_MOVE", PuppetStringsMove, new CardDebuffIntent());
 		MoveState moveState2 = new MoveState("YOU_ARE_MINE_MOVE", YoureMineMove, new DebuffIntent());
+		MoveState moveState3 = new MoveState("DREAD_INITIAL_MOVE", DreadInitialMove, new CardDebuffIntent(), new DebuffIntent());
 		ConditionalBranchState conditionalBranchState = new ConditionalBranchState("YOURE_MINE_NOW_BRANCH");
 		BurnBrightForMeState = new MoveState("BURN_BRIGHT_FOR_ME_MOVE", BurnBrightForMeMove, new BuffIntent(), new DefendIntent());
 		ConditionalBranchState conditionalBranchState2 = new ConditionalBranchState("BURN_BRIGHT_FOR_ME_BRANCH");
-		MoveState moveState3 = new MoveState("OFF_WITH_YOUR_HEAD_MOVE", OffWithYourHeadMove, new MultiAttackIntent(OffWithYourHeadDamage, 5));
-		MoveState moveState4 = new MoveState("EXECUTION_MOVE", ExecutionMove, new SingleAttackIntent(ExecutionDamage));
+		MoveState moveState4 = new MoveState("OFF_WITH_YOUR_HEAD_MOVE", OffWithYourHeadMove, new MultiAttackIntent(OffWithYourHeadDamage, 5));
+		MoveState moveState5 = new MoveState("EXECUTION_MOVE", ExecutionMove, new SingleAttackIntent(ExecutionDamage));
 		EnragedState = new MoveState("ENRAGE_MOVE", EnrageMove, new BuffIntent());
 		moveState.FollowUpState = moveState2;
 		moveState2.FollowUpState = conditionalBranchState;
 		conditionalBranchState.AddState(BurnBrightForMeState, () => !HasAmalgamDied);
-		conditionalBranchState.AddState(moveState3, () => HasAmalgamDied);
+		conditionalBranchState.AddState(moveState4, () => HasAmalgamDied);
+		moveState3.FollowUpState = conditionalBranchState;
 		BurnBrightForMeState.FollowUpState = conditionalBranchState2;
 		conditionalBranchState2.AddState(BurnBrightForMeState, () => !HasAmalgamDied);
-		conditionalBranchState2.AddState(moveState3, () => HasAmalgamDied);
-		moveState3.FollowUpState = moveState4;
-		moveState4.FollowUpState = EnragedState;
-		EnragedState.FollowUpState = moveState3;
+		conditionalBranchState2.AddState(moveState4, () => HasAmalgamDied);
+		moveState4.FollowUpState = moveState5;
+		moveState5.FollowUpState = EnragedState;
+		EnragedState.FollowUpState = moveState4;
 		list.Add(moveState);
 		list.Add(moveState2);
+		list.Add(moveState3);
 		list.Add(BurnBrightForMeState);
 		list.Add(conditionalBranchState2);
 		list.Add(conditionalBranchState);
-		list.Add(moveState3);
 		list.Add(moveState4);
+		list.Add(moveState5);
 		list.Add(EnragedState);
-		return new MonsterMoveStateMachine(list, moveState);
+		return new MonsterMoveStateMachine(list, AscensionHelper.IsDread() ? moveState3 : moveState);
 	}
 
 	private async Task PuppetStringsMove(IReadOnlyList<Creature> targets)
 	{
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/queen/queen_cast");
 		await CreatureCmd.TriggerAnim(Creature, "Cast", 0.5f);
-		await PowerCmd.Apply<ChainsOfBindingPower>(new ThrowingPlayerChoiceContext(), targets, 3m, Creature, null);
+		await PowerCmd.Apply<ChainsOfBindingPower>(new ThrowingPlayerChoiceContext(), targets, ChainsOfBindingAmount, Creature, null);
 	}
 
 	private async Task YoureMineMove(IReadOnlyList<Creature> targets)
@@ -179,11 +186,23 @@ public sealed class Queen : MonsterModel
 		await PowerCmd.Apply<VulnerablePower>(new ThrowingPlayerChoiceContext(), targets, 99m, Creature, null);
 	}
 
+	private async Task DreadInitialMove(IReadOnlyList<Creature> targets)
+	{
+		LocString line = MonsterModel.L10NMonsterLookup("QUEEN.banter");
+		TalkCmd.Play(line, Creature, VfxColor.Purple);
+		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/queen/queen_cast");
+		await CreatureCmd.TriggerAnim(Creature, "Cast", 0.5f);
+		await PowerCmd.Apply<ChainsOfBindingPower>(new ThrowingPlayerChoiceContext(), targets, ChainsOfBindingAmount, Creature, null);
+		await PowerCmd.Apply<FrailPower>(new ThrowingPlayerChoiceContext(), targets, 99m, Creature, null);
+		await PowerCmd.Apply<WeakPower>(new ThrowingPlayerChoiceContext(), targets, 99m, Creature, null);
+		await PowerCmd.Apply<VulnerablePower>(new ThrowingPlayerChoiceContext(), targets, 99m, Creature, null);
+	}
+
 	private async Task BurnBrightForMeMove(IReadOnlyList<Creature> targets)
 	{
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/queen/queen_cast");
 		await CreatureCmd.TriggerAnim(Creature, "Cast", 0.8f);
-		int strengthAmount = AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 1, 1);
+		int strengthAmount = ((!AscensionHelper.IsDread()) ? 1 : 2);
 		List<Creature> source = CombatState.GetTeammatesOf(Creature).ToList();
 		foreach (Creature item in source.Where((Creature teammate) => teammate != Creature))
 		{
@@ -218,7 +237,7 @@ public sealed class Queen : MonsterModel
 		await PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(), Creature, 2m, Creature, null);
 	}
 
-	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (creature.Monster is TorchHeadAmalgam && Creature.IsAlive)
 		{
@@ -242,7 +261,7 @@ public sealed class Queen : MonsterModel
 
 	protected override bool ShouldShowMoveInBestiary(string moveStateId)
 	{
-		if (moveStateId != "PUPPET_STRINGS_MOVE" && moveStateId != "BURN_BRIGHT_FOR_ME_MOVE" && moveStateId != "ENRAGE_MOVE")
+		if (moveStateId != "PUPPET_STRINGS_MOVE" && moveStateId != "BURN_BRIGHT_FOR_ME_MOVE" && moveStateId != "ENRAGE_MOVE" && moveStateId != "DREAD_INITIAL_MOVE")
 		{
 			return moveStateId != "EXECUTION_MOVE";
 		}

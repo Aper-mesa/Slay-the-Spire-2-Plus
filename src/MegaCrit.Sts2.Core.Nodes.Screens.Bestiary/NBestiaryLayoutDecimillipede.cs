@@ -87,7 +87,7 @@ public class NBestiaryLayoutDecimillipede : NBestiaryLayout
 
 	private Control _encounterSlots;
 
-	private List<NCreature> _creatures = new List<NCreature>();
+	private readonly List<NCreature> _creatures = new List<NCreature>();
 
 	private NBestiary _bestiary;
 

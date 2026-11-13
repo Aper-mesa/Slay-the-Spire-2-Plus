@@ -10,5 +10,6 @@ public enum CharacterGender
 {
 	Neutral,
 	Feminine,
-	Masculine
+	Masculine,
+	Tree
 }

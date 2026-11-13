@@ -26,7 +26,7 @@ public sealed class PhialHolster : RelicModel
 	public override async Task AfterObtained()
 	{
 		await PlayerCmd.GainMaxPotionCount(DynamicVars["PotionSlots"].IntValue, Owner);
-		IEnumerable<PotionModel> enumerable = PotionFactory.CreateRandomPotionsOutOfCombat(Owner, DynamicVars["Potions"].IntValue, Owner.RunState.Rng.CombatPotionGeneration);
+		IEnumerable<PotionModel> enumerable = PotionFactory.CreateRandomPotionsOutOfCombat(Owner, DynamicVars["Potions"].IntValue, Owner.PlayerRng.NonCombatGeneration);
 		foreach (PotionModel item in enumerable)
 		{
 			await PotionCmd.TryToProcure(item.ToMutable(), Owner);

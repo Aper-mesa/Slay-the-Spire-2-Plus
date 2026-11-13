@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Merchant;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Relics;
@@ -18,10 +17,6 @@ public sealed class MembershipCard : RelicModel
 	public override decimal ModifyMerchantPrice(Player player, MerchantEntry entry, decimal originalPrice)
 	{
 		if (player != Owner)
-		{
-			return originalPrice;
-		}
-		if (!LocalContext.IsMe(Owner))
 		{
 			return originalPrice;
 		}

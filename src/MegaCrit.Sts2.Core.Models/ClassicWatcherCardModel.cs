@@ -311,7 +311,7 @@ public abstract class ClassicWatcherCardModel : CardModel
             }
             case "Judgement":
             {
-                if (p.Target.CurrentHp <= M) await CreatureCmd.Kill(p.Target);
+                if (p.Target.CurrentHp <= M) await CreatureCmd.Kill(p.Target, this);
                 break;
             }
             case "JustLucky":
@@ -485,7 +485,7 @@ public abstract class ClassicWatcherCardModel : CardModel
             }
             case "Vault":
             {
-                await Buff<AmbergrisPower>(c,1); PlayerCmd.EndTurn(Owner,canBackOut:false);
+                await Buff<ExtraTurnPower>(c,1); PlayerCmd.EndTurn(Owner,canBackOut:false);
                 break;
             }
             case "Vigilance":

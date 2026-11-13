@@ -352,6 +352,12 @@ public class AttackCommand
 		return this;
 	}
 
+	public AttackCommand FromArrow()
+	{
+		DamageProps |= ValueProp.FromArrow;
+		return this;
+	}
+
 	/// <summary>
 	/// Set the attack to play the specified animation on the attacker.
 	/// </summary>
@@ -633,40 +639,28 @@ public class AttackCommand
 					item.GetVfxContainer()?.AddChildSafely(customHitVfxNode(item));
 				}
 			}
-			if (HitVfx != null)
+			List<Creature> source = ((singleTarget != null) ? new List<Creature>(1) { singleTarget } : validTargets);
+			List<DamageTargetData> targetData = source.Select((Creature t) => new DamageTargetData(t)).ToList();
+			if (HitVfx != null && singleTarget == null && !_spawnVfxOnEachCreature)
 			{
-				if (singleTarget != null)
+				VfxCmd.PlayOnSide(Attacker.Side.GetOppositeSide(), HitVfx, combatState);
+			}
+			else
+			{
+				for (int num = 0; num < targetData.Count; num++)
 				{
-					if (_spawnVfxOnCreatureCenter)
+					targetData[num] = targetData[num]with
 					{
-						VfxCmd.PlayOnCreatureCenter(singleTarget, HitVfx);
-					}
-					else
-					{
-						VfxCmd.PlayOnCreature(singleTarget, HitVfx);
-					}
-				}
-				else if (_spawnVfxOnEachCreature)
-				{
-					if (_spawnVfxOnCreatureCenter)
-					{
-						VfxCmd.PlayOnCreatureCenters(validTargets, HitVfx);
-					}
-					else
-					{
-						VfxCmd.PlayOnCreatures(validTargets, HitVfx);
-					}
-				}
-				else
-				{
-					VfxCmd.PlayOnSide(Attacker.Side.GetOppositeSide(), HitVfx, combatState);
+						hitVfx = HitVfx,
+						playVfxOnCreatureCenter = _spawnVfxOnCreatureCenter
+					};
 				}
 			}
 			if (_beforeDamage != null)
 			{
 				await _beforeDamage();
 			}
-			AddResultsInternal(await CreatureCmd.Damage(amount: (_calculatedDamageVar == null) ? _damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<Creature>(1) { singleTarget } : validTargets, props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel, cardPlay: CardPlay));
+			AddResultsInternal(await CreatureCmd.Damage(amount: (_calculatedDamageVar == null) ? _damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targetData: targetData, props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel, cardPlay: CardPlay));
 		}
 		CombatManager.Instance.History.CreatureAttacked(combatState, Attacker, _results.SelectMany((List<DamageResult> r) => r).ToList());
 		await Hook.AfterAttack(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), this);

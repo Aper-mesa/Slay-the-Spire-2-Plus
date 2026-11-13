@@ -37,6 +37,11 @@ public class NControllerCardPlay : NCardPlay
 	public new class MethodName : NCardPlay.MethodName
 	{
 		/// <summary>
+		/// Cached name for the '_ExitTree' method.
+		/// </summary>
+		public new static readonly StringName _ExitTree = "_ExitTree";
+
+		/// <summary>
 		/// Cached name for the '_Input' method.
 		/// </summary>
 		public new static readonly StringName _Input = "_Input";
@@ -50,11 +55,6 @@ public class NControllerCardPlay : NCardPlay
 		/// Cached name for the 'Start' method.
 		/// </summary>
 		public new static readonly StringName Start = "Start";
-
-		/// <summary>
-		/// Cached name for the '_ExitTree' method.
-		/// </summary>
-		public new static readonly StringName _ExitTree = "_ExitTree";
 
 		/// <summary>
 		/// Cached name for the 'DisconnectTargetingSignals' method.
@@ -145,6 +145,12 @@ public class NControllerCardPlay : NCardPlay
 		}
 	}
 
+	public override void _ExitTree()
+	{
+		base._ExitTree();
+		DisconnectTargetingSignals();
+	}
+
 	public override void _Input(InputEvent inputEvent)
 	{
 		if (!(inputEvent is InputEventAction inputEventAction))
@@ -229,7 +235,9 @@ public class NControllerCardPlay : NCardPlay
 			CancelPlayCard();
 			return;
 		}
-		List<NCreature> list2 = list.Select((Creature c) => NCombatRoom.Instance.GetCreatureNode(c)).OfType<NCreature>().ToList();
+		List<NCreature> list2 = (from c in list.Select((Creature c) => NCombatRoom.Instance.GetCreatureNode(c)).OfType<NCreature>()
+			where c.IsVisible()
+			select c).ToList();
 		if (list2.Count == 0)
 		{
 			CancelPlayCard();
@@ -273,11 +281,6 @@ public class NControllerCardPlay : NCardPlay
 		}
 	}
 
-	public override void _ExitTree()
-	{
-		DisconnectTargetingSignals();
-	}
-
 	private void DisconnectTargetingSignals()
 	{
 		if (_signalsConnected)
@@ -319,6 +322,7 @@ public class NControllerCardPlay : NCardPlay
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
 		List<MethodInfo> list = new List<MethodInfo>(7);
+		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName._Input, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.Object, "inputEvent", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("InputEvent"), exported: false)
@@ -328,7 +332,6 @@ public class NControllerCardPlay : NCardPlay
 			new PropertyInfo(Variant.Type.Object, "holder", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.Start, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
-		list.Add(new MethodInfo(MethodName._ExitTree, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.DisconnectTargetingSignals, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.MultiCreatureTargeting, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.OnCancelPlayCard, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
@@ -339,6 +342,12 @@ public class NControllerCardPlay : NCardPlay
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool InvokeGodotClassMethod(in godot_string_name method, NativeVariantPtrArgs args, out godot_variant ret)
 	{
+		if (method == MethodName._ExitTree && args.Count == 0)
+		{
+			_ExitTree();
+			ret = default;
+			return true;
+		}
 		if (method == MethodName._Input && args.Count == 1)
 		{
 			_Input(VariantUtils.ConvertTo<InputEvent>(in args[0]));
@@ -353,12 +362,6 @@ public class NControllerCardPlay : NCardPlay
 		if (method == MethodName.Start && args.Count == 0)
 		{
 			Start();
-			ret = default;
-			return true;
-		}
-		if (method == MethodName._ExitTree && args.Count == 0)
-		{
-			_ExitTree();
 			ret = default;
 			return true;
 		}
@@ -399,6 +402,10 @@ public class NControllerCardPlay : NCardPlay
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool HasGodotClassMethod(in godot_string_name method)
 	{
+		if (method == MethodName._ExitTree)
+		{
+			return true;
+		}
 		if (method == MethodName._Input)
 		{
 			return true;
@@ -408,10 +415,6 @@ public class NControllerCardPlay : NCardPlay
 			return true;
 		}
 		if (method == MethodName.Start)
-		{
-			return true;
-		}
-		if (method == MethodName._ExitTree)
 		{
 			return true;
 		}

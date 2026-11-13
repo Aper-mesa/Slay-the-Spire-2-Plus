@@ -82,6 +82,18 @@ public sealed class WaterfallGiant : MonsterModel
 
 	private int BasePressureGunDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 23, 20);
 
+	private int SteamBoostAmount
+	{
+		get
+		{
+			if (!AscensionHelper.IsDread())
+			{
+				return 3;
+			}
+			return 4;
+		}
+	}
+
 	public override bool ShouldDisappearFromDoom => !Creature.HasPower<SteamEruptionPower>();
 
 	private int PressureGunIncrease => 5;
@@ -164,7 +176,7 @@ public sealed class WaterfallGiant : MonsterModel
 		SfxCmd.PlayLoop(Creature, "event:/sfx/enemy/enemy_attacks/waterfall_giant/waterfall_giant_ambient", "waterfall_giant_sfx", 2f);
 	}
 
-	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (creature != Creature)
 		{
@@ -236,7 +248,7 @@ public sealed class WaterfallGiant : MonsterModel
 			.WithAttackerFx(null, "event:/sfx/enemy/enemy_attacks/waterfall_giant/waterfall_giant_attack_stomp")
 			.WithHitFx("vfx/vfx_attack_blunt")
 			.Execute(null);
-		await PowerCmd.Apply<SteamEruptionPower>(new ThrowingPlayerChoiceContext(), Creature, 3m, Creature, null);
+		await PowerCmd.Apply<SteamEruptionPower>(new ThrowingPlayerChoiceContext(), Creature, SteamBoostAmount, Creature, null);
 		IncrementBuildUpAnimationTrack();
 	}
 
@@ -247,7 +259,7 @@ public sealed class WaterfallGiant : MonsterModel
 			.WithHitFx("vfx/vfx_attack_blunt")
 			.Execute(null);
 		await PowerCmd.Apply<WeakPower>(new ThrowingPlayerChoiceContext(), targets, 1m, Creature, null);
-		await PowerCmd.Apply<SteamEruptionPower>(new ThrowingPlayerChoiceContext(), Creature, 3m, Creature, null);
+		await PowerCmd.Apply<SteamEruptionPower>(new ThrowingPlayerChoiceContext(), Creature, SteamBoostAmount, Creature, null);
 		IncrementBuildUpAnimationTrack();
 	}
 
@@ -257,7 +269,7 @@ public sealed class WaterfallGiant : MonsterModel
 			.WithAttackerFx(null, "event:/sfx/enemy/enemy_attacks/waterfall_giant/waterfall_giant_attack_kick")
 			.WithHitFx("vfx/vfx_attack_blunt")
 			.Execute(null);
-		await PowerCmd.Apply<SteamEruptionPower>(new ThrowingPlayerChoiceContext(), Creature, 3m, Creature, null);
+		await PowerCmd.Apply<SteamEruptionPower>(new ThrowingPlayerChoiceContext(), Creature, SteamBoostAmount, Creature, null);
 		IncrementBuildUpAnimationTrack();
 	}
 
@@ -266,7 +278,7 @@ public sealed class WaterfallGiant : MonsterModel
 		SfxCmd.Play("event:/sfx/enemy/enemy_attacks/waterfall_giant/waterfall_giant_eruption");
 		await CreatureCmd.TriggerAnim(Creature, "Heal", 0.8f);
 		await CreatureCmd.Heal(Creature, SiphonHeal * CombatState.Players.Count);
-		await PowerCmd.Apply<SteamEruptionPower>(new ThrowingPlayerChoiceContext(), Creature, 3m, Creature, null);
+		await PowerCmd.Apply<SteamEruptionPower>(new ThrowingPlayerChoiceContext(), Creature, SteamBoostAmount, Creature, null);
 		IncrementBuildUpAnimationTrack();
 	}
 
@@ -277,7 +289,7 @@ public sealed class WaterfallGiant : MonsterModel
 			.WithHitFx("vfx/vfx_attack_blunt")
 			.Execute(null);
 		CurrentPressureGunDamage += PressureGunIncrease;
-		await PowerCmd.Apply<SteamEruptionPower>(new ThrowingPlayerChoiceContext(), Creature, 3m, Creature, null);
+		await PowerCmd.Apply<SteamEruptionPower>(new ThrowingPlayerChoiceContext(), Creature, SteamBoostAmount, Creature, null);
 		IncrementBuildUpAnimationTrack();
 	}
 

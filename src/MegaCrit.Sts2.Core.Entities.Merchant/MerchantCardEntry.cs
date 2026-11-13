@@ -21,8 +21,6 @@ namespace MegaCrit.Sts2.Core.Entities.Merchant;
 /// </summary>
 public sealed class MerchantCardEntry : MerchantEntry
 {
-	private readonly MerchantInventory? _inventory;
-
 	private readonly IEnumerable<CardModel> _cardPool;
 
 	private readonly CardType? _cardType;
@@ -39,9 +37,9 @@ public sealed class MerchantCardEntry : MerchantEntry
 	{
 		int num = card.Rarity switch
 		{
-			CardRarity.Rare => 150, 
-			CardRarity.Uncommon => 75, 
-			_ => 50, 
+			CardRarity.Rare => 150,
+			CardRarity.Uncommon => 75,
+			_ => 50,
 		};
 		if (card.Pool is ColorlessCardPool)
 		{
@@ -50,28 +48,26 @@ public sealed class MerchantCardEntry : MerchantEntry
 		return num;
 	}
 
-	public MerchantCardEntry(Player player, MerchantInventory? inventory, IEnumerable<CardModel> cardPool, CardType cardType)
+	public MerchantCardEntry(Player player, IEnumerable<CardModel> cardPool, CardType cardType)
 		: base(player)
 	{
-		_inventory = inventory;
 		_cardPool = cardPool;
 		_cardType = cardType;
 	}
 
-	public MerchantCardEntry(Player player, MerchantInventory? inventory, IEnumerable<CardModel> cardPool, CardRarity cardRarity)
+	public MerchantCardEntry(Player player, IEnumerable<CardModel> cardPool, CardRarity cardRarity)
 		: base(player)
 	{
-		_inventory = inventory;
 		_cardPool = cardPool;
 		_cardRarity = cardRarity;
 	}
 
-	public void Populate()
+	public void Populate(MerchantInventory? inventory)
 	{
-		HashSet<CardModel> second = _inventory?.CardEntries.Select((MerchantCardEntry e) => e.CreationResult?.Card.CanonicalInstance).OfType<CardModel>().ToHashSet() ?? new HashSet<CardModel>();
+		HashSet<CardModel> blacklist = inventory?.CardEntries.Select((MerchantCardEntry e) => e.CreationResult?.Card.CanonicalInstance).OfType<CardModel>().ToHashSet() ?? new HashSet<CardModel>();
 		if (_cardType.HasValue)
 		{
-			CreationResult = CardFactory.CreateForMerchant(_player, _cardPool.Except(second), _cardType.Value);
+			CreationResult = CardFactory.CreateForMerchant(_player, _cardPool, blacklist, _cardType.Value);
 		}
 		else
 		{
@@ -79,7 +75,7 @@ public sealed class MerchantCardEntry : MerchantEntry
 			{
 				throw new InvalidOperationException();
 			}
-			CreationResult = CardFactory.CreateForMerchant(_player, _cardPool.Except(second), _cardRarity.Value);
+			CreationResult = CardFactory.CreateForMerchant(_player, _cardPool, blacklist, _cardRarity.Value);
 		}
 		IRunState runState = _player.RunState;
 		Player player = _player;
@@ -128,7 +124,7 @@ public sealed class MerchantCardEntry : MerchantEntry
 		}
 	}
 
-	protected override async Task<(bool, int)> OnTryPurchase(MerchantInventory? inventory, bool ignoreCost)
+	protected override async Task<(bool, int)> OnTryPurchaseInternal(MerchantInventory? inventory, bool ignoreCost)
 	{
 		if (!(await CardPileCmd.Add(CreationResult.Card, PileType.Deck)).success)
 		{
@@ -139,8 +135,6 @@ public sealed class MerchantCardEntry : MerchantEntry
 		{
 			await PlayerCmd.LoseGold(Cost, _player, GoldLossType.Spent);
 		}
-		RunManager.Instance.RewardSynchronizer.SyncLocalGoldLost(Cost);
-		RunManager.Instance.RewardSynchronizer.SyncLocalObtainedCard(CreationResult.Card);
 		if (CreationResult.Card.Pool is ColorlessCardPool)
 		{
 			_player.RunState.CurrentMapPointHistoryEntry?.GetEntry(_player.NetId).BoughtColorless.Add(CreationResult.Card.Id);
@@ -156,6 +150,6 @@ public sealed class MerchantCardEntry : MerchantEntry
 	protected override void RestockAfterPurchase(MerchantInventory? inventory)
 	{
 		IsOnSale = false;
-		Populate();
+		Populate(inventory);
 	}
 }

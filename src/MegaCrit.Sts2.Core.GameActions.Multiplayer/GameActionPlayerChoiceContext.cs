@@ -10,6 +10,8 @@ namespace MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
 public class GameActionPlayerChoiceContext : PlayerChoiceContext
 {
+	private bool _dependenciesMocked;
+
 	private ActionQueueSynchronizer? _actionQueueSynchronizer;
 
 	private ActionQueueSet? _actionQueueSet;
@@ -24,7 +26,19 @@ public class GameActionPlayerChoiceContext : PlayerChoiceContext
 
 	private ActionQueueSet ActionQueueSet => _actionQueueSet ?? RunManager.Instance.ActionQueueSet;
 
-	private ActionExecutor ActionExecutor => _actionExecutor ?? RunManager.Instance.ActionExecutor;
+	private ActionExecutor? ActionExecutor
+	{
+		get
+		{
+			if (!_dependenciesMocked)
+			{
+				return RunManager.Instance.ActionExecutor;
+			}
+			return _actionExecutor;
+		}
+	}
+
+	public override GameActionType? GameActionType => Action.ActionType;
 
 	public GameActionPlayerChoiceContext(GameAction action)
 	{
@@ -57,6 +71,7 @@ public class GameActionPlayerChoiceContext : PlayerChoiceContext
 
 	public void MockDependenciesForTest(ActionQueueSynchronizer? actionQueueSynchronizer, ActionQueueSet? actionQueueSet, ActionExecutor? actionExecutor)
 	{
+		_dependenciesMocked = true;
 		_actionQueueSet = actionQueueSet;
 		_actionQueueSynchronizer = actionQueueSynchronizer;
 		_actionExecutor = actionExecutor;

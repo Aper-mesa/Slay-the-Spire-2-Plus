@@ -22,6 +22,8 @@ public class MerchantDialogueSet
 
 	private readonly List<LocString> _purchaseFailureForbiddenLines = new List<LocString>();
 
+	private readonly List<LocString> _blitzFinishedLines = new List<LocString>();
+
 	/// <summary>
 	/// Lines for when the player enters the merchant room.
 	/// </summary>
@@ -43,6 +45,11 @@ public class MerchantDialogueSet
 	/// </summary>
 	public IReadOnlyList<LocString> OpenInventoryLines => _openInventoryLines;
 
+	/// <summary>
+	/// Lines for Blitz, when the player has no more options remaining.
+	/// </summary>
+	public IReadOnlyList<LocString> BlitzFinishedLines => _blitzFinishedLines;
+
 	public static MerchantDialogueSet CreateFromLocStrings(IEnumerable<LocString> locStrings)
 	{
 		MerchantDialogueSet merchantDialogueSet = new MerchantDialogueSet();
@@ -51,15 +58,16 @@ public class MerchantDialogueSet
 			string text = locString.LocEntryKey.Split('.')[^2];
 			(text switch
 			{
-				"welcome" => merchantDialogueSet._welcomeLines, 
-				"openInventory" => merchantDialogueSet._openInventoryLines, 
-				"foulPotion" => merchantDialogueSet._foulPotionLines, 
-				"playerDead" => merchantDialogueSet._playerDeadLines, 
-				"purchaseSuccess" => merchantDialogueSet._purchaseSuccessLines, 
-				"purchaseFailureGold" => merchantDialogueSet._purchaseFailureGoldLines, 
-				"purchaseFailureSpace" => merchantDialogueSet._purchaseFailureSpaceLines, 
-				"purchaseFailureForbidden" => merchantDialogueSet._purchaseFailureForbiddenLines, 
-				_ => throw new InvalidOperationException("Unexpected merchant dialogue key: " + text), 
+				"welcome" => merchantDialogueSet._welcomeLines,
+				"openInventory" => merchantDialogueSet._openInventoryLines,
+				"foulPotion" => merchantDialogueSet._foulPotionLines,
+				"playerDead" => merchantDialogueSet._playerDeadLines,
+				"purchaseSuccess" => merchantDialogueSet._purchaseSuccessLines,
+				"purchaseFailureGold" => merchantDialogueSet._purchaseFailureGoldLines,
+				"purchaseFailureSpace" => merchantDialogueSet._purchaseFailureSpaceLines,
+				"purchaseFailureForbidden" => merchantDialogueSet._purchaseFailureForbiddenLines,
+				"blitzFinishedLines" => merchantDialogueSet._blitzFinishedLines,
+				_ => throw new InvalidOperationException("Unexpected merchant dialogue key: " + text),
 			}).Add(locString);
 		}
 		return merchantDialogueSet;
@@ -72,11 +80,11 @@ public class MerchantDialogueSet
 	{
 		return status switch
 		{
-			PurchaseStatus.Success => (IReadOnlyList<LocString>)_purchaseSuccessLines, 
-			PurchaseStatus.FailureGold => _purchaseFailureGoldLines, 
-			PurchaseStatus.FailureSpace => _purchaseFailureSpaceLines, 
-			PurchaseStatus.FailureForbidden => _purchaseFailureForbiddenLines, 
-			_ => throw new ArgumentOutOfRangeException("status", status, null), 
+			PurchaseStatus.Success => (IReadOnlyList<LocString>)_purchaseSuccessLines,
+			PurchaseStatus.FailureGold => _purchaseFailureGoldLines,
+			PurchaseStatus.FailureSpace => _purchaseFailureSpaceLines,
+			PurchaseStatus.FailureForbidden => _purchaseFailureForbiddenLines,
+			_ => throw new ArgumentOutOfRangeException("status", status, null),
 		};
 	}
 }

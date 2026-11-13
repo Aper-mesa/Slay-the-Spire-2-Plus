@@ -114,9 +114,37 @@ public class ProgressState
 
 	public int MaxMultiplayerAscension { get; set; }
 
+	public int PreferredBlitzAscension { get; set; }
+
+	public int MaxBlitzAscension { get; set; }
+
 	public int TestSubjectKills { get; set; }
 
 	public ModelId PendingCharacterUnlock { get; set; } = ModelId.none;
+
+	public ModelId PreferredStandardCharacter { get; set; } = ModelId.none;
+
+	public ModelId PreferredMultiplayerStandardCharacter { get; set; } = ModelId.none;
+
+	public ModelId PreferredBlitzCharacter { get; set; } = ModelId.none;
+
+	public ModelId PreferredMultiplayerBlitzCharacter { get; set; } = ModelId.none;
+
+	public ModelId PreferredDreadCharacter { get; set; } = ModelId.none;
+
+	public ModelId PreferredMultiplayerDreadCharacter { get; set; } = ModelId.none;
+
+	public bool PreferredDreadRotatingTickboxOnMultiplayer { get; set; }
+
+	public bool PreferredDreadRotatingTickboxOnSingleplayer { get; set; }
+
+	public ModelId CurrentSingleplayerDreadStartingCharacterForRotation { get; set; } = ModelId.none;
+
+	public ModelId CurrentMultiplayerDreadStartingCharacterForRotation { get; set; } = ModelId.none;
+
+	public PendingDreadWinStreakResult? PendingSingleplayerDreadWinStreakResult { get; set; }
+
+	public PendingDreadWinStreakResult? PendingMultiplayerDreadWinStreakResult { get; set; }
 
 	/// <summary>
 	/// How many end-of-run score bar unlocks the player has earned.
@@ -180,10 +208,24 @@ public class ProgressState
 			FloorsClimbed = ClampNonNegative(save.FloorsClimbed, "FloorsClimbed", ctx),
 			ArchitectDamage = ClampNonNegative(save.ArchitectDamage, "ArchitectDamage", ctx),
 			WongoPoints = ClampNonNegativeInt(save.WongoPoints, "WongoPoints", ctx),
-			PreferredMultiplayerAscension = ClampAscension(save.PreferredMultiplayerAscension, "PreferredMultiplayerAscension", ctx),
-			MaxMultiplayerAscension = ClampAscension(save.MaxMultiplayerAscension, "MaxMultiplayerAscension", ctx),
+			PreferredMultiplayerAscension = ClampAscension(save.PreferredMultiplayerAscension, 10, "PreferredMultiplayerAscension", ctx),
+			MaxMultiplayerAscension = ClampAscension(save.MaxMultiplayerAscension, 10, "MaxMultiplayerAscension", ctx),
+			PreferredBlitzAscension = ClampAscension(save.PreferredBlitzAscension, 5, "PreferredBlitzAscension", ctx),
+			MaxBlitzAscension = ClampAscension(save.MaxBlitzAscension, 5, "MaxBlitzAscension", ctx),
 			TestSubjectKills = ClampNonNegativeInt(save.TestSubjectKills, "TestSubjectKills", ctx),
-			PendingCharacterUnlock = ValidateModelId<CharacterModel>(save.PendingCharacterUnlock, "PendingCharacterUnlock", ctx)
+			PendingCharacterUnlock = ValidateModelId<CharacterModel>(save.PendingCharacterUnlock, "PendingCharacterUnlock", ctx),
+			PreferredStandardCharacter = ValidateModelId<CharacterModel>(save.PreferredStandardCharacter, "PreferredStandardCharacter", ctx),
+			PreferredMultiplayerStandardCharacter = ValidateModelId<CharacterModel>(save.PreferredMultiplayerStandardCharacter, "PreferredMultiplayerStandardCharacter", ctx),
+			PreferredBlitzCharacter = ValidateModelId<CharacterModel>(save.PreferredBlitzCharacter, "PreferredBlitzCharacter", ctx),
+			PreferredMultiplayerBlitzCharacter = ValidateModelId<CharacterModel>(save.PreferredMultiplayerBlitzCharacter, "PreferredMultiplayerBlitzCharacter", ctx),
+			PreferredDreadCharacter = ValidateModelId<CharacterModel>(save.PreferredDreadCharacter, "PreferredDreadCharacter", ctx),
+			PreferredMultiplayerDreadCharacter = ValidateModelId<CharacterModel>(save.PreferredMultiplayerDreadCharacter, "PreferredMultiplayerDreadCharacter", ctx),
+			PreferredDreadRotatingTickboxOnSingleplayer = save.PreferredDreadRotatingTickboxOnSingleplayer,
+			PreferredDreadRotatingTickboxOnMultiplayer = save.PreferredDreadRotatingTickboxOnMultiplayer,
+			CurrentMultiplayerDreadStartingCharacterForRotation = save.CurrentMultiplayerDreadStartingCharacterForRotation,
+			CurrentSingleplayerDreadStartingCharacterForRotation = save.CurrentSingleplayerDreadStartingCharacterForRotation,
+			PendingSingleplayerDreadWinStreakResult = save.PendingSingleplayerDreadWinStreakResult,
+			PendingMultiplayerDreadWinStreakResult = save.PendingMultiplayerDreadWinStreakResult
 		};
 		ParseCharacterStats(save.CharStats, progressState._characterStats, progressState._unknownCharacterStats, ctx);
 		ParseCardStats(save.CardStats, progressState._cardStats, progressState._unknownCardStats, ctx);
@@ -218,8 +260,22 @@ public class ProgressState
 			WongoPoints = WongoPoints,
 			PreferredMultiplayerAscension = PreferredMultiplayerAscension,
 			MaxMultiplayerAscension = MaxMultiplayerAscension,
+			PreferredBlitzAscension = PreferredBlitzAscension,
+			MaxBlitzAscension = MaxBlitzAscension,
 			TestSubjectKills = TestSubjectKills,
 			PendingCharacterUnlock = PendingCharacterUnlock,
+			PreferredStandardCharacter = PreferredStandardCharacter,
+			PreferredMultiplayerStandardCharacter = PreferredMultiplayerStandardCharacter,
+			PreferredBlitzCharacter = PreferredBlitzCharacter,
+			PreferredMultiplayerBlitzCharacter = PreferredMultiplayerBlitzCharacter,
+			PreferredDreadCharacter = PreferredDreadCharacter,
+			PreferredMultiplayerDreadCharacter = PreferredMultiplayerDreadCharacter,
+			PreferredDreadRotatingTickboxOnSingleplayer = PreferredDreadRotatingTickboxOnSingleplayer,
+			PreferredDreadRotatingTickboxOnMultiplayer = PreferredDreadRotatingTickboxOnMultiplayer,
+			PendingSingleplayerDreadWinStreakResult = PendingSingleplayerDreadWinStreakResult,
+			PendingMultiplayerDreadWinStreakResult = PendingMultiplayerDreadWinStreakResult,
+			CurrentMultiplayerDreadStartingCharacterForRotation = CurrentMultiplayerDreadStartingCharacterForRotation,
+			CurrentSingleplayerDreadStartingCharacterForRotation = CurrentSingleplayerDreadStartingCharacterForRotation,
 			CharStats = _characterStats.Values.Concat(_unknownCharacterStats.Values).ToList(),
 			CardStats = _cardStats.Values.Concat(_unknownCardStats.Values).ToList(),
 			EncounterStats = _encounterStats.Values.Concat(_unknownEncounterStats.Values).ToList(),
@@ -415,6 +471,12 @@ public class ProgressState
 		_epochs.Clear();
 	}
 
+	public CharacterStats? GetStatsForCharacter<T>() where T : CharacterModel
+	{
+		_characterStats.TryGetValue(ModelDb.GetId<T>(), out CharacterStats value);
+		return value;
+	}
+
 	public CharacterStats? GetStatsForCharacter(ModelId characterId)
 	{
 		_characterStats.TryGetValue(characterId, out CharacterStats value);
@@ -488,6 +550,21 @@ public class ProgressState
 			return false;
 		}
 		return serializableEpoch.State >= EpochState.ObtainedNoSlot;
+	}
+
+	/// <summary>
+	/// Returns true if an Epoch's slot is available on the Timeline and does not have an obtained Epoch in it.
+	/// Returns false if it's anything else.
+	/// </summary>
+	/// <param name="epochId"></param>
+	public bool IsEmptyEpochSlotAvailable(string epochId)
+	{
+		SerializableEpoch serializableEpoch = _epochs.FirstOrDefault((SerializableEpoch e) => e.Id == epochId);
+		if (serializableEpoch == null)
+		{
+			return false;
+		}
+		return serializableEpoch.State == EpochState.NotObtained;
 	}
 
 	public bool IsEpochRevealed(string epochId)
@@ -888,6 +965,36 @@ public class ProgressState
 			ctx.Warn($"Negative CurrentWinStreak ({stats.CurrentWinStreak}), clamping to 0");
 			stats.CurrentWinStreak = 0L;
 		}
+		if (stats.BestSingleplayerDreadWinStreakThisVersion < 0)
+		{
+			ctx.Warn($"Negative BestSingleplayerDreadWinStreakThisVersion ({stats.BestSingleplayerDreadWinStreakThisVersion}), clamping to 0");
+			stats.BestSingleplayerDreadWinStreakThisVersion = 0;
+		}
+		if (stats.BestSingleplayerDreadWinStreakOldVersion < 0)
+		{
+			ctx.Warn($"Negative BestSingleplayerDreadWinStreakOldVersion ({stats.BestSingleplayerDreadWinStreakOldVersion}), clamping to 0");
+			stats.BestSingleplayerDreadWinStreakOldVersion = 0;
+		}
+		if (stats.CurrentSingleplayerDreadWinStreak < 0)
+		{
+			ctx.Warn($"Negative CurrentSingleplayerDreadWinStreak ({stats.CurrentSingleplayerDreadWinStreak}), clamping to 0");
+			stats.CurrentSingleplayerDreadWinStreak = 0;
+		}
+		if (stats.BestMultiplayerDreadWinStreakThisVersion < 0)
+		{
+			ctx.Warn($"Negative BestMultiplayerDreadWinStreakThisVersion ({stats.BestMultiplayerDreadWinStreakThisVersion}), clamping to 0");
+			stats.BestMultiplayerDreadWinStreakThisVersion = 0;
+		}
+		if (stats.BestMultiplayerDreadWinStreakOldVersion < 0)
+		{
+			ctx.Warn($"Negative BestMultiplayerDreadWinStreakOldVersion ({stats.BestMultiplayerDreadWinStreakOldVersion}), clamping to 0");
+			stats.BestMultiplayerDreadWinStreakOldVersion = 0;
+		}
+		if (stats.CurrentMultiplayerDreadWinStreak < 0)
+		{
+			ctx.Warn($"Negative CurrentMultiplayerDreadWinStreak ({stats.CurrentMultiplayerDreadWinStreak}), clamping to 0");
+			stats.CurrentMultiplayerDreadWinStreak = 0;
+		}
 		if (stats.FastestWinTime < -1)
 		{
 			ctx.Warn($"Invalid FastestWinTime ({stats.FastestWinTime}), resetting to -1");
@@ -1124,15 +1231,15 @@ public class ProgressState
 		return 0;
 	}
 
-	private static int ClampAscension(int value, string fieldName, DeserializationContext ctx)
+	private static int ClampAscension(int value, int max, string fieldName, DeserializationContext ctx)
 	{
 		value = ClampNonNegativeInt(value, fieldName, ctx);
-		if (value > 10)
+		if (value > max)
 		{
 			ctx.PushPath(fieldName);
-			ctx.Warn($"Value ({value}) exceeds allowed ({10}), clamping");
+			ctx.Warn($"Value ({value}) exceeds allowed ({max}), clamping");
 			ctx.PopPath();
-			return 10;
+			return max;
 		}
 		return value;
 	}

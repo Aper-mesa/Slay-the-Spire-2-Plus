@@ -12,6 +12,8 @@ namespace MegaCrit.Sts2.Core.Models.Monsters;
 
 public sealed class TwigSlimeS : MonsterModel
 {
+	protected override bool HasPhobiaSpineSkin => true;
+
 	public override int MinInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 8, 7);
 
 	public override int MaxInitialHp => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 12, 11);

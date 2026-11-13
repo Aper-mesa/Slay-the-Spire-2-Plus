@@ -70,7 +70,7 @@ public static class PlusSaveLoadService
 				return;
 			}
 			RunManager runManager = RunManager.Instance;
-			if (!runManager.IsInProgress || runManager.IsCleaningUp)
+			if (!runManager.IsInProgress || runManager.IsCleaningUp || runManager.IsChangingRooms)
 			{
 				return;
 			}
@@ -108,6 +108,10 @@ public static class PlusSaveLoadService
 			if (currentSaveTask != null)
 			{
 				await currentSaveTask;
+			}
+			if (!runManager.IsInProgress || runManager.IsCleaningUp || runManager.IsChangingRooms)
+			{
+				return;
 			}
 			if (!saveManager.HasRunSave)
 			{

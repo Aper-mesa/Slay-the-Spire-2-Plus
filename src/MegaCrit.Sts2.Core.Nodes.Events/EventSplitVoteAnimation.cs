@@ -15,9 +15,9 @@ namespace MegaCrit.Sts2.Core.Nodes.Events;
 /// </summary>
 public class EventSplitVoteAnimation
 {
-	private NEventLayout _eventLayout;
+	private readonly NEventLayout _eventLayout;
 
-	private IRunState _runState;
+	private readonly IRunState _runState;
 
 	private int _ticks;
 
@@ -56,7 +56,7 @@ public class EventSplitVoteAnimation
 		Tween tween = _eventLayout.CreateTween();
 		tween.TweenMethod(Callable.From<float>(TickSplitVoteAnimation), 0f, 1f, 1.2000000476837158).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.Out);
 		tween.TweenInterval(num);
-		if (await tween.AwaitFinished(_eventLayout))
+		if (await tween.AwaitFinished(_eventLayout) == TweenOutcome.Finished)
 		{
 			chosenButton.VoteContainer.BouncePlayers();
 		}

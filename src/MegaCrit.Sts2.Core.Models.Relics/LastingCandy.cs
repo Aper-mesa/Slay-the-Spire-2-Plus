@@ -79,7 +79,7 @@ public sealed class LastingCandy : RelicModel
 		}
 	}
 
-	public override bool IsAllowed(IRunState runState)
+	protected override bool IsAllowedInternal(IRunState runState)
 	{
 		if (runState.Players.Any((Player p) =>
 		{
@@ -96,7 +96,7 @@ public sealed class LastingCandy : RelicModel
 		{
 			return false;
 		}
-		return RelicModel.IsBeforeAct3TreasureChest(runState);
+		return true;
 	}
 
 	public override bool TryModifyCardRewardOptions(Player player, List<CardCreationResult> rewardOptions, CardCreationOptions creationOptions)

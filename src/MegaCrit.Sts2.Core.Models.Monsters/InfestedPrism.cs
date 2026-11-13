@@ -11,7 +11,6 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.MonsterMoves.Intents;
 using MegaCrit.Sts2.Core.MonsterMoves.MonsterMoveStateMachine;
-using MegaCrit.Sts2.Core.ValueProps;
 
 namespace MegaCrit.Sts2.Core.Models.Monsters;
 
@@ -41,12 +40,6 @@ public sealed class InfestedPrism : MonsterModel
 
 	private int PulsateDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 10, 8);
 
-	private int PulsateBlock => AscensionHelper.GetValueIfAscension(AscensionLevel.ToughEnemies, 22, 20);
-
-	private int RadiateDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 13, 11);
-
-	private int RadiateBlock => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 13, 11);
-
 	private int WhirlwindDamage => AscensionHelper.GetValueIfAscension(AscensionLevel.DeadlyEnemies, 6, 5);
 
 	private int WhirlwindRepeat => 3;
@@ -63,9 +56,9 @@ public sealed class InfestedPrism : MonsterModel
 	{
 		List<MonsterState> list = new List<MonsterState>();
 		MoveState moveState = new MoveState("JAB_MOVE", JabMove, new SingleAttackIntent(JabDamage));
-		MoveState moveState2 = new MoveState("RADIATE_MOVE", RadiateMove, new SingleAttackIntent(RadiateDamage), new DefendIntent());
+		MoveState moveState2 = new MoveState("JAB_MOVE_2", JabMove, new SingleAttackIntent(JabDamage));
 		MoveState moveState3 = new MoveState("WHIRLWIND_MOVE", WhirlwindMove, new MultiAttackIntent(WhirlwindDamage, WhirlwindRepeat));
-		MoveState moveState4 = new MoveState("PULSATE_MOVE", PulsateMove, new SingleAttackIntent(PulsateDamage), new BuffIntent(), new DefendIntent());
+		MoveState moveState4 = new MoveState("PULSATE_MOVE", PulsateMove, new SingleAttackIntent(PulsateDamage), new DebuffIntent(), new BuffIntent());
 		moveState.FollowUpState = moveState2;
 		moveState2.FollowUpState = moveState3;
 		moveState3.FollowUpState = moveState4;
@@ -85,15 +78,6 @@ public sealed class InfestedPrism : MonsterModel
 			.Execute(null);
 	}
 
-	private async Task RadiateMove(IReadOnlyList<Creature> targets)
-	{
-		await DamageCmd.Attack(RadiateDamage).FromMonster(this).WithAttackerAnim("AttackBlock", 0.25f)
-			.WithAttackerFx(null, "event:/sfx/enemy/enemy_attacks/infested_prisms/infested_prisms_attack_defend")
-			.WithHitFx("vfx/vfx_attack_slash")
-			.Execute(null);
-		await CreatureCmd.GainBlock(Creature, RadiateBlock, ValueProp.Move, null);
-	}
-
 	private async Task WhirlwindMove(IReadOnlyList<Creature> targets)
 	{
 		await DamageCmd.Attack(WhirlwindDamage).WithHitCount(WhirlwindRepeat).FromMonster(this)
@@ -110,7 +94,7 @@ public sealed class InfestedPrism : MonsterModel
 			.WithAttackerFx(null, "event:/sfx/enemy/enemy_attacks/infested_prisms/infested_prisms_attack_defend")
 			.WithHitFx("vfx/vfx_attack_slash")
 			.Execute(null);
-		await CreatureCmd.GainBlock(Creature, PulsateBlock, ValueProp.Move, null);
+		await PowerCmd.Apply<VulnerablePower>(new ThrowingPlayerChoiceContext(), targets, 1m, Creature, null);
 		await PowerCmd.Apply<VitalSparkPower>(new ThrowingPlayerChoiceContext(), Creature, VitalSparkAmount, Creature, null);
 	}
 

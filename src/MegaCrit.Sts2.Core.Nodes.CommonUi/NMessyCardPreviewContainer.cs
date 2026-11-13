@@ -53,7 +53,7 @@ public class NMessyCardPreviewContainer : Control
 		/// Return a lazy sequence of samples.
 		public IEnumerator<Vector2> Samples()
 		{
-			yield return AddSample(_rect.Size / 2f);
+			yield return AddSample(_rect.Size * 0.5f);
 			while (_activeSamples.Count > 0)
 			{
 				int i = (int)(Rng.Chaotic.NextFloat() * (float)_activeSamples.Count);

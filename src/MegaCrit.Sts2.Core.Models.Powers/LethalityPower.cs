@@ -39,7 +39,7 @@ public sealed class LethalityPower : PowerModel
 		}
 		int num = CombatManager.Instance.History.CardPlaysStarted.Count((CardPlayStartedEntry e) => e.HappenedThisTurn(CombatState) && e.CardPlay.Card.Type == CardType.Attack && e.CardPlay.Player == Owner.Player);
 		pile = cardSource.Pile;
-		int num2 = ((pile != null && pile.Type == PileType.Play) ? 1 : 0);
+		int num2 = ((pile != null && pile.Type == PileType.Play && cardPlay != null) ? 1 : 0);
 		if (num > num2)
 		{
 			return 1m;

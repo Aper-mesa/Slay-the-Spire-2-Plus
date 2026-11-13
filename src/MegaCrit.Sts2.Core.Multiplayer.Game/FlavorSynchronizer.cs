@@ -34,7 +34,9 @@ public class FlavorSynchronizer : IDisposable
 
 	private Player LocalPlayer => _playerCollection.GetPlayer(_localPlayerId);
 
-	public event Action<ulong>? OnEndTurnPingReceived;
+	public event Action<ulong>? EndTurnPingReceived;
+
+	public event Action<Player, MapCoord>? MapPingReceived;
 
 	public FlavorSynchronizer(INetGameService gameService, IPlayerCollection playerCollection, ulong localPlayerId)
 	{
@@ -70,13 +72,13 @@ public class FlavorSynchronizer : IDisposable
 				coord = coord
 			});
 			_nextAllowedPingTime = Time.GetTicksMsec() + 200;
-			CreateMapPing(coord, LocalPlayer);
+			MapPingReceived?.Invoke(LocalPlayer, coord);
 		}
 	}
 
 	private void HandleEndTurnPingMessage(EndTurnPingMessage message, ulong senderId)
 	{
-		OnEndTurnPingReceived?.Invoke(senderId);
+		EndTurnPingReceived?.Invoke(senderId);
 		CreateEndTurnPingDialogueIfNecessary(_playerCollection.GetPlayer(senderId));
 	}
 
@@ -99,14 +101,6 @@ public class FlavorSynchronizer : IDisposable
 
 	private void HandleMapPingMessage(MapPingMessage message, ulong senderId)
 	{
-		CreateMapPing(message.coord, _playerCollection.GetPlayer(senderId));
-	}
-
-	private void CreateMapPing(MapCoord coord, Player player)
-	{
-		if (NRun.Instance != null)
-		{
-			NRun.Instance.GlobalUi.MapScreen.PingMapCoord(coord, player);
-		}
+		MapPingReceived?.Invoke(_playerCollection.GetPlayer(senderId), message.coord);
 	}
 }

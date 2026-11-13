@@ -182,6 +182,6 @@ public class EventCombatSynchronizer
 
 	private CombatState CreateCombatState(EncounterModel mutableEncounter)
 	{
-		return new CombatState(mutableEncounter, _runState, _runState.Modifiers, _runState.BadgeModels, _runState.MultiplayerScalingModel);
+		return new CombatState(mutableEncounter, _runState, _runState.Modifiers, _runState.BadgeModels, _runState.RunModels, _runState.Dominion);
 	}
 }

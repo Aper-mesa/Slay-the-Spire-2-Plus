@@ -54,7 +54,7 @@ public sealed class PossessSpeedPower : PowerModel
 		return Task.CompletedTask;
 	}
 
-	public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (wasRemovalPrevented || creature != Owner)
 		{

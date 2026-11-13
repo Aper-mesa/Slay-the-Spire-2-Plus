@@ -194,7 +194,7 @@ public class NDoomVfx : Node2D
 			_tween = CreateTween();
 			_tween.TweenProperty(node2, "position:y", node2.Position.Y + (float)node.Size.Y, 0.75).SetEase(Tween.EaseType.In).SetDelay(0.75)
 				.SetTrans(Tween.TransitionType.Expo);
-			if (await _tween.AwaitFinished(this))
+			if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 			{
 				ShowOrHideParticles(0f, 0.25f);
 				await Task.Delay(2000, _cancelToken);

@@ -270,6 +270,7 @@ public class NCrystalSphereScreen : Control, IOverlayScreen, IScreenContext
 		_instructionsTitleLabel.SetTextAutoSize(_instructionsTitleLoc.GetFormattedText());
 		_instructionsDescriptionLabel.SetTextAutoSize(_instructionsDescriptionLoc.GetFormattedText());
 		_dialogue = GetNode<NCrystalSphereDialogue>("%Dialogue");
+		_proceedButton.Initialize(_entity.Owner.RunState);
 		Vector2 vector = Vector2.One * -(57 * _entity.GridSize.X) * 0.5f;
 		NCrystalSphereCell[,] array = new NCrystalSphereCell[_entity.GridSize.X, _entity.GridSize.Y];
 		for (int i = 0; i < _entity.GridSize.X; i++)
@@ -427,7 +428,7 @@ public class NCrystalSphereScreen : Control, IOverlayScreen, IScreenContext
 
 	private void OnProceedButtonPressed(NButton _)
 	{
-		TaskHelper.RunSafely(RunManager.Instance.ProceedFromTerminalRewardsScreen());
+		RunManager.Instance.Proceed();
 	}
 
 	public void AfterOverlayOpened()

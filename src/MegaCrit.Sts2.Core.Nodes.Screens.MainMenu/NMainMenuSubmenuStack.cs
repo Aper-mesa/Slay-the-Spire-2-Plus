@@ -6,10 +6,12 @@ using Godot.Bridge;
 using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Screens.Bestiary;
+using MegaCrit.Sts2.Core.Nodes.Screens.Blitz;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardLibrary;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Nodes.Screens.CustomRun;
 using MegaCrit.Sts2.Core.Nodes.Screens.DailyRun;
+using MegaCrit.Sts2.Core.Nodes.Screens.Dread;
 using MegaCrit.Sts2.Core.Nodes.Screens.ModdingScreen;
 using MegaCrit.Sts2.Core.Nodes.Screens.PotionLab;
 using MegaCrit.Sts2.Core.Nodes.Screens.ProfileScreen;
@@ -53,6 +55,16 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 		/// Cached name for the '_characterSelectScreenScene' field.
 		/// </summary>
 		public static readonly StringName _characterSelectScreenScene = "_characterSelectScreenScene";
+
+		/// <summary>
+		/// Cached name for the '_dreadScreenScene' field.
+		/// </summary>
+		public static readonly StringName _dreadScreenScene = "_dreadScreenScene";
+
+		/// <summary>
+		/// Cached name for the '_blitzScreenScene' field.
+		/// </summary>
+		public static readonly StringName _blitzScreenScene = "_blitzScreenScene";
 
 		/// <summary>
 		/// Cached name for the '_singleplayerSubmenu' field.
@@ -158,6 +170,16 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 		/// Cached name for the '_profileScreen' field.
 		/// </summary>
 		public static readonly StringName _profileScreen = "_profileScreen";
+
+		/// <summary>
+		/// Cached name for the '_dreadScreen' field.
+		/// </summary>
+		public static readonly StringName _dreadScreen = "_dreadScreen";
+
+		/// <summary>
+		/// Cached name for the '_blitzScreen' field.
+		/// </summary>
+		public static readonly StringName _blitzScreen = "_blitzScreen";
 	}
 
 	/// <summary>
@@ -172,6 +194,12 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 
 	[Export(PropertyHint.None, "")]
 	private PackedScene _characterSelectScreenScene;
+
+	[Export(PropertyHint.None, "")]
+	private PackedScene _dreadScreenScene;
+
+	[Export(PropertyHint.None, "")]
+	private PackedScene _blitzScreenScene;
 
 	private NSingleplayerSubmenu? _singleplayerSubmenu;
 
@@ -215,10 +243,15 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 
 	private NProfileScreen? _profileScreen;
 
+	private NDreadScreen? _dreadScreen;
+
+	private NBlitzScreen? _blitzScreen;
+
 	public override void _Ready()
 	{
 		GetSubmenuType<NSettingsScreen>();
 		GetSubmenuType<NCharacterSelectScreen>();
+		GetSubmenuType<NDreadScreen>();
 	}
 
 	public override T PushSubmenuType<T>()
@@ -461,6 +494,26 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 			}
 			return _profileScreen;
 		}
+		if (type == typeof(NDreadScreen))
+		{
+			if (_dreadScreen == null)
+			{
+				_dreadScreen = _dreadScreenScene.Instantiate<NDreadScreen>(PackedScene.GenEditState.Disabled);
+				_dreadScreen.Visible = false;
+				this.AddChildSafely(_dreadScreen);
+			}
+			return _dreadScreen;
+		}
+		if (type == typeof(NBlitzScreen))
+		{
+			if (_blitzScreen == null)
+			{
+				_blitzScreen = _blitzScreenScene.Instantiate<NBlitzScreen>(PackedScene.GenEditState.Disabled);
+				_blitzScreen.Visible = false;
+				this.AddChildSafely(_blitzScreen);
+			}
+			return _blitzScreen;
+		}
 		throw new ArgumentException($"No such submenu {type} in main menu");
 	}
 
@@ -513,6 +566,16 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 		if (name == PropertyName._characterSelectScreenScene)
 		{
 			_characterSelectScreenScene = VariantUtils.ConvertTo<PackedScene>(in value);
+			return true;
+		}
+		if (name == PropertyName._dreadScreenScene)
+		{
+			_dreadScreenScene = VariantUtils.ConvertTo<PackedScene>(in value);
+			return true;
+		}
+		if (name == PropertyName._blitzScreenScene)
+		{
+			_blitzScreenScene = VariantUtils.ConvertTo<PackedScene>(in value);
 			return true;
 		}
 		if (name == PropertyName._singleplayerSubmenu)
@@ -620,6 +683,16 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 			_profileScreen = VariantUtils.ConvertTo<NProfileScreen>(in value);
 			return true;
 		}
+		if (name == PropertyName._dreadScreen)
+		{
+			_dreadScreen = VariantUtils.ConvertTo<NDreadScreen>(in value);
+			return true;
+		}
+		if (name == PropertyName._blitzScreen)
+		{
+			_blitzScreen = VariantUtils.ConvertTo<NBlitzScreen>(in value);
+			return true;
+		}
 		return base.SetGodotClassPropertyValue(in name, in value);
 	}
 
@@ -635,6 +708,16 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 		if (name == PropertyName._characterSelectScreenScene)
 		{
 			value = VariantUtils.CreateFrom(in _characterSelectScreenScene);
+			return true;
+		}
+		if (name == PropertyName._dreadScreenScene)
+		{
+			value = VariantUtils.CreateFrom(in _dreadScreenScene);
+			return true;
+		}
+		if (name == PropertyName._blitzScreenScene)
+		{
+			value = VariantUtils.CreateFrom(in _blitzScreenScene);
 			return true;
 		}
 		if (name == PropertyName._singleplayerSubmenu)
@@ -742,6 +825,16 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 			value = VariantUtils.CreateFrom(in _profileScreen);
 			return true;
 		}
+		if (name == PropertyName._dreadScreen)
+		{
+			value = VariantUtils.CreateFrom(in _dreadScreen);
+			return true;
+		}
+		if (name == PropertyName._blitzScreen)
+		{
+			value = VariantUtils.CreateFrom(in _blitzScreen);
+			return true;
+		}
 		return base.GetGodotClassPropertyValue(in name, out value);
 	}
 
@@ -756,6 +849,8 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 		List<PropertyInfo> list = new List<PropertyInfo>();
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._settingsScreenScene, PropertyHint.ResourceType, "PackedScene", PropertyUsageFlags.Default | PropertyUsageFlags.ScriptVariable, exported: true));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._characterSelectScreenScene, PropertyHint.ResourceType, "PackedScene", PropertyUsageFlags.Default | PropertyUsageFlags.ScriptVariable, exported: true));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._dreadScreenScene, PropertyHint.ResourceType, "PackedScene", PropertyUsageFlags.Default | PropertyUsageFlags.ScriptVariable, exported: true));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._blitzScreenScene, PropertyHint.ResourceType, "PackedScene", PropertyUsageFlags.Default | PropertyUsageFlags.ScriptVariable, exported: true));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._singleplayerSubmenu, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._multiplayerSubmenu, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._multiplayerHostSubmenu, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -777,6 +872,8 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._customRunLoadScreen, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._moddingScreen, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._profileScreen, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._dreadScreen, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._blitzScreen, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
 
@@ -787,6 +884,8 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 		base.SaveGodotObjectData(info);
 		info.AddProperty(PropertyName._settingsScreenScene, Variant.From(in _settingsScreenScene));
 		info.AddProperty(PropertyName._characterSelectScreenScene, Variant.From(in _characterSelectScreenScene));
+		info.AddProperty(PropertyName._dreadScreenScene, Variant.From(in _dreadScreenScene));
+		info.AddProperty(PropertyName._blitzScreenScene, Variant.From(in _blitzScreenScene));
 		info.AddProperty(PropertyName._singleplayerSubmenu, Variant.From(in _singleplayerSubmenu));
 		info.AddProperty(PropertyName._multiplayerSubmenu, Variant.From(in _multiplayerSubmenu));
 		info.AddProperty(PropertyName._multiplayerHostSubmenu, Variant.From(in _multiplayerHostSubmenu));
@@ -808,6 +907,8 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 		info.AddProperty(PropertyName._customRunLoadScreen, Variant.From(in _customRunLoadScreen));
 		info.AddProperty(PropertyName._moddingScreen, Variant.From(in _moddingScreen));
 		info.AddProperty(PropertyName._profileScreen, Variant.From(in _profileScreen));
+		info.AddProperty(PropertyName._dreadScreen, Variant.From(in _dreadScreen));
+		info.AddProperty(PropertyName._blitzScreen, Variant.From(in _blitzScreen));
 	}
 
 	/// <inheritdoc />
@@ -823,89 +924,105 @@ public class NMainMenuSubmenuStack : NSubmenuStack
 		{
 			_characterSelectScreenScene = value2.As<PackedScene>();
 		}
-		if (info.TryGetProperty(PropertyName._singleplayerSubmenu, out var value3))
+		if (info.TryGetProperty(PropertyName._dreadScreenScene, out var value3))
 		{
-			_singleplayerSubmenu = value3.As<NSingleplayerSubmenu>();
+			_dreadScreenScene = value3.As<PackedScene>();
 		}
-		if (info.TryGetProperty(PropertyName._multiplayerSubmenu, out var value4))
+		if (info.TryGetProperty(PropertyName._blitzScreenScene, out var value4))
 		{
-			_multiplayerSubmenu = value4.As<NMultiplayerSubmenu>();
+			_blitzScreenScene = value4.As<PackedScene>();
 		}
-		if (info.TryGetProperty(PropertyName._multiplayerHostSubmenu, out var value5))
+		if (info.TryGetProperty(PropertyName._singleplayerSubmenu, out var value5))
 		{
-			_multiplayerHostSubmenu = value5.As<NMultiplayerHostSubmenu>();
+			_singleplayerSubmenu = value5.As<NSingleplayerSubmenu>();
 		}
-		if (info.TryGetProperty(PropertyName._joinFriendSubmenu, out var value6))
+		if (info.TryGetProperty(PropertyName._multiplayerSubmenu, out var value6))
 		{
-			_joinFriendSubmenu = value6.As<NJoinFriendScreen>();
+			_multiplayerSubmenu = value6.As<NMultiplayerSubmenu>();
 		}
-		if (info.TryGetProperty(PropertyName._characterSelectSubmenu, out var value7))
+		if (info.TryGetProperty(PropertyName._multiplayerHostSubmenu, out var value7))
 		{
-			_characterSelectSubmenu = value7.As<NCharacterSelectScreen>();
+			_multiplayerHostSubmenu = value7.As<NMultiplayerHostSubmenu>();
 		}
-		if (info.TryGetProperty(PropertyName._loadMultiplayerSubmenu, out var value8))
+		if (info.TryGetProperty(PropertyName._joinFriendSubmenu, out var value8))
 		{
-			_loadMultiplayerSubmenu = value8.As<NMultiplayerLoadGameScreen>();
+			_joinFriendSubmenu = value8.As<NJoinFriendScreen>();
 		}
-		if (info.TryGetProperty(PropertyName._compendiumSubmenu, out var value9))
+		if (info.TryGetProperty(PropertyName._characterSelectSubmenu, out var value9))
 		{
-			_compendiumSubmenu = value9.As<NCompendiumSubmenu>();
+			_characterSelectSubmenu = value9.As<NCharacterSelectScreen>();
 		}
-		if (info.TryGetProperty(PropertyName._bestiarySubmenu, out var value10))
+		if (info.TryGetProperty(PropertyName._loadMultiplayerSubmenu, out var value10))
 		{
-			_bestiarySubmenu = value10.As<NBestiary>();
+			_loadMultiplayerSubmenu = value10.As<NMultiplayerLoadGameScreen>();
 		}
-		if (info.TryGetProperty(PropertyName._relicCollectionSubmenu, out var value11))
+		if (info.TryGetProperty(PropertyName._compendiumSubmenu, out var value11))
 		{
-			_relicCollectionSubmenu = value11.As<NRelicCollection>();
+			_compendiumSubmenu = value11.As<NCompendiumSubmenu>();
 		}
-		if (info.TryGetProperty(PropertyName._potionLabSubmenu, out var value12))
+		if (info.TryGetProperty(PropertyName._bestiarySubmenu, out var value12))
 		{
-			_potionLabSubmenu = value12.As<NPotionLab>();
+			_bestiarySubmenu = value12.As<NBestiary>();
 		}
-		if (info.TryGetProperty(PropertyName._cardLibrarySubmenu, out var value13))
+		if (info.TryGetProperty(PropertyName._relicCollectionSubmenu, out var value13))
 		{
-			_cardLibrarySubmenu = value13.As<NCardLibrary>();
+			_relicCollectionSubmenu = value13.As<NRelicCollection>();
 		}
-		if (info.TryGetProperty(PropertyName._runHistorySubmenu, out var value14))
+		if (info.TryGetProperty(PropertyName._potionLabSubmenu, out var value14))
 		{
-			_runHistorySubmenu = value14.As<NRunHistory>();
+			_potionLabSubmenu = value14.As<NPotionLab>();
 		}
-		if (info.TryGetProperty(PropertyName._statsScreen, out var value15))
+		if (info.TryGetProperty(PropertyName._cardLibrarySubmenu, out var value15))
 		{
-			_statsScreen = value15.As<NStatsScreen>();
+			_cardLibrarySubmenu = value15.As<NCardLibrary>();
 		}
-		if (info.TryGetProperty(PropertyName._timelineScreen, out var value16))
+		if (info.TryGetProperty(PropertyName._runHistorySubmenu, out var value16))
 		{
-			_timelineScreen = value16.As<NTimelineScreen>();
+			_runHistorySubmenu = value16.As<NRunHistory>();
 		}
-		if (info.TryGetProperty(PropertyName._settingsScreen, out var value17))
+		if (info.TryGetProperty(PropertyName._statsScreen, out var value17))
 		{
-			_settingsScreen = value17.As<NSettingsScreen>();
+			_statsScreen = value17.As<NStatsScreen>();
 		}
-		if (info.TryGetProperty(PropertyName._dailyScreen, out var value18))
+		if (info.TryGetProperty(PropertyName._timelineScreen, out var value18))
 		{
-			_dailyScreen = value18.As<NDailyRunScreen>();
+			_timelineScreen = value18.As<NTimelineScreen>();
 		}
-		if (info.TryGetProperty(PropertyName._dailyLoadScreen, out var value19))
+		if (info.TryGetProperty(PropertyName._settingsScreen, out var value19))
 		{
-			_dailyLoadScreen = value19.As<NDailyRunLoadScreen>();
+			_settingsScreen = value19.As<NSettingsScreen>();
 		}
-		if (info.TryGetProperty(PropertyName._customRunScreen, out var value20))
+		if (info.TryGetProperty(PropertyName._dailyScreen, out var value20))
 		{
-			_customRunScreen = value20.As<NCustomRunScreen>();
+			_dailyScreen = value20.As<NDailyRunScreen>();
 		}
-		if (info.TryGetProperty(PropertyName._customRunLoadScreen, out var value21))
+		if (info.TryGetProperty(PropertyName._dailyLoadScreen, out var value21))
 		{
-			_customRunLoadScreen = value21.As<NCustomRunLoadScreen>();
+			_dailyLoadScreen = value21.As<NDailyRunLoadScreen>();
 		}
-		if (info.TryGetProperty(PropertyName._moddingScreen, out var value22))
+		if (info.TryGetProperty(PropertyName._customRunScreen, out var value22))
 		{
-			_moddingScreen = value22.As<NModdingScreen>();
+			_customRunScreen = value22.As<NCustomRunScreen>();
 		}
-		if (info.TryGetProperty(PropertyName._profileScreen, out var value23))
+		if (info.TryGetProperty(PropertyName._customRunLoadScreen, out var value23))
 		{
-			_profileScreen = value23.As<NProfileScreen>();
+			_customRunLoadScreen = value23.As<NCustomRunLoadScreen>();
+		}
+		if (info.TryGetProperty(PropertyName._moddingScreen, out var value24))
+		{
+			_moddingScreen = value24.As<NModdingScreen>();
+		}
+		if (info.TryGetProperty(PropertyName._profileScreen, out var value25))
+		{
+			_profileScreen = value25.As<NProfileScreen>();
+		}
+		if (info.TryGetProperty(PropertyName._dreadScreen, out var value26))
+		{
+			_dreadScreen = value26.As<NDreadScreen>();
+		}
+		if (info.TryGetProperty(PropertyName._blitzScreen, out var value27))
+		{
+			_blitzScreen = value27.As<NBlitzScreen>();
 		}
 	}
 }

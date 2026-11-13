@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -36,11 +37,24 @@ public sealed class CoveredPower : PowerModel
 		interceptPower.AddCoveredCreature(Owner);
 	}
 
-	public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, bool wasRemovalPrevented, float deathAnimLength)
+	public override async Task AfterDeath(PlayerChoiceContext choiceContext, Creature creature, CardModel? source, bool wasRemovalPrevented, float deathAnimLength)
 	{
 		if (!wasRemovalPrevented && creature == Applier)
 		{
 			await PowerCmd.Remove(this);
+		}
+	}
+
+	public override async Task AfterRemoved(Creature oldOwner)
+	{
+		InterceptPower interceptPower = Applier?.GetPower<InterceptPower>();
+		if (interceptPower != null && !oldOwner.GetPowerInstances<CoveredPower>().Any((CoveredPower c) => c.Applier == Applier))
+		{
+			interceptPower.RemoveCoveredCreature(oldOwner);
+			if (!interceptPower.IsCovering)
+			{
+				await PowerCmd.Remove(interceptPower);
+			}
 		}
 	}
 
@@ -59,7 +73,7 @@ public sealed class CoveredPower : PowerModel
 
 	public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
 	{
-		if (side == CombatSide.Enemy)
+		if (side == CombatSide.Enemy && Owner.Powers.Contains(this))
 		{
 			await PowerCmd.Remove(this);
 		}

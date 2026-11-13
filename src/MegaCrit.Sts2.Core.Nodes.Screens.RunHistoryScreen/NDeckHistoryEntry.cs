@@ -56,6 +56,11 @@ public class NDeckHistoryEntry : NButton
 	public new class PropertyName : NButton.PropertyName
 	{
 		/// <summary>
+		/// Cached name for the 'FocusedLabelOffset' property.
+		/// </summary>
+		public static readonly StringName FocusedLabelOffset = "FocusedLabelOffset";
+
+		/// <summary>
 		/// Cached name for the '_titleLabel' field.
 		/// </summary>
 		public static readonly StringName _titleLabel = "_titleLabel";
@@ -118,6 +123,18 @@ public class NDeckHistoryEntry : NButton
 	public IEnumerable<int> FloorsAddedToDeck { get; private set; }
 
 	public CardModel Card { get; private set; }
+
+	private float FocusedLabelOffset
+	{
+		get
+		{
+			if (!IsLayoutRtl())
+			{
+				return 8f;
+			}
+			return -8f;
+		}
+	}
 
 	/// <inheritdoc cref="T:MegaCrit.Sts2.Core.Nodes.Screens.RunHistoryScreen.NDeckHistoryEntry.ClickedEventHandler" />
 	public event ClickedEventHandler Clicked
@@ -190,7 +207,7 @@ public class NDeckHistoryEntry : NButton
 		_scaleTween?.FastForwardToCompletion();
 		_scaleTween = CreateTween().SetParallel();
 		_scaleTween.TweenProperty(_cardImage, "scale", Vector2.One * 1.5f, 0.05);
-		_scaleTween.TweenProperty(_labelContainer, "position:x", _labelContainer.Position.X + 8f, 0.05);
+		_scaleTween.TweenProperty(_labelContainer, "position:x", _labelContainer.Position.X + FocusedLabelOffset, 0.05);
 	}
 
 	protected override void OnUnfocus()
@@ -198,7 +215,7 @@ public class NDeckHistoryEntry : NButton
 		_scaleTween?.FastForwardToCompletion();
 		_scaleTween = CreateTween().SetParallel();
 		_scaleTween.TweenProperty(_cardImage, "scale", Vector2.One, 0.5).SetTrans(Tween.TransitionType.Expo).SetEase(Tween.EaseType.Out);
-		_scaleTween.TweenProperty(_labelContainer, "position:x", _labelContainer.Position.X - 8f, 0.5).SetTrans(Tween.TransitionType.Expo).SetEase(Tween.EaseType.Out);
+		_scaleTween.TweenProperty(_labelContainer, "position:x", _labelContainer.Position.X - FocusedLabelOffset, 0.5).SetTrans(Tween.TransitionType.Expo).SetEase(Tween.EaseType.Out);
 	}
 
 	protected override void OnRelease()
@@ -328,6 +345,11 @@ public class NDeckHistoryEntry : NButton
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
+		if (name == PropertyName.FocusedLabelOffset)
+		{
+			value = VariantUtils.CreateFrom<float>(FocusedLabelOffset);
+			return true;
+		}
 		if (name == PropertyName._titleLabel)
 		{
 			value = VariantUtils.CreateFrom(in _titleLabel);
@@ -376,6 +398,7 @@ public class NDeckHistoryEntry : NButton
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._labelContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._scaleTween, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._amount, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Float, PropertyName.FocusedLabelOffset, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		return list;
 	}
 

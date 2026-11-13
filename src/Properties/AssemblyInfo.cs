@@ -35,6 +35,7 @@ using MegaCrit.Sts2.Core.Nodes.Rewards;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.Bestiary;
+using MegaCrit.Sts2.Core.Nodes.Screens.Blitz;
 using MegaCrit.Sts2.Core.Nodes.Screens.Capstones;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardLibrary;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
@@ -42,6 +43,7 @@ using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Nodes.Screens.Credits;
 using MegaCrit.Sts2.Core.Nodes.Screens.CustomRun;
 using MegaCrit.Sts2.Core.Nodes.Screens.DailyRun;
+using MegaCrit.Sts2.Core.Nodes.Screens.Dread;
 using MegaCrit.Sts2.Core.Nodes.Screens.FeedbackScreen;
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
 using MegaCrit.Sts2.Core.Nodes.Screens.InspectScreens;
@@ -83,7 +85,7 @@ using RiderTestRunner;
 [assembly: AssemblyCopyright("© 2023 Mega Crit Games")]
 [assembly: AssemblyDescription("sts2")]
 [assembly: AssemblyFileVersion("0.1.0.0")]
-[assembly: AssemblyInformationalVersion("0.1.0+41cef1ea4657c524aa50e870df009e56337e8c32")]
+[assembly: AssemblyInformationalVersion("0.1.0+16ac0fe3775f571e5f3b1c81e47d511024515730")]
 [assembly: AssemblyProduct("sts2")]
 [assembly: AssemblyTitle("sts2")]
 [assembly: InternalsVisibleTo("test")]
@@ -140,6 +142,9 @@ using RiderTestRunner;
 	typeof(NEnemyTurnBanner),
 	typeof(NEnergyCounter),
 	typeof(NExhaustPileButton),
+	typeof(NFoolArrowUi),
+	typeof(NFoolCombatSymbol),
+	typeof(NFoolCombatUi),
 	typeof(NHealthBar),
 	typeof(NIntent),
 	typeof(NMouseCardPlay),
@@ -157,6 +162,8 @@ using RiderTestRunner;
 	typeof(NTargetManager),
 	typeof(NAbandonRunConfirmPopup),
 	typeof(NBackButton),
+	typeof(NBlitzTopBarMap),
+	typeof(NBlitzTopBarMapPoint),
 	typeof(NCardPreviewContainer),
 	typeof(NCardViewSortButton),
 	typeof(NCommonBanner),
@@ -185,6 +192,7 @@ using RiderTestRunner;
 	typeof(NScrollbarTrain),
 	typeof(NSearchBar),
 	typeof(NSettingsScreenPopup),
+	typeof(NSubmenuPortrait),
 	typeof(NTickbox),
 	typeof(NTopBar),
 	typeof(NVerticalPopup),
@@ -289,6 +297,8 @@ using RiderTestRunner;
 	typeof(NRestSiteCharacter),
 	typeof(NLinkedRewardSet),
 	typeof(NRewardButton),
+	typeof(NBlitzMerchantButton),
+	typeof(NBlitzMerchantRoom),
 	typeof(NCombatBackground),
 	typeof(NCombatBackgroundLayer),
 	typeof(NCombatRoom),
@@ -297,6 +307,7 @@ using RiderTestRunner;
 	typeof(NMerchantButton),
 	typeof(NMerchantRoom),
 	typeof(NRestSiteRoom),
+	typeof(NStandardMerchantRoom),
 	typeof(NTreasureRoom),
 	typeof(NBestiary),
 	typeof(NBestiaryCharacterFilter),
@@ -308,6 +319,8 @@ using RiderTestRunner;
 	typeof(NBestiaryLayoutKaiserCrab),
 	typeof(NBestiaryModeButton),
 	typeof(NBestiaryMoveButton),
+	typeof(NBlitzInfoDisclaimer),
+	typeof(NBlitzScreen),
 	typeof(NCapstoneContainer),
 	typeof(NCardCostTickbox),
 	typeof(NCardLibrary),
@@ -338,6 +351,8 @@ using RiderTestRunner;
 	typeof(NMultiplayerLoadGameScreen),
 	typeof(NRegentCharacterSelectBg),
 	typeof(NCreditsScreen),
+	typeof(NCustomGameModeDropdown),
+	typeof(NCustomGameModeDropdownItem),
 	typeof(NCustomRunLoadScreen),
 	typeof(NCustomRunRandomizeButton),
 	typeof(NCustomRunScreen),
@@ -352,8 +367,15 @@ using RiderTestRunner;
 	typeof(NDailyRunScreen),
 	typeof(NDailyRunScreenModifier),
 	typeof(NGlobalRankTickbox),
+	typeof(NLeaderboardDayArrow),
 	typeof(NLeaderboardDayPaginator),
 	typeof(NLeaderboardPageArrow),
+	typeof(NDreadBeginRotationTickbox),
+	typeof(NDreadDisclaimerConfirmButton),
+	typeof(NDreadInfoButton),
+	typeof(NDreadInfoDisclaimer),
+	typeof(NDreadNameText),
+	typeof(NDreadScreen),
 	typeof(NFeedbackCategoryDropdown),
 	typeof(NFeedbackCategoryDropdownItem),
 	typeof(NFeedbackScreenOpener),
@@ -432,6 +454,7 @@ using RiderTestRunner;
 	typeof(NRunSubmenuStack),
 	typeof(NShareButton),
 	typeof(NSimpleCardsViewScreen),
+	typeof(NUnderConstruction),
 	typeof(NOverlayStack),
 	typeof(NPauseMenu),
 	typeof(NPauseMenuButton),
@@ -526,6 +549,7 @@ using RiderTestRunner;
 	typeof(NVSyncPaginator),
 	typeof(NWindowResizeHoverTip),
 	typeof(NWindowResizeTickbox),
+	typeof(NBlitzMerchantSlot),
 	typeof(NFakeMerchantInventory),
 	typeof(NMerchantCard),
 	typeof(NMerchantCardRemoval),
@@ -547,7 +571,6 @@ using RiderTestRunner;
 	typeof(NAcknowledgeButton),
 	typeof(NChapterPaginateButton),
 	typeof(NCloseButton),
-	typeof(NEpochCard),
 	typeof(NEpochInspectScreen),
 	typeof(NEpochPaginateButton),
 	typeof(NEpochReminderText),
@@ -562,7 +585,6 @@ using RiderTestRunner;
 	typeof(NUnlockInfo),
 	typeof(NUnlockCardsScreen),
 	typeof(NUnlockCharacterScreen),
-	typeof(NUnlockEpochScreen),
 	typeof(NUnlockMiscScreen),
 	typeof(NUnlockPotionsScreen),
 	typeof(NUnlockRelicsScreen),
@@ -624,9 +646,12 @@ using RiderTestRunner;
 	typeof(NBgGroundSpikeVfx),
 	typeof(NBigSlashImpactVfx),
 	typeof(NBigSlashVfx),
+	typeof(NBlitzMerchantVfx),
 	typeof(NBlockBrokenVfx),
 	typeof(NBlockSparkVfx),
 	typeof(NBounceSparkVfx),
+	typeof(NByrdEvolutionVfx),
+	typeof(NByrdpipReadyToEvolveVfx),
 	typeof(NCardEnchantVfx),
 	typeof(NCardFlyPowerVfx),
 	typeof(NCardFlyShuffleVfx),
@@ -637,6 +662,7 @@ using RiderTestRunner;
 	typeof(NCardTransformVfx),
 	typeof(NCardUpgradeVfx),
 	typeof(NCeremonialBeastVfx),
+	typeof(NChoVfx),
 	typeof(NCubexConstructVfx),
 	typeof(NDaggerSprayFlurryVfx),
 	typeof(NDaggerSprayImpactVfx),
@@ -662,6 +688,7 @@ using RiderTestRunner;
 	typeof(NFlyconidSporesVfx),
 	typeof(NFogmogVfx),
 	typeof(NFollowCursor),
+	typeof(NFoolVfx),
 	typeof(NFossilStalkerVfx),
 	typeof(NFullscreenTextVfx),
 	typeof(NFuzzyWurmCrawlerSpitTrailVfx),
@@ -680,6 +707,8 @@ using RiderTestRunner;
 	typeof(NHunterKillerVfx),
 	typeof(NHyperbeamImpactVfx),
 	typeof(NHyperbeamVfx),
+	typeof(NImpaledArrowVfx),
+	typeof(NInfestedPrismVfx),
 	typeof(NIroncladVfx),
 	typeof(NItemThrowVfx),
 	typeof(NKaiserCrabBossExplosionVfx),
@@ -688,6 +717,7 @@ using RiderTestRunner;
 	typeof(NKinPriestBeamVfx),
 	typeof(NKinPriestGrenadeVfx),
 	typeof(NKinPriestVfx),
+	typeof(NKiVfx),
 	typeof(NKnowledgeDemonVfx),
 	typeof(NLargeMagicMissileVfx),
 	typeof(NLaserVfx),
@@ -719,6 +749,7 @@ using RiderTestRunner;
 	typeof(NRainVfx),
 	typeof(NRegentVfx),
 	typeof(NRelicFlashVfx),
+	typeof(NRelicRareGlow),
 	typeof(NRestSiteFireVfx),
 	typeof(NRestSmokeVfx),
 	typeof(NRollingBoulderVfx),
@@ -758,8 +789,10 @@ using RiderTestRunner;
 	typeof(NVantomVfx),
 	typeof(NVfxSpawner),
 	typeof(NVineShamblerVinesVfx),
+	typeof(NWahVfx),
 	typeof(NWaterfallGiantVfx),
 	typeof(NWormyImpactVfx),
+	typeof(NChainVisualization),
 	typeof(NEpochChains),
 	typeof(NFailedJoinVfx),
 	typeof(NGaseousScreenVfx),
@@ -767,6 +800,7 @@ using RiderTestRunner;
 	typeof(NPowerAppliedBuffVfx),
 	typeof(NPowerAppliedDebuffVfx),
 	typeof(LocalizedTexture),
+	typeof(NByrdineAttackVfx),
 	typeof(NHitStop),
 	typeof(NParticlesContainer),
 	typeof(NScreenShake),
@@ -796,6 +830,7 @@ using RiderTestRunner;
 	typeof(RichTextScramble),
 	typeof(RichTextSine),
 	typeof(RichTextThinkyDots),
+	typeof(RichTextYellow),
 	typeof(TimelineInfoDumper),
 	typeof(NGameInfoUploader)
 })]

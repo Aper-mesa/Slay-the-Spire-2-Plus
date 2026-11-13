@@ -110,7 +110,7 @@ public sealed class RanwidTheElder : EventModel
 	private async Task GivePotion(PotionModel potion)
 	{
 		await PotionCmd.Discard(potion);
-		RelicModel relic = RelicFactory.PullNextRelicFromFront(Owner).ToMutable();
+		RelicModel relic = RelicFactory.PullNextRelicFromFront(Owner, Rng).ToMutable();
 		await RelicCmd.Obtain(relic, Owner);
 		SetEventFinished(L10NLookup("RANWID_THE_ELDER.pages.POTION.description"));
 	}
@@ -118,7 +118,7 @@ public sealed class RanwidTheElder : EventModel
 	private async Task GiveGold()
 	{
 		await PlayerCmd.LoseGold(DynamicVars.Gold.IntValue, Owner, GoldLossType.Spent);
-		RelicModel relic = RelicFactory.PullNextRelicFromFront(Owner).ToMutable();
+		RelicModel relic = RelicFactory.PullNextRelicFromFront(Owner, Rng).ToMutable();
 		await RelicCmd.Obtain(relic, Owner);
 		SetEventFinished(L10NLookup("RANWID_THE_ELDER.pages.GOLD.description"));
 	}
@@ -128,7 +128,7 @@ public sealed class RanwidTheElder : EventModel
 		await RelicCmd.Remove(relic);
 		for (int i = 0; i < 2; i++)
 		{
-			await RelicCmd.Obtain(RelicFactory.PullNextRelicFromFront(Owner).ToMutable(), Owner);
+			await RelicCmd.Obtain(RelicFactory.PullNextRelicFromFront(Owner, Rng).ToMutable(), Owner);
 		}
 		SetEventFinished(L10NLookup("RANWID_THE_ELDER.pages.RELIC.description"));
 	}

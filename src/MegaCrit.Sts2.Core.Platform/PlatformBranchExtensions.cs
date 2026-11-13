@@ -1,3 +1,5 @@
+using System;
+
 namespace MegaCrit.Sts2.Core.Platform;
 
 public static class PlatformBranchExtensions
@@ -9,23 +11,33 @@ public static class PlatformBranchExtensions
 	{
 		return branch switch
 		{
-			PlatformBranch.None => "none", 
-			PlatformBranch.DevTest => "dev-test", 
-			PlatformBranch.PrivateBeta => "private-beta", 
-			PlatformBranch.PublicBeta => "public-beta", 
-			PlatformBranch.Production => "public", 
+			PlatformBranch.None => "none",
+			PlatformBranch.DevTest => "dev-test",
+			PlatformBranch.PrivateBeta => "private-beta",
+			PlatformBranch.PublicBeta => "public-beta",
+			PlatformBranch.Production => "public",
+			_ => "unknown",
 		};
 	}
 
 	public static PlatformBranch? FromName(string name)
 	{
-		return name switch
+		if (name == "dev-test")
 		{
-			"dev-test" => (PlatformBranch?)PlatformBranch.DevTest, 
-			"private-beta" => PlatformBranch.PrivateBeta, 
-			"public-beta" => PlatformBranch.PublicBeta, 
-			"public" => PlatformBranch.Production, 
-			_ => null, 
-		};
+			return PlatformBranch.DevTest;
+		}
+		if (name.StartsWith("private-", StringComparison.Ordinal))
+		{
+			return PlatformBranch.PrivateBeta;
+		}
+		if (name == "public-beta")
+		{
+			return PlatformBranch.PublicBeta;
+		}
+		if (name == "public")
+		{
+			return PlatformBranch.Production;
+		}
+		return null;
 	}
 }

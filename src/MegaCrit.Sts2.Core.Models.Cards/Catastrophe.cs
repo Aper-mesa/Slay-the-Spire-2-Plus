@@ -22,11 +22,11 @@ public sealed class Catastrophe : CardModel
 	{
 		for (int i = 0; i < DynamicVars.Cards.IntValue; i++)
 		{
-			CardModel cardModel = PileType.Draw.GetPile(Owner).Cards.Where((CardModel c) => !c.Keywords.Contains(CardKeyword.Unplayable)).ToList().StableShuffle(Owner.RunState.Rng.Shuffle)
+			CardModel cardModel = PileType.Draw.GetPile(Owner).Cards.Where((CardModel c) => !c.Keywords.Contains(CardKeyword.Unplayable)).ToList().StableShuffle(Owner.RunState.Rng.CombatCardSelection)
 				.FirstOrDefault();
 			if (cardModel == null)
 			{
-				cardModel = PileType.Draw.GetPile(Owner).Cards.ToList().StableShuffle(Owner.RunState.Rng.Shuffle).FirstOrDefault();
+				cardModel = PileType.Draw.GetPile(Owner).Cards.ToList().StableShuffle(Owner.RunState.Rng.CombatCardSelection).FirstOrDefault();
 			}
 			if (cardModel != null)
 			{

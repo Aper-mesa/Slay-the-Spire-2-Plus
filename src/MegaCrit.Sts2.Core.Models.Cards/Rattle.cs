@@ -27,7 +27,7 @@ public sealed class Rattle : CardModel
 		new OstyDamageVar(7m, ValueProp.Move),
 		new CalculationBaseVar(0m),
 		new CalculationExtraVar(1m),
-		new CalculatedVar("CalculatedHits").WithMultiplier((CardModel card, Creature? _) => 1 + CombatManager.Instance.History.Entries.OfType<CreatureAttackedEntry>().Count((CreatureAttackedEntry e) => e.Actor == card.Owner.Osty && e.HappenedThisTurn(card.CombatState)))
+		new CalculatedHitCountVar("CalculatedHits").WithMultiplier((CardModel card, Creature? _) => 1 + CombatManager.Instance.History.Entries.OfType<CreatureAttackedEntry>().Count((CreatureAttackedEntry e) => e.Actor == card.Owner.Osty && e.HappenedThisTurn(card.CombatState)))
 	});
 
 	public Rattle()

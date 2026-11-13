@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Godot;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
+using MegaCrit.Sts2.Core.Models.Dread;
+using MegaCrit.Sts2.Core.Models.Dread.Dominions;
 using MegaCrit.Sts2.Core.Models.Monsters;
 using MegaCrit.Sts2.Core.Rooms;
 
@@ -53,5 +55,10 @@ public sealed class KaiserCrabBoss : EncounterModel
 			(ModelDb.Monster<Crusher>().ToMutable(), "crusher"),
 			(ModelDb.Monster<Rocket>().ToMutable(), "rocket")
 		});
+	}
+
+	public override DominionModel GetDominion()
+	{
+		return ModelDb.Dominion<KaiserCrabDominion>();
 	}
 }

@@ -37,7 +37,11 @@ public sealed class RitualPower : PowerModel
 	{
 		if (Owner.IsEnemy)
 		{
-			WasJustAppliedByEnemy = true;
+			ICombatState? combatState = Owner.CombatState;
+			if (combatState != null && combatState.CurrentSide == CombatSide.Enemy)
+			{
+				WasJustAppliedByEnemy = true;
+			}
 		}
 		return Task.CompletedTask;
 	}

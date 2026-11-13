@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Rooms;
+using MegaCrit.Sts2.Core.Runs;
+using MegaCrit.Sts2.Core.TestSupport;
 
 namespace MegaCrit.Sts2.Core.Entities.Merchant;
 
@@ -16,7 +18,7 @@ public abstract class MerchantEntry
 
 	protected int _cost;
 
-	public int Cost
+	public virtual int Cost
 	{
 		get
 		{
@@ -30,6 +32,17 @@ public abstract class MerchantEntry
 	}
 
 	public bool EnoughGold => Cost <= _player.Gold;
+
+	/// <summary>
+	/// Player to whom the entry is being presented.
+	/// </summary>
+	public Player Player => _player;
+
+	/// <summary>
+	/// Id of the entry within the containing merchant inventory.
+	/// If this entry is not contained within a merchant inventory, then this will be null.
+	/// </summary>
+	public uint? Id { get; set; }
 
 	public abstract bool IsStocked { get; }
 
@@ -66,8 +79,19 @@ public abstract class MerchantEntry
 
 	public abstract void CalcCost();
 
-	public async Task<bool> OnTryPurchaseWrapper(MerchantInventory? inventory, bool ignoreCost = false)
+	/// <summary>
+	/// Attempts to purchase the item and returns false if it could not be purchased.
+	/// Also invokes <see cref="E:MegaCrit.Sts2.Core.Entities.Merchant.MerchantEntry.PurchaseFailed" /> with the reason if it could not be purchased.
+	/// See <see cref="T:MegaCrit.Sts2.Core.Entities.Merchant.PurchaseStatus" /> for possible failure reasons.
+	/// This method is unsynchronized, and therefore may cause divergences, so only call it if you know what you are
+	/// doing. In most cases, you should call <see cref="M:MegaCrit.Sts2.Core.Multiplayer.Game.MerchantSynchronizer.PurchaseLocalEntry(MegaCrit.Sts2.Core.Entities.Merchant.MerchantEntry)" />.
+	/// </summary>
+	public async Task<bool> OnTryPurchaseUnsynchronized(MerchantInventory? inventory, bool ignoreCost = false)
 	{
+		if (TestMode.IsOff && !RunManager.Instance.IsInProgress)
+		{
+			return false;
+		}
 		if (!IsStocked)
 		{
 			InvokePurchaseFailed(PurchaseStatus.FailureOutOfStock);
@@ -78,7 +102,7 @@ public abstract class MerchantEntry
 			InvokePurchaseFailed(PurchaseStatus.FailureGold);
 			return false;
 		}
-		var (success, goldSpent) = await OnTryPurchase(inventory, ignoreCost);
+		var (success, goldSpent) = await OnTryPurchaseInternal(inventory, ignoreCost);
 		if (success)
 		{
 			if (_player.RunState.CurrentRoom is MerchantRoom && Hook.ShouldRefillMerchantEntry(_player.RunState, this, _player))
@@ -101,7 +125,7 @@ public abstract class MerchantEntry
 	/// <param name="inventory">Inventory that the entry is being purchased in.</param>
 	/// <param name="ignoreCost">Whether or not the cost should be ignored</param>
 	/// <returns>Tuple containing whether or not the purchase was successful and the amount of gold spent.</returns>
-	protected abstract Task<(bool, int)> OnTryPurchase(MerchantInventory? inventory, bool ignoreCost);
+	protected abstract Task<(bool, int)> OnTryPurchaseInternal(MerchantInventory? inventory, bool ignoreCost);
 
 	/// <summary>
 	/// Subclass-specific logic for clearing the entry after a purchase.

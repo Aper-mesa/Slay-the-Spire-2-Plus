@@ -97,6 +97,38 @@ public sealed class SpoilsMap : CardModel
 		return Task.CompletedTask;
 	}
 
+	public override Task AfterCardChangedPiles(CardModel card, PileType oldPileType, AbstractModel? clonedBy)
+	{
+		if (card != this)
+		{
+			return Task.CompletedTask;
+		}
+		CardPile? pile = Pile;
+		if (pile == null || pile.Type != PileType.Deck)
+		{
+			return Task.CompletedTask;
+		}
+		if (SpoilsActIndex != Owner.RunState.CurrentActIndex)
+		{
+			return Task.CompletedTask;
+		}
+		if (!SpoilsCoord.HasValue)
+		{
+			return Task.CompletedTask;
+		}
+		MapPoint point = Owner.RunState.Map.GetPoint(SpoilsCoord.Value);
+		if (point == null || point.PointType != MapPointType.Treasure)
+		{
+			return Task.CompletedTask;
+		}
+		if (point.Quests.Contains(this))
+		{
+			return Task.CompletedTask;
+		}
+		point.AddQuest(this);
+		return Task.CompletedTask;
+	}
+
 	public override Task BeforeCardRemoved(CardModel card)
 	{
 		if (card != this)

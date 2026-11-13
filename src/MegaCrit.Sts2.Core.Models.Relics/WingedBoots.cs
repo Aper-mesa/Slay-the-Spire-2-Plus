@@ -44,7 +44,7 @@ public sealed class WingedBoots : RelicModel
 		}
 	}
 
-	public override bool IsAllowed(IRunState runState)
+	protected override bool IsAllowedInternal(IRunState runState)
 	{
 		return runState.Players.Count == 1;
 	}

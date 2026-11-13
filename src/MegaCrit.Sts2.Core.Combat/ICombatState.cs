@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Singleton;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace MegaCrit.Sts2.Core.Combat;
@@ -50,7 +49,7 @@ public interface ICombatState
 	/// <summary>
 	/// The model used to scale various things (block, power application) in multiplayer.
 	/// </summary>
-	MultiplayerScalingModel? MultiplayerScalingModel { get; }
+	IReadOnlyList<RunModel> RunModels { get; }
 
 	/// <summary>
 	/// BE CAREFUL! You usually want <see cref="P:MegaCrit.Sts2.Core.Entities.Players.PlayerCombatState.TurnNumber" /> instead of this.

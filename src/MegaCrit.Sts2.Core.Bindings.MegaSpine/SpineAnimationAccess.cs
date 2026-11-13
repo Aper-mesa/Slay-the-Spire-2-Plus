@@ -20,6 +20,11 @@ public readonly struct SpineAnimationAccess(MegaSprite? sprite)
 		_sprite?.GetAnimationState().AddAnimation(name, delay, loop, track);
 	}
 
+	public MegaSkeleton? GetSkeleton()
+	{
+		return _sprite?.GetSkeleton();
+	}
+
 	/// <summary>
 	/// Current track entry, or null if the sprite is null or no track is active. The returned wrapper is the
 	/// caller's to dispose: wrap it in <c>using</c> so its native release stays on the calling thread.

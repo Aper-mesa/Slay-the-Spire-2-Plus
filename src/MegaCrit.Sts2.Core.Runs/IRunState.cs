@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Singleton;
+using MegaCrit.Sts2.Core.Models.Dread;
 using MegaCrit.Sts2.Core.Odds;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs.History;
@@ -42,6 +42,11 @@ public interface IRunState : ICardScope, IPlayerCollection
 	ActMap Map { get; set; }
 
 	/// <summary>
+	/// The MapCoords that have been visited within the current act.
+	/// </summary>
+	IReadOnlyList<MapCoord> VisitedMapCoords { get; }
+
+	/// <summary>
 	/// The MapCoord that we're currently at in this run.
 	/// Will be null before we've entered our first map point.
 	/// </summary>
@@ -51,6 +56,11 @@ public interface IRunState : ICardScope, IPlayerCollection
 	/// The game mode that we are playing.
 	/// </summary>
 	GameMode GameMode { get; }
+
+	/// <summary>
+	/// If the game we are playing is a custom game.
+	/// </summary>
+	bool IsCustomGame { get; }
 
 	/// <summary>
 	/// The MapPoint that we're currently at in this run.
@@ -122,6 +132,7 @@ public interface IRunState : ICardScope, IPlayerCollection
 
 	/// <summary>
 	/// The Ascension difficulty of this run.
+	/// Remember that this may be modified by the GameMode, so do not depend on this being the standard ascension list.
 	/// </summary>
 	int AscensionLevel { get; }
 
@@ -164,9 +175,15 @@ public interface IRunState : ICardScope, IPlayerCollection
 	IReadOnlyList<BadgeModel> BadgeModels { get; }
 
 	/// <summary>
-	/// The model used to scale various things (block, power application) in multiplayer.
+	/// Singleton models applied for the entire run.
 	/// </summary>
-	MultiplayerScalingModel? MultiplayerScalingModel { get; }
+	IReadOnlyList<RunModel> RunModels { get; }
+
+	/// <summary>
+	/// The currently applied dominion, if any.
+	/// Should always be null unless the GameMode is Dread.
+	/// </summary>
+	DominionModel? Dominion { get; }
 
 	/// <summary>
 	/// The map point history for the current run.

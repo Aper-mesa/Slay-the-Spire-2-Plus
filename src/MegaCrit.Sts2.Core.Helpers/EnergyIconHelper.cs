@@ -1,8 +1,11 @@
+using Godot;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.CardPools;
+using MegaCrit.Sts2.Core.Models.Dread;
 
 namespace MegaCrit.Sts2.Core.Helpers;
 
@@ -39,7 +42,12 @@ public static class EnergyIconHelper
 	/// </summary>
 	public static string GetPath(string prefix)
 	{
-		return ImageHelper.GetImagePath("atlases/ui_atlas.sprites/card/energy_" + prefix.ToLowerInvariant() + ".tres");
+		string imagePath = ImageHelper.GetImagePath("atlases/ui_atlas.sprites/card/energy_" + prefix.ToLowerInvariant() + ".tres");
+		if (ResourceLoader.Exists(imagePath))
+		{
+			return imagePath;
+		}
+		return ImageHelper.GetImagePath("packed/energy_icons/energy_" + prefix.ToLowerInvariant() + ".png");
 	}
 
 	private static IPoolModel GetPool(AbstractModel model)
@@ -58,7 +66,18 @@ public static class EnergyIconHelper
 				{
 					if (!(model is RelicModel relicModel))
 					{
-						if (model is PowerModel powerModel)
+						if (!(model is PowerModel powerModel))
+						{
+							if (model is DominionModel dominionModel)
+							{
+								if (dominionModel != null && dominionModel.IsMutable && dominionModel.RunState != null)
+								{
+									player = LocalContext.GetMe(dominionModel.RunState);
+								}
+								poolModel = ModelDb.CardPool<ColorlessCardPool>();
+							}
+						}
+						else
 						{
 							if (powerModel != null && powerModel.IsMutable)
 							{
@@ -66,7 +85,7 @@ public static class EnergyIconHelper
 								if (owner != null && owner.IsPlayer)
 								{
 									player = powerModel.Owner.Player;
-									goto IL_0108;
+									goto IL_014e;
 								}
 							}
 							poolModel = ModelDb.CardPool<ColorlessCardPool>();
@@ -108,8 +127,8 @@ public static class EnergyIconHelper
 			}
 			poolModel = cardModel.Pool;
 		}
-		goto IL_0108;
-		IL_0108:
+		goto IL_014e;
+		IL_014e:
 		if (player != null)
 		{
 			return player.Character.CardPool;

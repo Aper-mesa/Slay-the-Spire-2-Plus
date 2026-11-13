@@ -174,14 +174,14 @@ public class NGroundFireVfx : Node2D
 		_tween = CreateTween().SetParallel();
 		_tween.TweenProperty(_mainFire, "scale", Vector2.One * 4f, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Back);
 		_tween.TweenProperty(_mainFire, "modulate:a", 0.9f, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
-		if (await _tween.AwaitFinished(this))
+		if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 		{
 			_flameSprites.Emitting = true;
 			_tween = CreateTween().SetParallel();
 			_tween.TweenProperty(_mainFire, "modulate:a", 0f, 0.5);
 			_tween.TweenProperty(_flameSprites, "modulate:a", 0f, 0.5);
 			_tween.TweenProperty(_mainFire, "scale", Vector2.One * 2f, 2.0).SetEase(Tween.EaseType.InOut).SetTrans(Tween.TransitionType.Cubic);
-			if (await _tween.AwaitFinished(this))
+			if (await _tween.AwaitFinished(this) == TweenOutcome.Finished)
 			{
 				_flameSprites.Emitting = false;
 				await emberDone;

@@ -24,6 +24,18 @@ public class CardRarityOdds : AbstractOdds
 
 	public const float shopUncommonOdds = 0.37f;
 
+	public const float blitzShopCommonOdds = 0.4f;
+
+	public const float blitzShopUncommonOdds = 0.5f;
+
+	public const float blitzShopRareOdds = 0.1f;
+
+	public const float blitzNeowCommonOdds = 0.55f;
+
+	public const float blitzNeowUncommonOdds = 0.4f;
+
+	public const float blitzNeowRareOdds = 0.05f;
+
 	private const float _baseRarityOffset = -0.05f;
 
 	private const float _maxRarityOffset = 0.4f;
@@ -65,10 +77,11 @@ public class CardRarityOdds : AbstractOdds
 	/// Use for things like encounter rewards.
 	/// </summary>
 	/// <param name="type">Odds type to roll for.</param>
+	/// <param name="rngOverride">RNG to roll, or the internal RNG if null.</param>
 	/// <returns>What rarity a generated card should be.</returns>
-	public CardRarity Roll(CardRarityOddsType type)
+	public CardRarity Roll(CardRarityOddsType type, Rng? rngOverride = null)
 	{
-		CardRarity cardRarity = RollWithoutChangingFutureOdds(type, (type == CardRarityOddsType.BossEncounter) ? 0f : CurrentValue);
+		CardRarity cardRarity = RollWithoutChangingFutureOdds(type, (type == CardRarityOddsType.BossEncounter) ? 0f : CurrentValue, rngOverride);
 		if (cardRarity == CardRarity.Rare)
 		{
 			CurrentValue = -0.05f;
@@ -80,9 +93,9 @@ public class CardRarityOdds : AbstractOdds
 		return cardRarity;
 	}
 
-	public CardRarity RollWithoutChangingFutureOdds(CardRarityOddsType oddsType)
+	public CardRarity RollWithoutChangingFutureOdds(CardRarityOddsType oddsType, Rng? rngOverride = null)
 	{
-		return RollWithoutChangingFutureOdds(oddsType, CurrentValue);
+		return RollWithoutChangingFutureOdds(oddsType, CurrentValue, rngOverride);
 	}
 
 	/// <summary>
@@ -92,10 +105,12 @@ public class CardRarityOdds : AbstractOdds
 	/// </summary>
 	/// <param name="type">Odds type to roll for.</param>
 	/// <param name="offset">offset for rare odds</param>
+	/// <param name="rngOverride">RNG to use, or the built-in RNG otherwise.</param>
 	/// <returns>What rarity a generated card should be.</returns>
-	public CardRarity RollWithoutChangingFutureOdds(CardRarityOddsType type, float offset)
+	public CardRarity RollWithoutChangingFutureOdds(CardRarityOddsType type, float offset, Rng? rngOverride = null)
 	{
-		float num = _rng.NextFloat();
+		Rng rng = rngOverride ?? _rng;
+		float num = rng.NextFloat();
 		float num2 = GetBaseOdds(type, CardRarity.Rare) + offset;
 		float baseOdds = GetBaseOdds(type, CardRarity.Uncommon);
 		Log.Info($"Card rarity: Rolled {num}, need < {num2} for rare (offset = {offset})");
@@ -116,12 +131,14 @@ public class CardRarityOdds : AbstractOdds
 	/// Used for some events.
 	/// </summary>
 	/// <param name="type">Odds type to roll for.</param>
+	/// <param name="rngOverride">The RNG to roll, or the built-in RNG if null.</param>
 	/// <returns>What rarity a generated card should be.</returns>
-	public CardRarity RollWithBaseOdds(CardRarityOddsType type)
+	public CardRarity RollWithBaseOdds(CardRarityOddsType type, Rng? rngOverride = null)
 	{
+		Rng rng = rngOverride ?? _rng;
 		float baseOdds = GetBaseOdds(type, CardRarity.Rare);
 		float baseOdds2 = GetBaseOdds(type, CardRarity.Uncommon);
-		float num = _rng.NextFloat();
+		float num = rng.NextFloat();
 		if (num < baseOdds)
 		{
 			return CardRarity.Rare;
@@ -139,40 +156,54 @@ public class CardRarityOdds : AbstractOdds
 		{
 			CardRarityOddsType.EliteEncounter => rarity switch
 			{
-				CardRarity.Common => EliteCommonOdds, 
-				CardRarity.Uncommon => 0.4f, 
-				CardRarity.Rare => EliteRareOdds, 
-				_ => throw new ArgumentOutOfRangeException("rarity"), 
-			}, 
+				CardRarity.Common => EliteCommonOdds,
+				CardRarity.Uncommon => 0.4f,
+				CardRarity.Rare => EliteRareOdds,
+				_ => throw new ArgumentOutOfRangeException("rarity"),
+			},
 			CardRarityOddsType.BossEncounter => rarity switch
 			{
-				CardRarity.Common => 0f, 
-				CardRarity.Uncommon => 0f, 
-				CardRarity.Rare => 1f, 
-				_ => throw new ArgumentOutOfRangeException("rarity"), 
-			}, 
+				CardRarity.Common => 0f,
+				CardRarity.Uncommon => 0f,
+				CardRarity.Rare => 1f,
+				_ => throw new ArgumentOutOfRangeException("rarity"),
+			},
 			CardRarityOddsType.Shop => rarity switch
 			{
-				CardRarity.Common => ShopCommonOdds, 
-				CardRarity.Uncommon => 0.37f, 
-				CardRarity.Rare => ShopRareOdds, 
-				_ => throw new ArgumentOutOfRangeException("rarity"), 
-			}, 
+				CardRarity.Common => ShopCommonOdds,
+				CardRarity.Uncommon => 0.37f,
+				CardRarity.Rare => ShopRareOdds,
+				_ => throw new ArgumentOutOfRangeException("rarity"),
+			},
 			CardRarityOddsType.RegularEncounter => rarity switch
 			{
-				CardRarity.Common => regularCommonOdds, 
-				CardRarity.Uncommon => 0.37f, 
-				CardRarity.Rare => RegularRareOdds, 
-				_ => throw new ArgumentOutOfRangeException("rarity"), 
-			}, 
+				CardRarity.Common => regularCommonOdds,
+				CardRarity.Uncommon => 0.37f,
+				CardRarity.Rare => RegularRareOdds,
+				_ => throw new ArgumentOutOfRangeException("rarity"),
+			},
+			CardRarityOddsType.Blitz => rarity switch
+			{
+				CardRarity.Common => 0.4f,
+				CardRarity.Uncommon => 0.5f,
+				CardRarity.Rare => 0.1f,
+				_ => throw new ArgumentOutOfRangeException("rarity"),
+			},
+			CardRarityOddsType.BlitzNeow => rarity switch
+			{
+				CardRarity.Common => 0.55f,
+				CardRarity.Uncommon => 0.4f,
+				CardRarity.Rare => 0.05f,
+				_ => throw new ArgumentOutOfRangeException("rarity"),
+			},
 			CardRarityOddsType.Uniform => rarity switch
 			{
-				CardRarity.Common => 0.33f, 
-				CardRarity.Uncommon => 0.33f, 
-				CardRarity.Rare => 0.33f, 
-				_ => throw new ArgumentOutOfRangeException("rarity"), 
-			}, 
-			_ => throw new ArgumentOutOfRangeException("type"), 
+				CardRarity.Common => 0.33f,
+				CardRarity.Uncommon => 0.33f,
+				CardRarity.Rare => 0.33f,
+				_ => throw new ArgumentOutOfRangeException("rarity"),
+			},
+			_ => throw new ArgumentOutOfRangeException("type"),
 		};
 	}
 }

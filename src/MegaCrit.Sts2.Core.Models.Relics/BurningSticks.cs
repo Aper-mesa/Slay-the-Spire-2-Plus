@@ -46,10 +46,10 @@ public sealed class BurningSticks : RelicModel
 		if (card.Owner == Owner && !WasUsedThisCombat && card.Type == CardType.Skill)
 		{
 			Flash();
+			WasUsedThisCombat = true;
 			CardModel card2 = card.CreateClone();
 			await CardPileCmd.AddGeneratedCardToCombat(card2, PileType.Hand, Owner);
 			Status = RelicStatus.Normal;
-			WasUsedThisCombat = true;
 		}
 	}
 

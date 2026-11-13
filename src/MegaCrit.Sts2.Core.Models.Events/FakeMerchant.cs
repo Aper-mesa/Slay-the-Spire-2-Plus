@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Merchant;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Events;
@@ -113,14 +112,17 @@ public sealed class FakeMerchant : EventModel
 
 	protected override Task BeforeEventStarted(bool isPreFinished)
 	{
-		Inventory = new MerchantInventory(Owner);
 		List<RelicModel> list = _inventoryRelics.ToList().UnstableShuffle(Rng).Take(6)
 			.ToList();
-		foreach (RelicModel item in list)
+		List<MerchantRelicEntry> list2 = new List<MerchantRelicEntry>();
+		foreach (RelicModel item2 in list)
 		{
-			MerchantRelicEntry entry = new MerchantRelicEntry(item.ToMutable(), Owner);
-			Inventory.AddRelicEntry(entry);
+			MerchantRelicEntry item = new MerchantRelicEntry(item2.ToMutable(), Owner);
+			list2.Add(item);
 		}
+		Inventory = new MerchantInventory(Owner, new List<MerchantCardEntry>(), new List<MerchantCardEntry>(), list2, new List<MerchantPotionEntry>(), null, new List<BlitzMerchantEntry>());
+		Inventory.Setup();
+		RunManager.Instance.MerchantSynchronizer.SetMerchantInventory(Owner, Inventory);
 		return Task.CompletedTask;
 	}
 
@@ -146,17 +148,20 @@ public sealed class FakeMerchant : EventModel
 
 	public async Task FoulPotionThrown(FoulPotion potion)
 	{
-		if (LocalContext.IsMine(this) && Node is NFakeMerchant nFakeMerchant)
+		if (Node is NFakeMerchant nFakeMerchant)
 		{
+			if (nFakeMerchant.Inventory.IsOpen)
+			{
+				nFakeMerchant.Inventory.Close();
+			}
 			await nFakeMerchant.FoulPotionThrown();
 		}
 		StartedFight = true;
 		List<Reward> list = new List<Reward>();
 		list.Add(new RelicReward(ModelDb.Relic<FakeMerchantsRug>().ToMutable(), Owner));
-		FakeMerchant fakeMerchant = (FakeMerchant)RunManager.Instance.EventSynchronizer.GetEventForPlayer(Owner);
-		foreach (MerchantRelicEntry relicEntry in fakeMerchant.Inventory.RelicEntries)
+		foreach (MerchantRelicEntry relicEntry in Inventory.RelicEntries)
 		{
-			if (relicEntry.IsStocked || Owner.RunState.Players.Count > 1)
+			if (relicEntry.IsStocked)
 			{
 				list.Add(new RelicReward(relicEntry.Model, Owner));
 			}

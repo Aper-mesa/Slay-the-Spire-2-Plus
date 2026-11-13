@@ -5,6 +5,7 @@ using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Multiplayer.Transport;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves.Runs;
 
 namespace MegaCrit.Sts2.Core.Multiplayer.Messages.Lobby;
@@ -24,6 +25,16 @@ public struct ClientLobbyJoinResponseMessage : INetMessage, IPacketSerializable
 	/// If the run is a daily, this contains information about the time that the host requested from the time server.
 	/// </summary>
 	public TimeServerResult? dailyTime;
+
+	/// <summary>
+	/// What kind of game mode the lobby is currently set to.
+	/// </summary>
+	public GameMode gameMode;
+
+	/// <summary>
+	/// Whether or not this is a custom lobby.
+	/// </summary>
+	public bool isCustom;
 
 	/// <summary>
 	/// Current ascension that the lobby is set to.
@@ -65,6 +76,8 @@ public struct ClientLobbyJoinResponseMessage : INetMessage, IPacketSerializable
 		{
 			writer.WriteString(seed);
 		}
+		writer.WriteEnum(gameMode);
+		writer.WriteBool(isCustom);
 		writer.WriteInt(ascension, 5);
 		writer.WriteList(modifiers);
 	}
@@ -80,6 +93,8 @@ public struct ClientLobbyJoinResponseMessage : INetMessage, IPacketSerializable
 		{
 			seed = reader.ReadString();
 		}
+		gameMode = reader.ReadEnum<GameMode>();
+		isCustom = reader.ReadBool();
 		ascension = reader.ReadInt(5);
 		modifiers = reader.ReadList<SerializableModifier>();
 	}

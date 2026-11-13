@@ -17,11 +17,11 @@ namespace MegaCrit.Sts2.Core.Nodes.Screens.Map;
 /// </summary>
 public class MapSplitVoteAnimation
 {
-	private NMapScreen _mapScreen;
+	private readonly NMapScreen _mapScreen;
 
-	private RunState _runState;
+	private readonly RunState _runState;
 
-	private Dictionary<MapCoord, NMapPoint> _mapPointDictionary;
+	private readonly Dictionary<MapCoord, NMapPoint> _mapPointDictionary;
 
 	private int _ticks;
 
@@ -47,19 +47,20 @@ public class MapSplitVoteAnimation
 		MapCoord? mapCoord = null;
 		bool flag = true;
 		List<Player> list = new List<Player>();
-		foreach (KeyValuePair<Player, MapCoord?> item in _mapScreen.PlayerVoteDictionary)
+		foreach (Player player in _runState.Players)
 		{
+			MapCoord? mapCoord2 = RunManager.Instance.MapSelectionSynchronizer.GetVote(player)?.coord;
 			if (!mapCoord.HasValue)
 			{
-				mapCoord = item.Value;
+				mapCoord = mapCoord2;
 			}
-			else if (item.Value != mapCoord)
+			else if (mapCoord2 != mapCoord)
 			{
 				flag = false;
 			}
-			if (item.Value == selectedCoord)
+			if (mapCoord2 == selectedCoord)
 			{
-				list.Add(item.Key);
+				list.Add(player);
 			}
 		}
 		if (!flag)
@@ -68,14 +69,15 @@ public class MapSplitVoteAnimation
 			_ticks = rng.NextInt(12, 18);
 			float num = rng.NextFloat(0.05f, 0.3f);
 			_winner = rng.NextItem(list);
-			_sortedPlayers = (from p in (from p in _mapScreen.PlayerVoteDictionary.ToList()
-					where p.Value.HasValue
-					select p).OrderBy((KeyValuePair<Player, MapCoord?> p) => p.Value, Comparer<MapCoord?>.Create(MapCoordComparer)).ThenBy((KeyValuePair<Player, MapCoord?> p) => _mapPointDictionary[p.Value.Value].VoteContainer.GetVoteIndex(p.Key))
-				select p.Key).ToList();
+			_sortedPlayers = (from p in (from player in _runState.Players
+					select (player: player, coord: RunManager.Instance.MapSelectionSynchronizer.GetVote(player)?.coord) into p
+					where p.coord.HasValue
+					select p).OrderBy(((Player player, MapCoord? coord) p) => p.coord, Comparer<MapCoord?>.Create(MapCoordComparer)).ThenBy(((Player player, MapCoord? coord) p) => _mapPointDictionary[p.coord.Value].VoteContainer.GetVoteIndex(p.player))
+				select p.player).ToList();
 			Tween tween = _mapScreen.CreateTween();
 			tween.TweenMethod(Callable.From<float>(TickSplitVoteAnimation), 0f, 1f, 1.2000000476837158).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.Out);
 			tween.TweenInterval(num);
-			if (await tween.AwaitFinished(_mapScreen))
+			if (await tween.AwaitFinished(_mapScreen) == TweenOutcome.Finished)
 			{
 				_mapPointDictionary[selectedCoord].VoteContainer.BouncePlayers();
 			}
@@ -126,14 +128,14 @@ public class MapSplitVoteAnimation
 		{
 			if (_currentlyHighlightedPlayer != null)
 			{
-				MapCoord value = _mapScreen.PlayerVoteDictionary[_currentlyHighlightedPlayer].Value;
-				_mapPointDictionary[value].VoteContainer.SetPlayerHighlighted(_currentlyHighlightedPlayer, isHighlighted: false);
+				MapCoord coord = RunManager.Instance.MapSelectionSynchronizer.GetVote(_currentlyHighlightedPlayer).Value.coord;
+				_mapPointDictionary[coord].VoteContainer.SetPlayerHighlighted(_currentlyHighlightedPlayer, isHighlighted: false);
 			}
 			_currentlyHighlightedPlayer = player;
 			if (player != null)
 			{
-				MapCoord value2 = _mapScreen.PlayerVoteDictionary[player].Value;
-				_mapPointDictionary[value2].VoteContainer.SetPlayerHighlighted(player, isHighlighted: true);
+				MapCoord coord2 = RunManager.Instance.MapSelectionSynchronizer.GetVote(player).Value.coord;
+				_mapPointDictionary[coord2].VoteContainer.SetPlayerHighlighted(player, isHighlighted: true);
 			}
 		}
 	}

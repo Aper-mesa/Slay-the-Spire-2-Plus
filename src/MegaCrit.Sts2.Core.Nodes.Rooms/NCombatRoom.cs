@@ -291,6 +291,10 @@ public class NCombatRoom : Control, IScreenContext, IRoomWithProceedButton
 
 	public Control CombatVfxContainer { get; private set; }
 
+	/// <summary>
+	/// The time reported by Time.GetTicksMsec when _Ready was called on the combat room, OR when an event transitioned
+	/// to combat - whichever was more recent.
+	/// </summary>
 	public ulong CreatedMsec { get; private set; }
 
 	/// <summary>
@@ -369,8 +373,7 @@ public class NCombatRoom : Control, IScreenContext, IRoomWithProceedButton
 		{
 			foreach (NCreature creatureNode in _creatureNodes)
 			{
-				creatureNode.Hitbox.FocusMode = FocusModeEnum.None;
-				SetCreatureIsInteractable(creatureNode.Entity, on: false);
+				creatureNode.SetIsInteractable(on: false, changeVisibilityImmediately: true);
 			}
 		}
 		SceneContainer.Scale = Vector2.One * _visuals.Encounter.GetCameraScaling();
@@ -421,6 +424,7 @@ public class NCombatRoom : Control, IScreenContext, IRoomWithProceedButton
 	private void OnCombatSetUp(CombatState state)
 	{
 		Ui.Activate(((CombatRoom)_visuals).CombatState);
+		_proceedButton.Initialize(state.RunState);
 		if (Background == null)
 		{
 			SetUpBackground(state.RunState);
@@ -627,26 +631,16 @@ public class NCombatRoom : Control, IScreenContext, IRoomWithProceedButton
 				NCreature player = playerAndPets.player;
 				List<NCreature> pets = playerAndPets.pets;
 				player.Position = new Vector2(0f - targetXPos - player.Visuals.Bounds.Size.X * 0.5f, 200f - num9 * (float)num11);
+				NCreature osty = null;
 				if (LocalContext.IsMe(player.Entity) && player.Entity.Player.Character is Necrobinder)
 				{
-					NCreature osty = null;
-					for (int num14 = 0; num14 < pets.Count; num14++)
-					{
-						NCreature nCreature = pets[num14];
-						if (nCreature.Entity.Monster is Osty)
-						{
-							osty = nCreature;
-							pets.RemoveAt(num14);
-							break;
-						}
-					}
 					PositionLocalPlayerOsty(ref targetXPos, player.Position.Y, player, osty);
 				}
-				float num15 = ((pets.Count > 1) ? (player.Visuals.Bounds.Size.X / (float)(pets.Count - 1)) : 0f);
-				for (int num16 = 0; num16 < pets.Count; num16++)
+				float num14 = ((pets.Count > 1) ? (player.Visuals.Bounds.Size.X / (float)(pets.Count - 1)) : 0f);
+				for (int num15 = 0; num15 < pets.Count; num15++)
 				{
-					NCreature nCreature2 = pets[num16];
-					nCreature2.Position = new Vector2(0f - targetXPos + 20f - (float)num16 * num15 - nCreature2.Visuals.Bounds.Size.X * 0.5f, player.Position.Y + 10f);
+					NCreature nCreature = pets[num15];
+					nCreature.Position = new Vector2(0f - targetXPos + 20f - (float)num15 * num14 - nCreature.Visuals.Bounds.Size.X * 0.5f, player.Position.Y + 10f);
 				}
 				if (num11 > 0)
 				{
@@ -662,13 +656,13 @@ public class NCombatRoom : Control, IScreenContext, IRoomWithProceedButton
 		foreach (PlayerAndPets item3 in list)
 		{
 			item3.player.GetParent().MoveChildSafely(item3.player, 0);
-			for (int num17 = 0; num17 < item3.pets.Count; num17++)
+			for (int num16 = 0; num16 < item3.pets.Count; num16++)
 			{
-				NCreature nCreature3 = item3.pets[num17];
-				nCreature3.GetParent().MoveChildSafely(nCreature3, num17 + 1);
+				NCreature nCreature2 = item3.pets[num16];
+				nCreature2.GetParent().MoveChildSafely(nCreature2, num16 + 1);
 				if (!LocalContext.IsMe(item3.player.Entity))
 				{
-					nCreature3.Visuals.Bounds.Visible = false;
+					nCreature2.Visuals.Bounds.Visible = false;
 				}
 			}
 		}
@@ -693,6 +687,21 @@ public class NCombatRoom : Control, IScreenContext, IRoomWithProceedButton
 			return CreatureNodes.FirstOrDefault((NCreature c) => c.Entity == creature);
 		}
 		return null;
+	}
+
+	/// <summary>
+	/// Finds a creature's node whether it is alive or partway through its death animation.
+	/// <see cref="M:MegaCrit.Sts2.Core.Nodes.Rooms.NCombatRoom.GetCreatureNode(MegaCrit.Sts2.Core.Entities.Creatures.Creature)" /> only searches live creatures, so it returns null for a creature that has already
+	/// been handed to <see cref="M:MegaCrit.Sts2.Core.Nodes.Rooms.NCombatRoom.RemoveCreatureNode(MegaCrit.Sts2.Core.Nodes.Combat.NCreature)" /> even though that node is still around playing its death
+	/// animation. Use this when an effect has to reach a creature that just died.
+	/// </summary>
+	public NCreature? GetCreatureNodeIncludingDying(Creature? creature)
+	{
+		if (creature == null)
+		{
+			return null;
+		}
+		return GetCreatureNode(creature) ?? RemovingCreatureNodes.FirstOrDefault((NCreature c) => c.Entity == creature);
 	}
 
 	public void RemoveCreatureNode(NCreature node)
@@ -746,34 +755,45 @@ public class NCombatRoom : Control, IScreenContext, IRoomWithProceedButton
 		}
 		NCreature creatureNode = GetCreatureNode(creature.PetOwner.Creature);
 		Player player = creatureNode.Entity.Player;
-		List<NCreature> list = _creatureNodes.Where((NCreature c) => c.Entity.PetOwner == player && (!(c.Entity.Monster is Osty) || !LocalContext.IsMe(player))).ToList();
+		List<NCreature> list = _creatureNodes.Where((NCreature c) => c.Entity.PetOwner == player && ((!(c.Entity.Monster is Osty) && !(c.Entity.Monster is Wuppy)) || !LocalContext.IsMe(player))).ToList();
 		nCreature.GetParent().MoveChildSafely(nCreature, creatureNode.GetIndex() + 1);
-		if (creature.Monster is Osty && LocalContext.IsMe(player))
+		bool flag = LocalContext.IsMe(player);
+		bool flag2 = flag;
+		if (flag2)
 		{
-			nCreature.OstyScaleToSize(creature.MaxHp, 0.0);
-			nCreature.GetParent().MoveChildSafely(nCreature, creatureNode.GetIndex());
-			return;
+			MonsterModel monster = creature.Monster;
+			bool flag3 = ((monster is Osty || monster is Wuppy) ? true : false);
+			flag2 = flag3;
 		}
-		float num = ((list.Count > 1) ? (creatureNode.Visuals.Bounds.Size.X / (float)(list.Count - 1)) : 0f);
-		for (int num2 = 0; num2 < list.Count; num2++)
+		if (flag2)
 		{
-			NCreature nCreature2 = list[num2];
-			nCreature2.Position = new Vector2(creatureNode.Position.X - 20f + (float)num2 * num + nCreature2.Visuals.Bounds.Size.X * 0.5f, creatureNode.Position.Y + 10f);
-			nCreature2.ToggleIsInteractable(on: false);
+			if (creature.Monster is Osty)
+			{
+				nCreature.ScaleAndPositionOsty(creature.MaxHp, 0.0);
+				nCreature.GetParent().MoveChildSafely(nCreature, creatureNode.GetIndex());
+				player.Creature.Pets.FirstOrDefault((Creature e) => e.Monster is Wuppy)?.GetCreatureNode()?.PositionWuppy(isCombatStart: false);
+			}
+			if (creature.Monster is Wuppy)
+			{
+				nCreature.PositionWuppy(CombatManager.Instance.IsInProgress);
+			}
 		}
-		if (creatureNode.Position.Y < 199f)
+		else
 		{
-			nCreature.Visuals.Modulate = new Color(0.5f, 0.5f, 0.5f);
+			float num = ((list.Count > 1) ? (creatureNode.Visuals.Bounds.Size.X / (float)(list.Count - 1)) : 0f);
+			for (int num2 = 0; num2 < list.Count; num2++)
+			{
+				NCreature nCreature2 = list[num2];
+				nCreature2.Position = new Vector2(creatureNode.Position.X - 20f + (float)num2 * num + nCreature2.Visuals.Bounds.Size.X * 0.5f, creatureNode.Position.Y + 10f);
+			}
+			if (creatureNode.Position.Y < 199f)
+			{
+				nCreature.Visuals.Modulate = new Color(0.5f, 0.5f, 0.5f);
+			}
 		}
 	}
 
-	public void SetCreatureIsInteractable(Creature? creature, bool on)
-	{
-		GetCreatureNode(creature)?.ToggleIsInteractable(on);
-		UpdateCreatureNavigation();
-	}
-
-	private void UpdateCreatureNavigation()
+	public void UpdateCreatureNavigation()
 	{
 		List<NCreature> list = (from n in _creatureNodes
 			where n.IsInteractable
@@ -940,10 +960,11 @@ public class NCombatRoom : Control, IScreenContext, IRoomWithProceedButton
 		}
 		Mode = CombatRoomMode.ActiveCombat;
 		_visuals = combatRoom;
+		CreatedMsec = Time.GetTicksMsec();
 		foreach (NCreature creatureNode in _creatureNodes)
 		{
-			creatureNode.Hitbox.FocusMode = FocusModeEnum.All;
-			SetCreatureIsInteractable(creatureNode.Entity, on: true);
+			creatureNode.SetIsInteractable(on: true, changeVisibilityImmediately: false);
+			creatureNode.AnimateInStateDisplayForCombatStart();
 		}
 		SubscribeToCombatEvents();
 	}

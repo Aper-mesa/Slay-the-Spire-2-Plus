@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -14,6 +15,13 @@ public sealed class MockTurnEndInHandRecorderCard : MockCardModel
 {
 	/// <summary>Number of times this card's turn-end-in-hand effect has fired since it was last reset.</summary>
 	public static int FireCount { get; set; }
+
+	/// <summary>
+	/// Runs inside the turn-end-in-hand effect, after the count. A test sets it to change the combat from inside the
+	/// effect, for example to tear the combat down while the end-of-turn sequence is between the effect and the move to
+	/// the discard pile.
+	/// </summary>
+	public static Action? OnFire { get; set; }
 
 	public override CardType Type => CardType.Skill;
 
@@ -34,6 +42,7 @@ public sealed class MockTurnEndInHandRecorderCard : MockCardModel
 	protected override Task OnTurnEndInHand(PlayerChoiceContext choiceContext)
 	{
 		FireCount++;
+		OnFire?.Invoke();
 		return Task.CompletedTask;
 	}
 }

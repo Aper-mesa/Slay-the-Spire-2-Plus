@@ -36,7 +36,7 @@ namespace MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 /// TODO: this is very similar to NCardRewardScreen... if we have a 3rd screen set up like this, might be
 /// worth having them inherit from a common class.
 [ScriptPath("res://src/Core/Nodes/Screens/CardSelection/NChooseACardSelectionScreen.cs")]
-public class NChooseACardSelectionScreen : Control, IOverlayScreen, IScreenContext, ICardSelector
+public class NChooseACardSelectionScreen : Control, IOverlayScreen, IScreenContext, ICardSelectionScreen
 {
 	/// <summary>
 	/// Cached StringNames for the methods contained in this class, for fast lookup.

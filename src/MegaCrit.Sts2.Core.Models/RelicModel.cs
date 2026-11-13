@@ -8,10 +8,12 @@ using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Relics;
+using MegaCrit.Sts2.Core.Extensions;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
@@ -108,10 +110,6 @@ public abstract class RelicModel : AbstractModel
 		}
 	}
 
-	/// <summary>
-	/// Get the additional text that this relic should add to the "heal" option at the rest site.
-	/// Returns null for relics that add no additional text.
-	/// </summary>
 	protected LocString? AdditionalRestSiteHealText
 	{
 		get
@@ -204,11 +202,6 @@ public abstract class RelicModel : AbstractModel
 
 	public virtual bool IsAllowedInShops => true;
 
-	/// <summary>
-	/// Get the player that owns this relic.
-	/// Will technically be null on a canonical relic model, but we should never be checking that, so we leave this as
-	/// non-nullable for convenience.
-	/// </summary>
 	public Player Owner
 	{
 		get
@@ -227,32 +220,14 @@ public abstract class RelicModel : AbstractModel
 		}
 	}
 
-	/// <summary>
-	/// Is this a relic with a limited number of uses that have all been used up?
-	///
-	/// Good example: Matryoshka after opening 2 chests.
-	/// Bad example: Strawberry (no "uses", just used immediately upon pickup).
-	/// </summary>
 	public virtual bool IsUsedUp => false;
 
-	/// <summary>
-	/// Does this relic have an "upon pickup" effect? Example: Strawberry.
-	/// </summary>
 	public virtual bool HasUponPickupEffect => false;
 
-	/// <summary>
-	/// Does this relic spawn pets? Example: Byrdpip.
-	/// </summary>
 	public virtual bool SpawnsPets => false;
 
-	/// <summary>
-	/// Can multiple instances of this relic be stacked? Example: Circlet.
-	/// </summary>
 	public virtual bool IsStackable => false;
 
-	/// <summary>
-	/// See the Wax Choker relic for more info on this.
-	/// </summary>
 	[SavedProperty(SerializationCondition.SaveIfNotTypeDefault)]
 	public bool IsWax
 	{
@@ -303,15 +278,15 @@ public abstract class RelicModel : AbstractModel
 
 	public virtual int MerchantCost => Rarity switch
 	{
-		RelicRarity.Common => 175, 
-		RelicRarity.Uncommon => 225, 
-		RelicRarity.Rare => 275, 
-		RelicRarity.Shop => 200, 
-		RelicRarity.Ancient => 999999999, 
-		RelicRarity.Starter => 999999999, 
-		RelicRarity.Event => 999999999, 
-		RelicRarity.None => 1, 
-		_ => throw new InvalidOperationException($"Relic {Id} has invalid merchant rarity {Rarity}."), 
+		RelicRarity.Common => 175,
+		RelicRarity.Uncommon => 225,
+		RelicRarity.Rare => 275,
+		RelicRarity.Shop => 200,
+		RelicRarity.Ancient => 999999999,
+		RelicRarity.Starter => 999999999,
+		RelicRarity.Event => 999999999,
+		RelicRarity.None => 1,
+		_ => throw new InvalidOperationException($"Relic {Id} has invalid merchant rarity {Rarity}."),
 	};
 
 	public int FloorAddedToDeck
@@ -375,10 +350,8 @@ public abstract class RelicModel : AbstractModel
 
 	protected virtual IEnumerable<IHoverTip> ExtraHoverTips => Array.Empty<IHoverTip>();
 
-	/// <summary>
-	/// Returns all extra hovertips, excluding the HoverTip for the relic itself.
-	/// Useful for event options which replicate the relic description exactly in the option description.
-	/// </summary>
+	protected IHoverTip ArrowHoverTip => HoverTipFactory.ForArrow(IsMutable ? _owner : null);
+
 	public IEnumerable<IHoverTip> HoverTipsExcludingRelic => ExtraHoverTips;
 
 	public IEnumerable<IHoverTip> HoverTips
@@ -414,9 +387,6 @@ public abstract class RelicModel : AbstractModel
 		}
 	}
 
-	/// <summary>
-	/// Set to true when this relic is removed from a player's relic inventory (happens very rarely).
-	/// </summary>
 	public bool HasBeenRemovedFromState { get; private set; }
 
 	public override bool ShouldReceiveCombatHooks => true;
@@ -427,32 +397,38 @@ public abstract class RelicModel : AbstractModel
 
 	public event Action? StatusChanged;
 
-	/// <summary>
-	/// Whether or not this relic is allowed to be rolled based on the current game state.
-	/// This will usually just return true, but some relics require special conditions.
-	/// </summary>
-	public virtual bool IsAllowed(IRunState runState)
+	public bool IsAllowed(IRunState runState)
+	{
+		if (runState.GameMode == GameMode.Blitz && RelicLists.notAllowedInBlitz.Contains(Id))
+		{
+			return false;
+		}
+		if (IsLateInAct3(runState) && RelicLists.notAllowedLateInAct3.Contains(Id))
+		{
+			return false;
+		}
+		return IsAllowedInternal(runState);
+	}
+
+	protected virtual bool IsAllowedInternal(IRunState runState)
 	{
 		return true;
 	}
 
-	/// <summary>
-	/// Whether or not this is allowed at Neow. Only applies to Neow relics.
-	/// Doing this because Kaledioscope needs the potential owning player.
-	/// </summary>
 	public virtual bool IsAllowedAtNeow(Player player)
 	{
 		return IsAllowed(player.RunState);
 	}
 
-	/// <summary>
-	/// Helper for relics that should stop spawning at the Act 3 treasure chest or later.
-	/// These relics provide diminishing value late in a run.
-	/// </summary>
-	protected static bool IsBeforeAct3TreasureChest(IRunState runState)
+	protected static bool IsLateInAct3(IRunState runState)
 	{
 		int num = ((runState.Players.Count > 1) ? 38 : 41);
-		return runState.TotalFloor < num;
+		if (runState.GameMode == GameMode.Blitz)
+		{
+			int num2 = BlitzActMap.pointTypes.Length + 2;
+			num = num2 * 2 + ListExtensions.IndexOf(BlitzActMap.pointTypes, MapPointType.Elite) + 2;
+		}
+		return runState.TotalFloor >= num;
 	}
 
 	public void Flash()
@@ -575,9 +551,6 @@ public abstract class RelicModel : AbstractModel
 		return relicModel;
 	}
 
-	/// <summary>
-	/// This should be called when the relic icon changes so the icon paths are uncached.
-	/// </summary>
 	protected void RelicIconChanged()
 	{
 		_resolvedBigIconPath = null;

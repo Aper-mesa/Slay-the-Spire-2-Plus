@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
 using MegaCrit.Sts2.addons.mega_text;
@@ -83,6 +84,11 @@ public class NContinueRunInfo : Control
 		public static readonly StringName _dateLabel = "_dateLabel";
 
 		/// <summary>
+		/// Cached name for the '_goldIcon' field.
+		/// </summary>
+		public static readonly StringName _goldIcon = "_goldIcon";
+
+		/// <summary>
 		/// Cached name for the '_goldLabel' field.
 		/// </summary>
 		public static readonly StringName _goldLabel = "_goldLabel";
@@ -130,6 +136,8 @@ public class NContinueRunInfo : Control
 
 	private MegaRichTextLabel _dateLabel;
 
+	private TextureRect _goldIcon;
+
 	private MegaRichTextLabel _goldLabel;
 
 	private MegaRichTextLabel _healthLabel;
@@ -151,6 +159,7 @@ public class NContinueRunInfo : Control
 		_runInfoContainer = GetNode<VBoxContainer>("%RunInfoContainer");
 		_errorContainer = GetNode<Control>("%ErrorContainer");
 		_dateLabel = GetNode<MegaRichTextLabel>("%DateLabel");
+		_goldIcon = GetNode<TextureRect>("%GoldIcon");
 		_goldLabel = GetNode<MegaRichTextLabel>("%GoldLabel");
 		_healthLabel = GetNode<MegaRichTextLabel>("%HealthLabel");
 		_progressLabel = GetNode<MegaRichTextLabel>("%ProgressLabel");
@@ -162,8 +171,8 @@ public class NContinueRunInfo : Control
 	{
 		_visTween?.Kill();
 		_visTween = CreateTween().SetParallel();
-		_visTween.TweenProperty(this, "position", _initPosition + new Vector2(0f, -20f), 0.20000000298023224).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Back);
-		_visTween.TweenProperty(this, "modulate:a", 1f, 0.20000000298023224);
+		_visTween.TweenProperty(this, "position", _initPosition + new Vector2(0f, -20f), 0.2).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Back);
+		_visTween.TweenProperty(this, "modulate:a", 1f, 0.2);
 		_isShown = true;
 	}
 
@@ -173,8 +182,8 @@ public class NContinueRunInfo : Control
 		{
 			_visTween?.Kill();
 			_visTween = CreateTween().SetParallel();
-			_visTween.TweenProperty(this, "position", _initPosition, 0.20000000298023224);
-			_visTween.TweenProperty(this, "modulate:a", 0f, 0.20000000298023224);
+			_visTween.TweenProperty(this, "position", _initPosition, 0.2);
+			_visTween.TweenProperty(this, "modulate:a", 0f, 0.2);
 			_isShown = false;
 		}
 	}
@@ -210,15 +219,46 @@ public class NContinueRunInfo : Control
 		string variable = dateTime.ToString(rawText, dateTimeFormat);
 		LocString locString = new LocString("main_menu_ui", "CONTINUE_RUN_INFO.saved");
 		locString.Add("LastSavedTime", variable);
-		_dateLabel.Text = locString.GetFormattedText();
-		if (save.Ascension > 0)
+		_dateLabel.SetTextAutoSize(locString.GetFormattedText());
+		if (save.GameMode == GameMode.Dread)
 		{
-			LocString locString2 = new LocString("main_menu_ui", "CONTINUE_RUN_INFO.ascension");
-			_ascensionLabel.Text = $"{locString2.GetFormattedText()} {save.Ascension}";
+			List<string> list = new List<string>();
+			LocString locString2 = new LocString("main_menu_ui", "CONTINUE_RUN_INFO.dread");
+			list.Add("[aqua]" + locString2.GetFormattedText() + "[/aqua]");
+			if (save.IsCustomGame)
+			{
+				list.Add(new LocString("main_menu_ui", "CONTINUE_RUN_INFO.custom").GetFormattedText());
+			}
+			_ascensionLabel.SetTextAutoSize(string.Join(" ", list));
 		}
 		else
 		{
-			_ascensionLabel.Visible = false;
+			List<string> list2 = new List<string>();
+			GameMode gameMode = save.GameMode;
+			if ((gameMode == GameMode.Daily || gameMode == GameMode.Blitz) ? true : false)
+			{
+				GameMode gameMode2 = save.GameMode;
+				string text = ((gameMode2 != GameMode.Daily) ? "CONTINUE_RUN_INFO.blitz" : "CONTINUE_RUN_INFO.daily");
+				string locEntryKey = text;
+				list2.Add(new LocString("main_menu_ui", locEntryKey).GetFormattedText());
+			}
+			if (save.IsCustomGame)
+			{
+				list2.Add(new LocString("main_menu_ui", "CONTINUE_RUN_INFO.custom").GetFormattedText());
+			}
+			if (save.Ascension > 0)
+			{
+				LocString locString3 = new LocString("main_menu_ui", "CONTINUE_RUN_INFO.ascension");
+				list2.Add($"[orange]{locString3.GetFormattedText()} {save.Ascension}[/orange]");
+			}
+			if (list2.Count > 0)
+			{
+				_ascensionLabel.SetTextAutoSize(string.Join(" ", list2));
+			}
+			else
+			{
+				_ascensionLabel.Visible = false;
+			}
 		}
 		ActModel byId = ModelDb.GetById<ActModel>(save.Acts[save.CurrentActIndex].Id);
 		SerializablePlayer serializablePlayer = save.Players[0];
@@ -228,11 +268,17 @@ public class NContinueRunInfo : Control
 		int num = save.VisitedMapCoords.Count;
 		for (int i = 0; i < save.CurrentActIndex; i++)
 		{
-			num += ModelDb.GetById<ActModel>(save.Acts[i].Id).GetNumberOfFloors(save.Players.Count > 1);
+			num += save.MapPointHistory[i].Count;
 		}
-		_progressLabel.Text = $"{formattedText} [blue]- {formattedText2} {num}[/blue]";
-		_healthLabel.Text = $"[red]{serializablePlayer.CurrentHp}/{serializablePlayer.MaxHp}[/red]";
-		_goldLabel.Text = $"[gold]{serializablePlayer.Gold}[/gold]";
+		_progressLabel.SetTextAutoSize($"{formattedText} [blue]- {formattedText2} {num}[/blue]");
+		_healthLabel.SetTextAutoSize($"[red]{serializablePlayer.CurrentHp}/{serializablePlayer.MaxHp}[/red]");
+		bool flag = save.GameMode != GameMode.Blitz;
+		_goldIcon.Visible = flag;
+		_goldLabel.Visible = flag;
+		if (flag)
+		{
+			_goldLabel.SetTextAutoSize($"[gold]{serializablePlayer.Gold}[/gold]");
+		}
 	}
 
 	private void ShowError()
@@ -345,6 +391,11 @@ public class NContinueRunInfo : Control
 			_dateLabel = VariantUtils.ConvertTo<MegaRichTextLabel>(in value);
 			return true;
 		}
+		if (name == PropertyName._goldIcon)
+		{
+			_goldIcon = VariantUtils.ConvertTo<TextureRect>(in value);
+			return true;
+		}
 		if (name == PropertyName._goldLabel)
 		{
 			_goldLabel = VariantUtils.ConvertTo<MegaRichTextLabel>(in value);
@@ -412,6 +463,11 @@ public class NContinueRunInfo : Control
 			value = VariantUtils.CreateFrom(in _dateLabel);
 			return true;
 		}
+		if (name == PropertyName._goldIcon)
+		{
+			value = VariantUtils.CreateFrom(in _goldIcon);
+			return true;
+		}
 		if (name == PropertyName._goldLabel)
 		{
 			value = VariantUtils.CreateFrom(in _goldLabel);
@@ -459,6 +515,7 @@ public class NContinueRunInfo : Control
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._runInfoContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._errorContainer, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._dateLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._goldIcon, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._goldLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._healthLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._progressLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -480,6 +537,7 @@ public class NContinueRunInfo : Control
 		info.AddProperty(PropertyName._runInfoContainer, Variant.From(in _runInfoContainer));
 		info.AddProperty(PropertyName._errorContainer, Variant.From(in _errorContainer));
 		info.AddProperty(PropertyName._dateLabel, Variant.From(in _dateLabel));
+		info.AddProperty(PropertyName._goldIcon, Variant.From(in _goldIcon));
 		info.AddProperty(PropertyName._goldLabel, Variant.From(in _goldLabel));
 		info.AddProperty(PropertyName._healthLabel, Variant.From(in _healthLabel));
 		info.AddProperty(PropertyName._progressLabel, Variant.From(in _progressLabel));
@@ -517,29 +575,33 @@ public class NContinueRunInfo : Control
 		{
 			_dateLabel = value6.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._goldLabel, out var value7))
+		if (info.TryGetProperty(PropertyName._goldIcon, out var value7))
 		{
-			_goldLabel = value7.As<MegaRichTextLabel>();
+			_goldIcon = value7.As<TextureRect>();
 		}
-		if (info.TryGetProperty(PropertyName._healthLabel, out var value8))
+		if (info.TryGetProperty(PropertyName._goldLabel, out var value8))
 		{
-			_healthLabel = value8.As<MegaRichTextLabel>();
+			_goldLabel = value8.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._progressLabel, out var value9))
+		if (info.TryGetProperty(PropertyName._healthLabel, out var value9))
 		{
-			_progressLabel = value9.As<MegaRichTextLabel>();
+			_healthLabel = value9.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._ascensionLabel, out var value10))
+		if (info.TryGetProperty(PropertyName._progressLabel, out var value10))
 		{
-			_ascensionLabel = value10.As<MegaRichTextLabel>();
+			_progressLabel = value10.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._charIcon, out var value11))
+		if (info.TryGetProperty(PropertyName._ascensionLabel, out var value11))
 		{
-			_charIcon = value11.As<TextureRect>();
+			_ascensionLabel = value11.As<MegaRichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._isShown, out var value12))
+		if (info.TryGetProperty(PropertyName._charIcon, out var value12))
 		{
-			_isShown = value12.As<bool>();
+			_charIcon = value12.As<TextureRect>();
+		}
+		if (info.TryGetProperty(PropertyName._isShown, out var value13))
+		{
+			_isShown = value13.As<bool>();
 		}
 	}
 }

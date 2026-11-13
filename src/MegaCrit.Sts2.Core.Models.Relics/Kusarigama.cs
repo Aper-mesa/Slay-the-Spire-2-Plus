@@ -133,6 +133,7 @@ public sealed class Kusarigama : RelicModel
 	{
 		Status = RelicStatus.Normal;
 		IsActivating = false;
+		AttacksPlayedThisTurn = 0;
 		return Task.CompletedTask;
 	}
 }

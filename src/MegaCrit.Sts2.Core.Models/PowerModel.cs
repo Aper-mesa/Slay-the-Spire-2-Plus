@@ -12,7 +12,6 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models.Singleton;
 using MegaCrit.Sts2.Core.Platform;
 using MegaCrit.Sts2.Core.Runs;
 
@@ -50,10 +49,6 @@ public abstract class PowerModel : AbstractModel
 
 	public virtual LocString Description => new LocString("powers", Id.Entry + ".description");
 
-	/// <summary>
-	/// NOTE: Unlike other models' DynamicDescription, this doesn't include any variables. Someone should probably do that
-	/// but it's a bit larger of a refactor than I want to do right now
-	/// </summary>
 	public LocString SmartDescription
 	{
 		get
@@ -143,10 +138,6 @@ public abstract class PowerModel : AbstractModel
 
 	public virtual PowerInstanceType InstanceType => PowerInstanceType.None;
 
-	/// <summary>
-	/// Should this power be visible?
-	/// Don't make this virtual, use <see cref="P:MegaCrit.Sts2.Core.Models.PowerModel.IsVisibleInternal" /> instead if you need to override.
-	/// </summary>
 	public bool IsVisible
 	{
 		get
@@ -159,18 +150,8 @@ public abstract class PowerModel : AbstractModel
 		}
 	}
 
-	/// <summary>
-	/// Should this power be visible?
-	/// Usually true, but overridden to false for powers that want to stay hidden and perform extra logic behind the
-	/// scenes.
-	/// </summary>
 	protected virtual bool IsVisibleInternal => true;
 
-	/// <summary>
-	/// Should this power play VFX when applied/removed/flashed?
-	/// Usually true for visible powers, but overridden to false for powers that don't want to be so "loud", like Osty's
-	/// Die For You power.
-	/// </summary>
 	public virtual bool ShouldPlayVfx
 	{
 		get
@@ -196,12 +177,6 @@ public abstract class PowerModel : AbstractModel
 		}
 	}
 
-	/// <summary>
-	/// The amount this power had at the beginning of the current turn.
-	/// Updated at the very start of each turn before any hooks run.
-	/// Useful for powers that should only trigger if they were present at turn start,
-	/// preventing same-turn activation when applied mid-turn (e.g., via auto-play effects).
-	/// </summary>
 	public int AmountOnTurnStart
 	{
 		get
@@ -217,10 +192,6 @@ public abstract class PowerModel : AbstractModel
 
 	public virtual int DisplayAmount => Amount;
 
-	/// <summary>
-	/// The color to use for this power's Amount label.
-	/// Usually red for debuffs and cream for all other powers, but can be overridden for special cases.
-	/// </summary>
 	public virtual Color AmountLabelColor
 	{
 		get
@@ -239,10 +210,6 @@ public abstract class PowerModel : AbstractModel
 
 	public PowerType TypeForCurrentAmount => GetTypeForAmount(Amount);
 
-	/// <summary>
-	/// This enables the behavior of duration-type powers (Vulnerable, Weak, etc.) ticking down at the end of the
-	/// monster side turn, but skipping the first tick if a monster applied the power to the player.
-	/// </summary>
 	public bool SkipNextDurationTick
 	{
 		get
@@ -256,11 +223,6 @@ public abstract class PowerModel : AbstractModel
 		}
 	}
 
-	/// <summary>
-	/// Get the Creature that this power is on.
-	/// Will technically be null on a canonical power model, but we should never be checking that, so we leave this as
-	/// non-nullable for convenience.
-	/// </summary>
 	public Creature Owner
 	{
 		get
@@ -279,11 +241,6 @@ public abstract class PowerModel : AbstractModel
 		}
 	}
 
-	/// <summary>
-	/// The CombatState that this power's owner exists in.
-	/// Will technically be null on a canonical power model, but we should never be checking that, so we leave this as
-	/// non-nullable for convenience.
-	/// </summary>
 	public ICombatState CombatState => Owner.CombatState;
 
 	public Creature? Applier
@@ -299,10 +256,6 @@ public abstract class PowerModel : AbstractModel
 		}
 	}
 
-	/// <summary>
-	/// Get the Creature that this power targets.
-	/// For most powers, this is null. It is used on instanced powers that each target a player in multiplayer.
-	/// </summary>
 	public Creature? Target
 	{
 		get
@@ -316,12 +269,6 @@ public abstract class PowerModel : AbstractModel
 		}
 	}
 
-	/// <summary>
-	/// "Public" data about this power.
-	/// These data are visible everywhere else in the game. They can be displayed in localization entries, read/written
-	/// by other callers, and if you clone this power, all these vars will be cloned along with it.
-	/// If you have "private" data that should be invisible to the rest of the game, use <see cref="F:MegaCrit.Sts2.Core.Models.PowerModel._internalData" />.
-	/// </summary>
 	public DynamicVarSet DynamicVars
 	{
 		get
@@ -336,9 +283,6 @@ public abstract class PowerModel : AbstractModel
 		}
 	}
 
-	/// <summary>
-	/// If set to true, this power's amount will automatically be multiplied by the player count when applied.
-	/// </summary>
 	public virtual bool ShouldScaleInMultiplayer => false;
 
 	protected virtual IEnumerable<DynamicVar> CanonicalVars => Array.Empty<DynamicVar>();
@@ -429,10 +373,6 @@ public abstract class PowerModel : AbstractModel
 
 	public override bool ShouldReceiveCombatHooks => true;
 
-	/// <summary>
-	/// Hook that allows this power to classify the enemy as primary or secondary.
-	/// See <see cref="P:MegaCrit.Sts2.Core.Entities.Creatures.Creature.IsPrimaryEnemy" /> for detailed definitions.
-	/// </summary>
 	public virtual bool OwnerIsSecondaryEnemy => false;
 
 	public event Action? PulsingStarted;
@@ -478,11 +418,6 @@ public abstract class PowerModel : AbstractModel
 		return Type;
 	}
 
-	/// <summary>
-	/// Should this power be removed from its owner due to an amount change?
-	/// Most powers are removed when they go below 0.
-	/// Powers that allow negative amounts (Strength, DexterityPower, etc.) should be removed when they reach exactly 0.
-	/// </summary>
 	public bool ShouldRemoveDueToAmount()
 	{
 		if (AllowNegative || Amount > 0)
@@ -496,38 +431,16 @@ public abstract class PowerModel : AbstractModel
 		return true;
 	}
 
-	/// <summary>
-	/// If ShouldScaleInMultiplayer is true, this will be called before the power is applied to any enemies.
-	/// Unless overridden, it applies a default scaling based on the number of players and
-	/// <see cref="M:MegaCrit.Sts2.Core.Models.Singleton.MultiplayerScalingModel.GetMultiplayerScaling(MegaCrit.Sts2.Core.Models.EncounterModel,System.Int32)" />.
-	/// Be sure to use the passed combat state rather than CombatState, as it will not be set in time.
-	/// </summary>
-	/// <param name="combatState">The combat state which will own the power.</param>
-	/// <param name="applier">The creature applying the power.</param>
-	/// <param name="amount">The amount of the power that is being applied.</param>
-	/// <param name="target">The target receiving the power.</param>
-	/// <param name="cardSource">The card applying the power, if any.</param>
-	/// <returns>The modified amount to apply.</returns>
 	public virtual decimal GetScaledAmountForMultiplayer(ICombatState combatState, Creature? applier, decimal amount, Creature target, CardModel? cardSource)
 	{
 		return amount * (decimal)combatState.Players.Count * MultiplayerScalingModel.GetMultiplayerScaling(combatState.Encounter, combatState.RunState.CurrentActIndex);
 	}
 
-	/// <summary>
-	/// Initialize any internal data used by this power.
-	/// </summary>
-	/// <returns></returns>
 	protected virtual object? InitInternalData()
 	{
 		return null;
 	}
 
-	/// <summary>
-	/// "Private" data that lives behind-the-scenes to make this power work as expected.
-	/// These data are isolated to this instance of the power. They cannot be displayed in localization entries, and
-	/// they will be reset on clones of this power.
-	/// If you want to set data that is meant to be cloned and displayed in localization, use <see cref="P:MegaCrit.Sts2.Core.Models.PowerModel.DynamicVars" />.
-	/// </summary>
 	protected T GetInternalData<T>()
 	{
 		return (T)_internalData;
@@ -542,9 +455,15 @@ public abstract class PowerModel : AbstractModel
 
 	private void AddDumbVariablesToDescription(LocString description, int? amountOverride = null)
 	{
-		description.Add("Amount", amountOverride ?? Amount);
+		int num = amountOverride ?? (IsCanonical ? 1 : Amount);
+		description.Add("Amount", num);
 		description.Add("singleStarIcon", "[img]res://images/packed/sprite_fonts/star_icon.png[/img]");
 		description.Add("energyPrefix", EnergyIconHelper.GetPrefix(this));
+	}
+
+	public IEnumerable<IHoverTip> GetExtraHoverTips()
+	{
+		return ExtraHoverTips;
 	}
 
 	public void SetAmount(int amount, bool silent = false)
@@ -605,52 +524,26 @@ public abstract class PowerModel : AbstractModel
 		_owner = null;
 	}
 
-	/// <summary>
-	/// Hook that runs just before this power is first applied to its owner.
-	/// Does not run if the owner already has this power, and its amount was just changed.
-	/// </summary>
-	/// <param name="target">The creature to which this power is about to be applied.</param>
-	/// <param name="amount">The amount of the power that is about to be applied.</param>
-	/// <param name="applier">The creature that applied the power, if any.</param>
-	/// <param name="cardSource">The card that applied the power, if any.</param>
 	public virtual Task BeforeApplied(Creature target, decimal amount, Creature? applier, CardModel? cardSource)
 	{
 		return Task.CompletedTask;
 	}
 
-	/// <summary>
-	/// Hook that runs after this power is first applied to its owner.
-	/// Does not run if the owner already has this power, and its amount was just changed.
-	/// </summary>
-	/// <param name="applier"></param>
-	/// <param name="cardSource"></param>
 	public virtual Task AfterApplied(Creature? applier, CardModel? cardSource)
 	{
 		return Task.CompletedTask;
 	}
 
-	/// <summary>
-	/// Hook that runs after this power is removed from its owner.
-	/// <param name="oldOwner">The owner of this power before it was removed.</param>
-	/// </summary>
 	public virtual Task AfterRemoved(Creature oldOwner)
 	{
 		return Task.CompletedTask;
 	}
 
-	/// <summary>
-	/// Should this power be removed after its owner dies?
-	/// Usually true, but false for powers that do things like revive their owner.
-	/// </summary>
 	public virtual bool ShouldPowerBeRemovedAfterOwnerDeath()
 	{
 		return true;
 	}
 
-	/// <summary>
-	/// Should this power's owner's death trigger effects with the Fatal keyword like <see cref="T:MegaCrit.Sts2.Core.Models.Cards.Feed" />?
-	/// Usually true, but false for <see cref="T:MegaCrit.Sts2.Core.Models.Powers.MinionPower" /> and a few other powers.
-	/// </summary>
 	public virtual bool ShouldOwnerDeathTriggerFatal()
 	{
 		return true;

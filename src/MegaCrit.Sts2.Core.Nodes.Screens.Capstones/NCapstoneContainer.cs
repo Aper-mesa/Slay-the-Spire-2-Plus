@@ -276,7 +276,7 @@ public class NCapstoneContainer : Control
 		{
 			if (ActiveScreenContext.Instance.IsCurrent(CurrentCapstoneScreen))
 			{
-				FocusBehaviorRecursive = FocusBehaviorRecursiveEnum.Enabled;
+				FocusBehaviorRecursive = FocusBehaviorRecursiveEnum.Inherited;
 			}
 			else
 			{

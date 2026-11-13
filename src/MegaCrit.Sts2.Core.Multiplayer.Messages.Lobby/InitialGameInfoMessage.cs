@@ -2,7 +2,6 @@ using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Multiplayer.Transport;
-using MegaCrit.Sts2.Core.Runs;
 
 namespace MegaCrit.Sts2.Core.Multiplayer.Messages.Lobby;
 
@@ -15,11 +14,6 @@ public struct InitialGameInfoMessage : INetMessage, IPacketSerializable
 	/// What state the run is currently in.
 	/// </summary>
 	public RunSessionState sessionState;
-
-	/// <summary>
-	/// What kind of run this is (standard, daily, custom).
-	/// </summary>
-	public GameMode gameMode;
 
 	/// <summary>
 	/// If the host is about to disconnect the client, why.
@@ -37,7 +31,6 @@ public struct InitialGameInfoMessage : INetMessage, IPacketSerializable
 	public void Serialize(PacketWriter writer)
 	{
 		writer.WriteEnum(sessionState);
-		writer.WriteEnum(gameMode);
 		writer.WriteBool(connectionFailureReason.HasValue);
 		if (connectionFailureReason.HasValue)
 		{
@@ -48,7 +41,6 @@ public struct InitialGameInfoMessage : INetMessage, IPacketSerializable
 	public void Deserialize(PacketReader reader)
 	{
 		sessionState = reader.ReadEnum<RunSessionState>();
-		gameMode = reader.ReadEnum<GameMode>();
 		if (reader.ReadBool())
 		{
 			connectionFailureReason = reader.ReadEnum<ConnectionFailureReason>();

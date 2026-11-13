@@ -14,9 +14,22 @@ public class DamageResult
 	public Creature Receiver { get; }
 
 	/// <summary>
+	/// The creature that was originally supposed to receive damage.
+	/// In almost all cases, this is the same as <see cref="P:MegaCrit.Sts2.Core.Entities.Creatures.DamageResult.Receiver" />, but Osty or Wuppy may take the original
+	/// target's place, and the original target is stored here.
+	/// </summary>
+	public Creature OriginalTarget { get; set; }
+
+	/// <summary>
 	/// The value props of the damage that was dealt.
 	/// </summary>
 	public ValueProp Props { get; }
+
+	/// <summary>
+	/// The amount of damage that the attacker intended to do to the target's HP.
+	/// This is set AFTER block absorption, but BEFORE ModifyHpLost.
+	/// </summary>
+	public int IntendedHpLoss { get; set; }
 
 	/// <summary>
 	/// The amount of damage that was blocked by the target.
@@ -101,6 +114,7 @@ public class DamageResult
 	public DamageResult(Creature receiver, ValueProp props)
 	{
 		Receiver = receiver;
+		OriginalTarget = receiver;
 		Props = props;
 	}
 }

@@ -7,6 +7,7 @@ using Godot;
 using Godot.Bridge;
 using Godot.NativeInterop;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.Entities.Merchant;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Models;
@@ -40,6 +41,11 @@ public class NMapPointHistoryHoverTip : MarginContainer
 	public new class PropertyName : MarginContainer.PropertyName
 	{
 		/// <summary>
+		/// Cached name for the 'ShowGold' property.
+		/// </summary>
+		public static readonly StringName ShowGold = "ShowGold";
+
+		/// <summary>
 		/// Cached name for the '_floorNum' field.
 		/// </summary>
 		public static readonly StringName _floorNum = "_floorNum";
@@ -48,6 +54,11 @@ public class NMapPointHistoryHoverTip : MarginContainer
 		/// Cached name for the '_playerId' field.
 		/// </summary>
 		public static readonly StringName _playerId = "_playerId";
+
+		/// <summary>
+		/// Cached name for the '_gameMode' field.
+		/// </summary>
+		public static readonly StringName _gameMode = "_gameMode";
 
 		/// <summary>
 		/// Cached name for the '_titleLabel' field.
@@ -90,6 +101,8 @@ public class NMapPointHistoryHoverTip : MarginContainer
 	private readonly LocString _mapPointRoomStatsLoc = new LocString("run_history", "MAP_POINT_HISTORY.room_stats");
 
 	private readonly LocString _mapPointPlayerStatsLoc = new LocString("run_history", "MAP_POINT_HISTORY.player_stats");
+
+	private readonly LocString _mapPointPlayerStatsNoGoldLoc = new LocString("run_history", "MAP_POINT_HISTORY.player_stats_no_gold");
 
 	private readonly LocString _combatStats = new LocString("run_history", "MAP_POINT_HISTORY.combatStats");
 
@@ -153,6 +166,8 @@ public class NMapPointHistoryHoverTip : MarginContainer
 
 	private ulong _playerId;
 
+	private GameMode _gameMode;
+
 	private MegaLabel _titleLabel;
 
 	private RichTextLabel _playerStats;
@@ -171,12 +186,18 @@ public class NMapPointHistoryHoverTip : MarginContainer
 
 	public static IEnumerable<string> AssetPaths => new _003C_003Ez__ReadOnlySingleElementList<string>("res://scenes/ui/map_point_history_hover_tip.tscn");
 
-	public static NMapPointHistoryHoverTip Create(int floorNum, ulong playerId, MapPointHistoryEntry historyEntry)
+	/// <summary>
+	/// Blitz has no gold, so a tip for a Blitz run reports none of it.
+	/// </summary>
+	private bool ShowGold => _gameMode != GameMode.Blitz;
+
+	public static NMapPointHistoryHoverTip Create(int floorNum, ulong playerId, MapPointHistoryEntry historyEntry, GameMode gameMode)
 	{
 		NMapPointHistoryHoverTip nMapPointHistoryHoverTip = PreloadManager.Cache.GetScene("res://scenes/ui/map_point_history_hover_tip.tscn").Instantiate<NMapPointHistoryHoverTip>(PackedScene.GenEditState.Disabled);
 		nMapPointHistoryHoverTip._entry = historyEntry;
 		nMapPointHistoryHoverTip._floorNum = floorNum;
 		nMapPointHistoryHoverTip._playerId = playerId;
+		nMapPointHistoryHoverTip._gameMode = gameMode;
 		return nMapPointHistoryHoverTip;
 	}
 
@@ -196,25 +217,25 @@ public class NMapPointHistoryHoverTip : MarginContainer
 		_titleLabel.SetTextAutoSize(_floorTitle.GetFormattedText());
 		string text = _entry.MapPointType switch
 		{
-			MapPointType.Shop => "ROOM_MERCHANT", 
-			MapPointType.Treasure => "ROOM_TREASURE", 
-			MapPointType.RestSite => "ROOM_REST", 
-			MapPointType.Monster => "ROOM_ENEMY", 
-			MapPointType.Elite => "ROOM_ELITE", 
-			MapPointType.Boss => "ROOM_BOSS", 
-			MapPointType.Ancient => "ROOM_ANCIENT", 
-			_ => null, 
+			MapPointType.Shop => "ROOM_MERCHANT",
+			MapPointType.Treasure => "ROOM_TREASURE",
+			MapPointType.RestSite => "ROOM_REST",
+			MapPointType.Monster => "ROOM_ENEMY",
+			MapPointType.Elite => "ROOM_ELITE",
+			MapPointType.Boss => "ROOM_BOSS",
+			MapPointType.Ancient => "ROOM_ANCIENT",
+			_ => null,
 		};
 		if (_entry.MapPointType == MapPointType.Unknown)
 		{
 			text = _entry.Rooms.First().RoomType switch
 			{
-				RoomType.Monster => "ROOM_UNKNOWN_ENEMY", 
-				RoomType.Treasure => "ROOM_UNKNOWN_TREASURE", 
-				RoomType.Shop => "ROOM_UNKNOWN_MERCHANT", 
-				RoomType.Elite => "ROOM_UNKNOWN_ELITE", 
-				RoomType.Event => "ROOM_EVENT", 
-				_ => null, 
+				RoomType.Monster => "ROOM_UNKNOWN_ENEMY",
+				RoomType.Treasure => "ROOM_UNKNOWN_TREASURE",
+				RoomType.Shop => "ROOM_UNKNOWN_MERCHANT",
+				RoomType.Elite => "ROOM_UNKNOWN_ELITE",
+				RoomType.Event => "ROOM_EVENT",
+				_ => null,
 			};
 		}
 		_mapPointRoomStatsLoc.Add("MapPointType", new LocString("static_hover_tips", text + ".title"));
@@ -238,10 +259,14 @@ public class NMapPointHistoryHoverTip : MarginContainer
 		{
 			throw new InvalidOperationException($"Player with ID {_playerId} not found in player stats for this run history!");
 		}
-		_mapPointPlayerStatsLoc.Add("HP", playerMapPointHistoryEntry.CurrentHp);
-		_mapPointPlayerStatsLoc.Add("MaxHP", playerMapPointHistoryEntry.MaxHp);
-		_mapPointPlayerStatsLoc.Add("Gold", playerMapPointHistoryEntry.CurrentGold);
-		_playerStats.Text = _mapPointPlayerStatsLoc.GetFormattedText();
+		LocString locString = (ShowGold ? _mapPointPlayerStatsLoc : _mapPointPlayerStatsNoGoldLoc);
+		locString.Add("HP", playerMapPointHistoryEntry.CurrentHp);
+		locString.Add("MaxHP", playerMapPointHistoryEntry.MaxHp);
+		if (ShowGold)
+		{
+			locString.Add("Gold", playerMapPointHistoryEntry.CurrentGold);
+		}
+		_playerStats.Text = locString.GetFormattedText();
 		PopulateActionStats(playerMapPointHistoryEntry);
 		PopulateRewardAndSkippedEntries(playerMapPointHistoryEntry);
 	}
@@ -413,7 +438,7 @@ public class NMapPointHistoryHoverTip : MarginContainer
 			handler.AppendLiteral("\n");
 			stringBuilder15.Append(ref handler);
 		}
-		if (playerEntry.GoldSpent > 0)
+		if (ShowGold && playerEntry.GoldSpent > 0)
 		{
 			_goldSpent.Add("Amount", playerEntry.GoldSpent);
 			StringBuilder stringBuilder2 = stringBuilder;
@@ -423,7 +448,7 @@ public class NMapPointHistoryHoverTip : MarginContainer
 			handler.AppendLiteral("\n");
 			stringBuilder16.Append(ref handler);
 		}
-		if (playerEntry.GoldLost > 0)
+		if (ShowGold && playerEntry.GoldLost > 0)
 		{
 			_goldLost.Add("Amount", playerEntry.GoldLost);
 			StringBuilder stringBuilder2 = stringBuilder;
@@ -433,7 +458,7 @@ public class NMapPointHistoryHoverTip : MarginContainer
 			handler.AppendLiteral("\n");
 			stringBuilder17.Append(ref handler);
 		}
-		if (playerEntry.GoldStolen > 0)
+		if (ShowGold && playerEntry.GoldStolen > 0)
 		{
 			_goldStolen.Add("Icon", "[img=top]res://images/packed/sprite_fonts/gold_icon.png[/img]");
 			_goldStolen.Add("Amount", playerEntry.GoldStolen);
@@ -451,11 +476,24 @@ public class NMapPointHistoryHoverTip : MarginContainer
 	{
 		List<string> list = new List<string>();
 		List<string> list2 = new List<string>();
-		if (playerEntry.GoldGained > 0)
+		if (ShowGold && playerEntry.GoldGained > 0)
 		{
 			_goldGained.Add("Icon", "[img=top]res://images/packed/sprite_fonts/gold_icon.png[/img]");
 			_goldGained.Add("Amount", playerEntry.GoldGained);
 			list.Add(_goldGained.GetFormattedText());
+		}
+		foreach (BlitzMerchantHistoryEntry blitzMerchantChoice in playerEntry.BlitzMerchantChoices)
+		{
+			_obtained.Add("Icon", "[img=top]res://images/packed/sprite_fonts/gold_icon.png[/img]");
+			_obtained.Add("Title", BlitzMerchantEntry.GetTitleForHistory(blitzMerchantChoice));
+			if (blitzMerchantChoice.wasPicked)
+			{
+				list.Add(_obtained.GetFormattedText());
+			}
+			else
+			{
+				list2.Add(_obtained.GetFormattedText());
+			}
 		}
 		foreach (SerializableCard item in playerEntry.CardsGained)
 		{
@@ -536,7 +574,7 @@ public class NMapPointHistoryHoverTip : MarginContainer
 			_transformed.Add("Title2", CardModel.FromSerializable(item5.FinalCard).Title);
 			list.Add(_transformed.GetFormattedText() ?? "");
 		}
-		int num = Mathf.Max(5, Mathf.CeilToInt((float)list.Count / 2f));
+		int num = Mathf.Max(5, Mathf.CeilToInt((float)list.Count * 0.5f));
 		_rewardRows[1].Visible = list.Count > 5;
 		_rewardStatsContainer.Visible = list.Count > 0;
 		for (int i = 0; i < list.Count; i++)
@@ -544,7 +582,7 @@ public class NMapPointHistoryHoverTip : MarginContainer
 			RichTextLabel richTextLabel = _rewardRows[i / num];
 			richTextLabel.Text = richTextLabel.Text + "\t" + list[i] + "\n";
 		}
-		int num2 = Mathf.Max(5, Mathf.CeilToInt((float)list2.Count / 2f));
+		int num2 = Mathf.Max(5, Mathf.CeilToInt((float)list2.Count * 0.5f));
 		_skippedRows[1].Visible = list2.Count > 5;
 		_skippedStatsContainer.Visible = list2.Count > 0;
 		for (int j = 0; j < list2.Count; j++)
@@ -613,6 +651,11 @@ public class NMapPointHistoryHoverTip : MarginContainer
 			_playerId = VariantUtils.ConvertTo<ulong>(in value);
 			return true;
 		}
+		if (name == PropertyName._gameMode)
+		{
+			_gameMode = VariantUtils.ConvertTo<GameMode>(in value);
+			return true;
+		}
 		if (name == PropertyName._titleLabel)
 		{
 			_titleLabel = VariantUtils.ConvertTo<MegaLabel>(in value);
@@ -650,6 +693,11 @@ public class NMapPointHistoryHoverTip : MarginContainer
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	protected override bool GetGodotClassPropertyValue(in godot_string_name name, out godot_variant value)
 	{
+		if (name == PropertyName.ShowGold)
+		{
+			value = VariantUtils.CreateFrom<bool>(ShowGold);
+			return true;
+		}
 		if (name == PropertyName._floorNum)
 		{
 			value = VariantUtils.CreateFrom(in _floorNum);
@@ -658,6 +706,11 @@ public class NMapPointHistoryHoverTip : MarginContainer
 		if (name == PropertyName._playerId)
 		{
 			value = VariantUtils.CreateFrom(in _playerId);
+			return true;
+		}
+		if (name == PropertyName._gameMode)
+		{
+			value = VariantUtils.CreateFrom(in _gameMode);
 			return true;
 		}
 		if (name == PropertyName._titleLabel)
@@ -704,6 +757,8 @@ public class NMapPointHistoryHoverTip : MarginContainer
 		List<PropertyInfo> list = new List<PropertyInfo>();
 		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._floorNum, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._playerId, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Int, PropertyName._gameMode, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
+		list.Add(new PropertyInfo(Variant.Type.Bool, PropertyName.ShowGold, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._titleLabel, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._playerStats, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
 		list.Add(new PropertyInfo(Variant.Type.Object, PropertyName._roomStats, PropertyHint.None, "", PropertyUsageFlags.ScriptVariable, exported: false));
@@ -720,6 +775,7 @@ public class NMapPointHistoryHoverTip : MarginContainer
 		base.SaveGodotObjectData(info);
 		info.AddProperty(PropertyName._floorNum, Variant.From(in _floorNum));
 		info.AddProperty(PropertyName._playerId, Variant.From(in _playerId));
+		info.AddProperty(PropertyName._gameMode, Variant.From(in _gameMode));
 		info.AddProperty(PropertyName._titleLabel, Variant.From(in _titleLabel));
 		info.AddProperty(PropertyName._playerStats, Variant.From(in _playerStats));
 		info.AddProperty(PropertyName._roomStats, Variant.From(in _roomStats));
@@ -741,29 +797,33 @@ public class NMapPointHistoryHoverTip : MarginContainer
 		{
 			_playerId = value2.As<ulong>();
 		}
-		if (info.TryGetProperty(PropertyName._titleLabel, out var value3))
+		if (info.TryGetProperty(PropertyName._gameMode, out var value3))
 		{
-			_titleLabel = value3.As<MegaLabel>();
+			_gameMode = value3.As<GameMode>();
 		}
-		if (info.TryGetProperty(PropertyName._playerStats, out var value4))
+		if (info.TryGetProperty(PropertyName._titleLabel, out var value4))
 		{
-			_playerStats = value4.As<RichTextLabel>();
+			_titleLabel = value4.As<MegaLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._roomStats, out var value5))
+		if (info.TryGetProperty(PropertyName._playerStats, out var value5))
 		{
-			_roomStats = value5.As<RichTextLabel>();
+			_playerStats = value5.As<RichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._rewardStatsContainer, out var value6))
+		if (info.TryGetProperty(PropertyName._roomStats, out var value6))
 		{
-			_rewardStatsContainer = value6.As<Control>();
+			_roomStats = value6.As<RichTextLabel>();
 		}
-		if (info.TryGetProperty(PropertyName._skippedStatsContainer, out var value7))
+		if (info.TryGetProperty(PropertyName._rewardStatsContainer, out var value7))
 		{
-			_skippedStatsContainer = value7.As<Control>();
+			_rewardStatsContainer = value7.As<Control>();
 		}
-		if (info.TryGetProperty(PropertyName._actionStats, out var value8))
+		if (info.TryGetProperty(PropertyName._skippedStatsContainer, out var value8))
 		{
-			_actionStats = value8.As<RichTextLabel>();
+			_skippedStatsContainer = value8.As<Control>();
+		}
+		if (info.TryGetProperty(PropertyName._actionStats, out var value9))
+		{
+			_actionStats = value9.As<RichTextLabel>();
 		}
 	}
 }

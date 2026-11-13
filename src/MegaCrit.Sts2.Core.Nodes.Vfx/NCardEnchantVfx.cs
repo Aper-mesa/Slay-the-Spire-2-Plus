@@ -156,7 +156,7 @@ public class NCardEnchantVfx : Node2D
 		_tween.TweenProperty(_cardNode.EnchantmentVfxOverride, "material:shader_parameter/progress", 1f, 1.0).SetEase(Tween.EaseType.InOut).SetTrans(Tween.TransitionType.Quad);
 		_tween.Parallel().TweenCallback(Callable.From(() => _enchantmentSparkles.Emitting = true)).SetDelay(0.20000000298023224);
 		_tween.Parallel().TweenProperty(_enchantmentSparkles, "position:x", _enchantmentSparkles.Position.X + 72f, 0.4000000059604645).SetDelay(0.20000000298023224);
-		if (!(await _tween.AwaitFinished(this)))
+		if (await _tween.AwaitFinished(this) != TweenOutcome.Finished)
 		{
 			return;
 		}
@@ -166,7 +166,7 @@ public class NCardEnchantVfx : Node2D
 		{
 			_tween = CreateTween();
 			_tween.TweenProperty(this, "scale", Vector2.Zero, 0.15000000596046448);
-			if (!(await _tween.AwaitFinished(this)))
+			if (await _tween.AwaitFinished(this) != TweenOutcome.Finished)
 			{
 				return;
 			}

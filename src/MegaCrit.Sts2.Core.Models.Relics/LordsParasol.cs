@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Debug;
 using MegaCrit.Sts2.Core.Entities.Merchant;
 using MegaCrit.Sts2.Core.Entities.Relics;
@@ -18,26 +19,45 @@ public sealed class LordsParasol : RelicModel
 {
 	public override RelicRarity Rarity => RelicRarity.Ancient;
 
+	/// <summary>
+	/// For testing.
+	/// </summary>
+	public Task? LastPurchaseEverythingTask { get; private set; }
+
 	public override Task AfterRoomEntered(AbstractRoom room)
 	{
-		if (!(room is MerchantRoom merchantRoom))
+		if (!(room is MerchantRoom))
 		{
 			return Task.CompletedTask;
 		}
-		TaskHelper.RunSafely(PurchaseEverything(merchantRoom.GetLocalInventory()));
+		MerchantInventory inventoryFor = RunManager.Instance.MerchantSynchronizer.GetInventoryFor(Owner);
+		LastPurchaseEverythingTask = TaskHelper.RunSafely(PurchaseEverything(inventoryFor));
 		return Task.CompletedTask;
 	}
 
 	private async Task PurchaseEverything(MerchantInventory inventory)
 	{
-		if (inventory.Player != Owner)
-		{
-			return;
-		}
-		bool uiBlocked = false;
+		bool isLocked = inventory.TryBeginPurchase();
 		try
 		{
-			if (TestMode.IsOff)
+			await PurchaseEverythingLocked(inventory);
+		}
+		finally
+		{
+			if (isLocked)
+			{
+				inventory.EndPurchase();
+			}
+		}
+	}
+
+	private async Task PurchaseEverythingLocked(MerchantInventory inventory)
+	{
+		bool uiBlocked = false;
+		bool ownerIsLocal = LocalContext.IsMe(Owner);
+		try
+		{
+			if (TestMode.IsOff & ownerIsLocal)
 			{
 				NRun.Instance?.GlobalUi.TopBar.Map.Disable();
 				NRun.Instance?.GlobalUi.TopBar.Deck.Disable();
@@ -61,7 +81,7 @@ public sealed class LordsParasol : RelicModel
 				}
 				else
 				{
-					await characterCardEntry.OnTryPurchaseWrapper(inventory, ignoreCost: true);
+					await characterCardEntry.OnTryPurchaseUnsynchronized(inventory, ignoreCost: true);
 					await Cmd.Wait(0.25f);
 				}
 			}
@@ -74,22 +94,30 @@ public sealed class LordsParasol : RelicModel
 				}
 				else
 				{
-					await colorlessCardEntry.OnTryPurchaseWrapper(inventory, ignoreCost: true);
+					await colorlessCardEntry.OnTryPurchaseUnsynchronized(inventory, ignoreCost: true);
 					await Cmd.Wait(0.25f);
 				}
 			}
 			foreach (MerchantRelicEntry relicEntry in inventory.RelicEntries)
 			{
-				NRun.Instance?.GlobalUi.TopBar.Map.Enable();
-				NRun.Instance?.GlobalUi.TopBar.Deck.Enable();
-				await relicEntry.OnTryPurchaseWrapper(inventory, ignoreCost: true);
-				NRun.Instance?.GlobalUi.TopBar.Deck.Disable();
-				NRun.Instance?.GlobalUi.TopBar.Map.Disable();
+				if (ownerIsLocal)
+				{
+					NMerchantRoom.Instance?.Inventory.UnblockInput();
+					NRun.Instance?.GlobalUi.TopBar.Map.Enable();
+					NRun.Instance?.GlobalUi.TopBar.Deck.Enable();
+				}
+				await relicEntry.OnTryPurchaseUnsynchronized(inventory, ignoreCost: true);
+				if (ownerIsLocal)
+				{
+					NMerchantRoom.Instance?.Inventory.BlockInput();
+					NRun.Instance?.GlobalUi.TopBar.Deck.Disable();
+					NRun.Instance?.GlobalUi.TopBar.Map.Disable();
+				}
 				await Cmd.Wait(0.25f);
 			}
 			foreach (MerchantPotionEntry potionEntry in inventory.PotionEntries)
 			{
-				await potionEntry.OnTryPurchaseWrapper(inventory, ignoreCost: true);
+				await potionEntry.OnTryPurchaseUnsynchronized(inventory, ignoreCost: true);
 				await Cmd.Wait(0.25f);
 			}
 		}
@@ -105,9 +133,16 @@ public sealed class LordsParasol : RelicModel
 		}
 		if (inventory.CardRemovalEntry != null && RunManager.Instance.IsInProgress)
 		{
-			NMapScreen.Instance?.SetTravelEnabled(enabled: false);
-			await inventory.CardRemovalEntry.OnTryPurchaseWrapper(inventory, ignoreCost: true, cancelable: false);
-			NMapScreen.Instance?.SetTravelEnabled(enabled: true);
+			if (ownerIsLocal)
+			{
+				NMapScreen.Instance?.SetTravelEnabled(enabled: false);
+			}
+			inventory.CardRemovalEntry.SetPurchaseUncancelable();
+			await inventory.CardRemovalEntry.OnTryPurchaseUnsynchronized(inventory, ignoreCost: true);
+			if (ownerIsLocal)
+			{
+				NMapScreen.Instance?.SetTravelEnabled(enabled: true);
+			}
 		}
 	}
 }

@@ -12,6 +12,8 @@ using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.FeedbackScreen;
 using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
+using MegaCrit.Sts2.Core.Platform;
+using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.TestSupport;
 
 namespace MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -24,6 +26,11 @@ namespace MegaCrit.Sts2.Core.Nodes.CommonUi;
 [ScriptPath("res://src/Core/Nodes/CommonUi/NErrorPopup.cs")]
 public class NErrorPopup : NVerticalPopup, IScreenContext
 {
+	/// <summary>
+	/// The popup text and buttons for a run save that could not be loaded.
+	/// </summary>
+	public readonly record struct RunSaveErrorContent(LocString Title, LocString Body, LocString? Cancel, bool ShowReportBugButton);
+
 	/// <summary>
 	/// Cached StringNames for the methods contained in this class, for fast lookup.
 	/// </summary>
@@ -38,6 +45,11 @@ public class NErrorPopup : NVerticalPopup, IScreenContext
 		/// Cached name for the 'Create' method.
 		/// </summary>
 		public static readonly StringName Create = "Create";
+
+		/// <summary>
+		/// Cached name for the 'CreateForRunSave' method.
+		/// </summary>
+		public static readonly StringName CreateForRunSave = "CreateForRunSave";
 
 		/// <summary>
 		/// Cached name for the 'OnOkButtonPressed' method.
@@ -176,6 +188,21 @@ public class NErrorPopup : NVerticalPopup, IScreenContext
 		return nErrorPopup;
 	}
 
+	public static NErrorPopup? CreateForRunSave(ReadSaveStatus status)
+	{
+		RunSaveErrorContent runSaveErrorContent = GetRunSaveErrorContent(status);
+		return Create(runSaveErrorContent.Title, runSaveErrorContent.Body, runSaveErrorContent.Cancel, runSaveErrorContent.ShowReportBugButton);
+	}
+
+	public static RunSaveErrorContent GetRunSaveErrorContent(ReadSaveStatus status)
+	{
+		if (status == ReadSaveStatus.FutureVersion)
+		{
+			return new RunSaveErrorContent(new LocString("main_menu_ui", "FUTURE_VERSION_RUN_POPUP.title"), new LocString("main_menu_ui", "FUTURE_VERSION_RUN_POPUP.description"), null, ShowReportBugButton: false);
+		}
+		return new RunSaveErrorContent(new LocString("main_menu_ui", "INVALID_SAVE_POPUP.title"), new LocString("main_menu_ui", "INVALID_SAVE_POPUP.description_run"), new LocString("main_menu_ui", "INVALID_SAVE_POPUP.dismiss"), ShowReportBugButton: true);
+	}
+
 	public static LocString LocStringFromNetError(NetErrorInfo info, out bool showReportBugButton)
 	{
 		NetError reason = info.GetReason();
@@ -203,6 +230,17 @@ public class NErrorPopup : NVerticalPopup, IScreenContext
 			showReportBugButton = !info.IsModded;
 		}
 		locString.Add("info", info.GetErrorString());
+		if (info.JoinExtraInfo != null)
+		{
+			if (info.JoinExtraInfo.hostId.HasValue)
+			{
+				locString.Add("HostName", PlatformUtil.GetPlayerName(info.JoinExtraInfo.platform, info.JoinExtraInfo.hostId.Value));
+			}
+			else
+			{
+				locString.Add("HostName", "???");
+			}
+		}
 		return locString;
 	}
 
@@ -211,31 +249,33 @@ public class NErrorPopup : NVerticalPopup, IScreenContext
 		string text = (isHost ? "NETWORK_ERROR.HOST." : "NETWORK_ERROR.");
 		string text2 = reason switch
 		{
-			NetError.None => null, 
-			NetError.QuitGameOver => null, 
-			NetError.CancelledJoin => null, 
-			NetError.LobbyFull => "LOBBY_FULL.body", 
-			NetError.Quit => "QUIT.body", 
-			NetError.HostAbandoned => "HOST_ABANDONED.body", 
-			NetError.Kicked => "KICKED.body", 
-			NetError.InvalidJoin => "INVALID_JOIN.body", 
-			NetError.RunInProgress => "RUN_IN_PROGRESS.body", 
-			NetError.StateDivergence => "STATE_DIVERGENCE.body", 
-			NetError.ModMismatch => "MOD_MISMATCH.body", 
-			NetError.JoinBlockedByUser => "JOIN_BLOCKED_BY_USER.body", 
-			NetError.NoInternet => "NO_INTERNET.body", 
-			NetError.Timeout => "TIMEOUT.body", 
-			NetError.HandshakeTimeout => "TIMEOUT.body", 
-			NetError.InternalError => "INTERNAL_ERROR.body", 
-			NetError.UnknownNetworkError => "UNKNOWN_ERROR.body", 
-			NetError.RateLimited => "RATE_LIMITED.body", 
-			NetError.TryAgainLater => "TRY_AGAIN_LATER.body", 
-			NetError.SecureConnectionFailed => "SECURE_CONNECTION_FAILED.body", 
-			NetError.FailedToHost => "FAILED_TO_HOST.body", 
-			NetError.NotInSaveGame => "NOT_IN_SAVE_GAME.body", 
-			NetError.VersionMismatch => "VERSION_MISMATCH.body", 
-			NetError.InvalidHandshake => "VERSION_MISMATCH.body", 
-			NetError.LobbyJoinTimeout => "TIMEOUT.body", 
+			NetError.None => null,
+			NetError.QuitGameOver => null,
+			NetError.CancelledJoin => null,
+			NetError.LobbyFull => "LOBBY_FULL.body",
+			NetError.Quit => "QUIT.body",
+			NetError.HostAbandoned => "HOST_ABANDONED.body",
+			NetError.Kicked => "KICKED.body",
+			NetError.InvalidJoin => "INVALID_JOIN.body",
+			NetError.RunInProgress => "RUN_IN_PROGRESS.body",
+			NetError.StateDivergence => "STATE_DIVERGENCE.body",
+			NetError.ModMismatch => "MOD_MISMATCH.body",
+			NetError.DreadNotUnlocked => "DREAD_NOT_UNLOCKED.body",
+			NetError.BlitzNotUnlocked => "BLITZ_NOT_UNLOCKED.body",
+			NetError.JoinBlockedByUser => "JOIN_BLOCKED_BY_USER.body",
+			NetError.NoInternet => "NO_INTERNET.body",
+			NetError.Timeout => "TIMEOUT.body",
+			NetError.HandshakeTimeout => "TIMEOUT.body",
+			NetError.InternalError => "INTERNAL_ERROR.body",
+			NetError.UnknownNetworkError => "UNKNOWN_ERROR.body",
+			NetError.RateLimited => "RATE_LIMITED.body",
+			NetError.TryAgainLater => "TRY_AGAIN_LATER.body",
+			NetError.SecureConnectionFailed => "SECURE_CONNECTION_FAILED.body",
+			NetError.FailedToHost => "FAILED_TO_HOST.body",
+			NetError.NotInSaveGame => "NOT_IN_SAVE_GAME.body",
+			NetError.VersionMismatch => "VERSION_MISMATCH.body",
+			NetError.InvalidHandshake => "VERSION_MISMATCH.body",
+			NetError.LobbyJoinTimeout => "TIMEOUT.body",
 		};
 		string text3 = ((text2 != null) ? (text + text2) : null);
 		if (text3 != null)
@@ -281,13 +321,17 @@ public class NErrorPopup : NVerticalPopup, IScreenContext
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	internal new static List<MethodInfo> GetGodotMethodList()
 	{
-		List<MethodInfo> list = new List<MethodInfo>(5);
+		List<MethodInfo> list = new List<MethodInfo>(6);
 		list.Add(new MethodInfo(MethodName._Ready, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, null, null));
 		list.Add(new MethodInfo(MethodName.Create, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
 		{
 			new PropertyInfo(Variant.Type.String, "title", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false),
 			new PropertyInfo(Variant.Type.String, "body", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false),
 			new PropertyInfo(Variant.Type.Bool, "showReportBugButton", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
+		}, null));
+		list.Add(new MethodInfo(MethodName.CreateForRunSave, new PropertyInfo(Variant.Type.Object, "", PropertyHint.None, "", PropertyUsageFlags.Default, new StringName("Control"), exported: false), MethodFlags.Normal | MethodFlags.Static, new List<PropertyInfo>
+		{
+			new PropertyInfo(Variant.Type.Int, "status", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false)
 		}, null));
 		list.Add(new MethodInfo(MethodName.OnOkButtonPressed, new PropertyInfo(Variant.Type.Nil, "", PropertyHint.None, "", PropertyUsageFlags.Default, exported: false), MethodFlags.Normal, new List<PropertyInfo>
 		{
@@ -319,6 +363,11 @@ public class NErrorPopup : NVerticalPopup, IScreenContext
 			ret = VariantUtils.CreateFrom<NErrorPopup>(Create(VariantUtils.ConvertTo<string>(in args[0]), VariantUtils.ConvertTo<string>(in args[1]), VariantUtils.ConvertTo<bool>(in args[2])));
 			return true;
 		}
+		if (method == MethodName.CreateForRunSave && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<NErrorPopup>(CreateForRunSave(VariantUtils.ConvertTo<ReadSaveStatus>(in args[0])));
+			return true;
+		}
 		if (method == MethodName.OnOkButtonPressed && args.Count == 1)
 		{
 			OnOkButtonPressed(VariantUtils.ConvertTo<NButton>(in args[0]));
@@ -348,6 +397,11 @@ public class NErrorPopup : NVerticalPopup, IScreenContext
 			ret = VariantUtils.CreateFrom<NErrorPopup>(Create(VariantUtils.ConvertTo<string>(in args[0]), VariantUtils.ConvertTo<string>(in args[1]), VariantUtils.ConvertTo<bool>(in args[2])));
 			return true;
 		}
+		if (method == MethodName.CreateForRunSave && args.Count == 1)
+		{
+			ret = VariantUtils.CreateFrom<NErrorPopup>(CreateForRunSave(VariantUtils.ConvertTo<ReadSaveStatus>(in args[0])));
+			return true;
+		}
 		ret = default;
 		return false;
 	}
@@ -361,6 +415,10 @@ public class NErrorPopup : NVerticalPopup, IScreenContext
 			return true;
 		}
 		if (method == MethodName.Create)
+		{
+			return true;
+		}
+		if (method == MethodName.CreateForRunSave)
 		{
 			return true;
 		}
