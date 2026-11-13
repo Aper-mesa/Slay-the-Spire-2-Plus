@@ -59,6 +59,8 @@ A **source tree that actually compiles**:
 
 The complete official **0.113.0** C# and GDScript changes are merged while retaining the Plus features. The Release build passes; in-game and multiplayer behavior still require manual verification.
 
+2026-11-13 startup hotfix: restore the official Blitz model initialization timing to prevent the startup `ENCHANTMENT.SHARP` lookup failure, and restore the original `RunManager.CleanUp(bool)` entry point used by RitsuLib and other mod cleanup patches. Plus multiplayer reloads use that entry point while preserving the network session. The build and DLL metadata checks pass; in-game verification remains pending.
+
 ## Target
 
 | Item | Value |

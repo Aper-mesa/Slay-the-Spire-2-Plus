@@ -21,7 +21,16 @@ namespace MegaCrit.Sts2.Core.Models.Blitz;
 
 public sealed class BlitzRunModel : RunModel
 {
-	public static List<(EnchantmentModel, int)> shopEnchantmentOptions;
+	// Keep field initialization implicit so constructing the model does not resolve ModelDb early.
+	public static List<(EnchantmentModel, int)> shopEnchantmentOptions = new List<(EnchantmentModel, int)>
+	{
+		(ModelDb.Enchantment<Sharp>(), 2),
+		(ModelDb.Enchantment<Nimble>(), 3),
+		(ModelDb.Enchantment<Adroit>(), 3),
+		(ModelDb.Enchantment<Steady>(), 1),
+		(ModelDb.Enchantment<Swift>(), 2),
+		(ModelDb.Enchantment<Vigorous>(), 5)
+	};
 
 	public static async Task GiveNeowRewards(Player player)
 	{
@@ -124,26 +133,5 @@ public sealed class BlitzRunModel : RunModel
 	private static CardCreationOptions GetCardRewardOptions(Player player, CardRarity rarity)
 	{
 		return CardCreationOptions.ForNonCombatWithUniformOdds(new _003C_003Ez__ReadOnlySingleElementList<CardPoolModel>(player.Character.CardPool), (CardModel c) => c.Rarity == rarity).WithFlags(CardCreationFlags.NoUpgradeRoll | CardCreationFlags.IsFromCombat);
-	}
-
-	static BlitzRunModel()
-	{
-		int num = 6;
-		List<(EnchantmentModel, int)> list = new List<(EnchantmentModel, int)>(num);
-		CollectionsMarshal.SetCount(list, num);
-		Span<(EnchantmentModel, int)> span = CollectionsMarshal.AsSpan(list);
-		int num2 = 0;
-		span[num2] = (ModelDb.Enchantment<Sharp>(), 2);
-		num2++;
-		span[num2] = (ModelDb.Enchantment<Nimble>(), 3);
-		num2++;
-		span[num2] = (ModelDb.Enchantment<Adroit>(), 3);
-		num2++;
-		span[num2] = (ModelDb.Enchantment<Steady>(), 1);
-		num2++;
-		span[num2] = (ModelDb.Enchantment<Swift>(), 2);
-		num2++;
-		span[num2] = (ModelDb.Enchantment<Vigorous>(), 5);
-		shopEnchantmentOptions = list;
 	}
 }

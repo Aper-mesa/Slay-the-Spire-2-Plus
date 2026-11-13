@@ -236,7 +236,7 @@ internal static class PlusSaveLoadHost
 			await game.Transition.FadeOut(0.8f, PlusSaveLoadService.FadeTransitionPath);
 			fadedOut = true;
 			DisposeOldRunSystems(runManager);
-			runManager.CleanUp(graceful: true, disconnect: false);
+			runManager.CleanUpForReload(graceful: true);
 			cleanedUp = true;
 
 			TaskCompletionSource<bool> beginRun = new(TaskCreationOptions.RunContinuationsAsynchronously);

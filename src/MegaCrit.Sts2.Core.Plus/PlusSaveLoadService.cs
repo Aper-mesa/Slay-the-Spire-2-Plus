@@ -133,7 +133,7 @@ public static class PlusSaveLoadService
 
 			await game.Transition.FadeOut(0.8f, FadeTransitionPath);
 			fadedOut = true;
-			runManager.CleanUp(graceful: true, disconnect: true);
+			runManager.CleanUp(graceful: true);
 			cleanedUp = true;
 			await runManager.SetUpSavedSingleplayer(state, save);
 			game.ReactionContainer.InitializeNetworking(new NetSingleplayerGameService());

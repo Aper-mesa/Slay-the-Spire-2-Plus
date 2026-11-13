@@ -64,6 +64,8 @@ public class RunManager : IRunLobbyListener
 
 	private bool _runHistoryWasUploaded;
 
+	private bool _preserveSessionOnCleanUp;
+
 	private int _numReloads;
 
 	public Action? debugAfterCombatRewardsOverride;
@@ -1414,7 +1416,22 @@ public class RunManager : IRunLobbyListener
 		CombatReplayWriter.WriteReplay(profileScopedPath, stopRecording);
 	}
 
-	public void CleanUp(bool graceful = true, bool disconnect = true)
+	public void CleanUpForReload(bool graceful = true)
+	{
+		bool preserveSession = _preserveSessionOnCleanUp;
+		_preserveSessionOnCleanUp = true;
+		try
+		{
+			// Route reloads through the original entry point so mod cleanup patches still run.
+			CleanUp(graceful);
+		}
+		finally
+		{
+			_preserveSessionOnCleanUp = preserveSession;
+		}
+	}
+
+	public void CleanUp(bool graceful = true)
 	{
 		if (State == null)
 		{
@@ -1454,7 +1471,7 @@ public class RunManager : IRunLobbyListener
 				RunLobby.RemotePlayerDisconnected -= RemotePlayerDisconnected;
 				RunLobby.Dispose();
 			}
-			if (disconnect)
+			if (!_preserveSessionOnCleanUp)
 			{
 				NetService.Disconnect(NetError.Quit, !graceful);
 			}
